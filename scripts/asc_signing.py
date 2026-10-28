@@ -61,7 +61,8 @@ def create(csr_path: str, out_dir: str, bundle_id: str, profile_name: str) -> No
 
     cert = call("POST", "/certificates", {"data": {
         "type": "certificates",
-        "attributes": {"certificateType": "DISTRIBUTION", "csrContent": csr},
+        # IOS_DISTRIBUTION has its own quota, separate from the cross-platform DISTRIBUTION type.
+        "attributes": {"certificateType": "IOS_DISTRIBUTION", "csrContent": csr},
     }})["data"]
     cert_id = cert["id"]
     with open(os.path.join(out_dir, "cert_id"), "w") as f:
