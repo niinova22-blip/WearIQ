@@ -48,7 +48,7 @@ jobs:
             -scheme WearIQ \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult \
-            -quiet CODE_SIGNING_ALLOWED=NO
+            -quiet CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v5
