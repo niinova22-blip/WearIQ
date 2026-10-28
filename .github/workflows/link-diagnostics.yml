@@ -26,4 +26,4 @@ jobs:
           xcodebuild test -project WearIQ.xcodeproj -scheme WearIQ -destination "id=$UDID" \
             -only-testing:WearIQTests/LiveLinkTests \
             CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= 2>&1 \
-            | grep -E "^(OK|FAIL|  )|error:|Test run|passed|failed" || true
+            | grep -E "^(OK|FAIL|CONTROLS|  )|error:|Test run|passed|failed" || true

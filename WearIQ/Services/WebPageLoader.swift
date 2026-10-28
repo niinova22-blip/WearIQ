@@ -17,6 +17,8 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
         var text: String = ""
         /// Image of the opened size guide, for guides that are only readable visually.
         var snapshot: UIImage?
+        /// Texts of clickable elements that mention sizes, for diagnostics.
+        var sizeRelatedControls: [String] = []
     }
 
     private var webView: WKWebView?
@@ -81,6 +83,7 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
         }
         guard var page = last else { return nil }
         page.text = (try? await webView.evaluateJavaScript("document.body.innerText") as? String) ?? ""
+        page.sizeRelatedControls = (try? await webView.evaluateJavaScript(Self.listSizeControls) as? [String]) ?? []
         if page.sizeGuideControls > 0 {
             // Bring the opened guide into view, then photograph it.
             _ = try? await webView.evaluateJavaScript(Self.scrollToSizeGuide)
@@ -89,6 +92,12 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
         }
         return page
     }
+
+    static let listSizeControls = #"""
+    [...document.querySelectorAll('button, [role="button"], summary, a, [data-qa-action], [class*="size-guide"], [class*="sizeGuide"]')]
+      .map(e => ((e.innerText || e.getAttribute('aria-label') || '') + ' <' + e.tagName + ' ' + (e.getAttribute('data-qa-action') || e.className || '').toString().slice(0, 60) + '>').replace(/\s+/g, ' ').trim())
+      .filter(t => /boyut|beden|ölç|olcu|size|guide|measure/i.test(t)).slice(0, 25)
+    """#
 
     /// Scrolls to the largest visible block that looks like a size table (many numbers).
     static let scrollToSizeGuide = #"""

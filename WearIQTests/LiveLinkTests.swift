@@ -38,4 +38,17 @@ struct LiveLinkTests {
             print("FAIL \(link): \(error) (\(String(format: "%.1fs", Date().timeIntervalSince(start))))")
         }
     }
+
+    /// What the rendered page offers as size guide controls (to tune the button matching).
+    @Test(arguments: [links[0], links[2], links[3], links[5]])
+    func sizeControls(_ link: String) async {
+        let page = await WebPageLoader.load(URL(string: link)!, timeout: 12) { _ in false }
+        var lines = ["CONTROLS \(link)", "  opened: \(page?.sizeGuideControls ?? -1) snapshot: \(page?.snapshot != nil)"]
+        lines += (page?.sizeRelatedControls ?? []).map { "  " + $0 }
+        let text = page?.text ?? ""
+        if let r = text.range(of: "ÜRÜN BOYUTLARI", options: .caseInsensitive) ?? text.range(of: "beden", options: .caseInsensitive) {
+            lines.append("  TEXT: " + text[r.lowerBound...].prefix(400).replacingOccurrences(of: "\n", with: " | "))
+        }
+        print(lines.joined(separator: "\n"))
+    }
 }
