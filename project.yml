@@ -46,6 +46,8 @@ targets:
         product: ProductMeasurementParser
       - package: WearIQKit
         product: ScanQuota
+      - package: WearIQKit
+        product: OutfitRecommendationEngine
       - package: GoogleMobileAds
       - package: GoogleUserMessagingPlatform
     info:

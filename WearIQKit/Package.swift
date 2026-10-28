@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "BodyMeasurementEngine", targets: ["BodyMeasurementEngine"]),
         .library(name: "ProductMeasurementParser", targets: ["ProductMeasurementParser"]),
         .library(name: "ScanQuota", targets: ["ScanQuota"]),
+        .library(name: "OutfitRecommendationEngine", targets: ["OutfitRecommendationEngine"]),
     ],
     targets: [
         .target(name: "WearIQCore"),
@@ -19,9 +20,11 @@ let package = Package(
         .target(name: "BodyMeasurementEngine", dependencies: ["WearIQCore"]),
         .target(name: "ProductMeasurementParser", dependencies: ["WearIQCore"]),
         .target(name: "ScanQuota"),
+        .target(name: "OutfitRecommendationEngine"),
         .testTarget(name: "FitEngineTests", dependencies: ["FitEngine"]),
         .testTarget(name: "BodyMeasurementEngineTests", dependencies: ["BodyMeasurementEngine"]),
         .testTarget(name: "ProductMeasurementParserTests", dependencies: ["ProductMeasurementParser"]),
         .testTarget(name: "ScanQuotaTests", dependencies: ["ScanQuota"]),
+        .testTarget(name: "OutfitRecommendationEngineTests", dependencies: ["OutfitRecommendationEngine"]),
     ]
 )

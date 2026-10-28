@@ -2510,6 +2510,1106 @@
           }
         }
       }
+    },
+    "No analyses yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz analiz yok"
+          }
+        }
+      }
+    },
+    "Garments you analyse are saved here.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analiz ettiğin kıyafetler burada saklanır."
+          }
+        }
+      }
+    },
+    "History": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geçmiş"
+          }
+        }
+      }
+    },
+    "Recent analyses": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son analizler"
+          }
+        }
+      }
+    },
+    "See all": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tümünü gör"
+          }
+        }
+      }
+    },
+    "Advertisement": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reklam"
+          }
+        }
+      }
+    },
+    "Unlimited garment scans": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sınırsız kıyafet tarama"
+          }
+        }
+      }
+    },
+    "No ads": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reklamsız kullanım"
+          }
+        }
+      }
+    },
+    "Detailed region-by-region analysis": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelişmiş bölgesel uyum analizi"
+          }
+        }
+      }
+    },
+    "Compare several sizes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birden fazla beden karşılaştırma"
+          }
+        }
+      }
+    },
+    "Outfit suggestions and style tips": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kombin önerileri ve stil ipuçları"
+          }
+        }
+      }
+    },
+    "Measurement change tracking": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçü değişimi takibi"
+          }
+        }
+      }
+    },
+    "Full fit history": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelişmiş uyum geçmişi"
+          }
+        }
+      }
+    },
+    "WearIQ Premium": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ Premium"
+          }
+        }
+      }
+    },
+    "Virtual try-on": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sanal deneme"
+          }
+        }
+      }
+    },
+    "Premium is active. Thank you!": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium aktif. Teşekkürler!"
+          }
+        }
+      }
+    },
+    "Subscriptions couldn't be loaded. Check your connection and try again.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonelikler yüklenemedi. Bağlantını kontrol edip tekrar dene."
+          }
+        }
+      }
+    },
+    "Subscriptions renew automatically until cancelled. Cancel anytime in your App Store account settings at least 24 hours before the period ends.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonelikler iptal edilene kadar otomatik yenilenir. Dönem bitmeden en az 24 saat önce App Store hesap ayarlarından istediğin zaman iptal edebilirsin."
+          }
+        }
+      }
+    },
+    "Restore purchases": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Satın alımları geri yükle"
+          }
+        }
+      }
+    },
+    "Terms": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koşullar"
+          }
+        }
+      }
+    },
+    "Billed monthly": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aylık faturalandırılır"
+          }
+        }
+      }
+    },
+    "Billed yearly": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yıllık faturalandırılır"
+          }
+        }
+      }
+    },
+    "Billed weekly": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haftalık faturalandırılır"
+          }
+        }
+      }
+    },
+    "Billed daily": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük faturalandırılır"
+          }
+        }
+      }
+    },
+    "The purchase couldn't be verified.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Satın alma doğrulanamadı."
+          }
+        }
+      }
+    },
+    "You've used today's free scans. They renew tomorrow, or go unlimited with Premium.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünkü ücretsiz taramalarını kullandın. Yarın yenilenecek ya da Premium ile sınırsız kullanabilirsin."
+          }
+        }
+      }
+    },
+    "Subscription": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonelik"
+          }
+        }
+      }
+    },
+    "Premium is active": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium aktif"
+          }
+        }
+      }
+    },
+    "Manage subscription": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aboneliği yönet"
+          }
+        }
+      }
+    },
+    "Get Premium": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium'a geç"
+          }
+        }
+      }
+    },
+    "Unlock with Premium": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium ile aç"
+          }
+        }
+      }
+    },
+    "Your wardrobe is empty": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gardırobun boş"
+          }
+        }
+      }
+    },
+    "Add the clothes you own to get outfit suggestions.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kombin önerileri almak için sahip olduğun kıyafetleri ekle."
+          }
+        }
+      }
+    },
+    "Add item": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet ekle"
+          }
+        }
+      }
+    },
+    "Edit item": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafeti düzenle"
+          }
+        }
+      }
+    },
+    "All": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tümü"
+          }
+        }
+      }
+    },
+    "All seasons": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm mevsimler"
+          }
+        }
+      }
+    },
+    "Season": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevsim"
+          }
+        }
+      }
+    },
+    "Seasons": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevsimler"
+          }
+        }
+      }
+    },
+    "%lld items": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld parça"
+          }
+        }
+      }
+    },
+    "Add photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf ekle"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ad"
+          }
+        }
+      }
+    },
+    "Size": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden"
+          }
+        }
+      }
+    },
+    "Colour": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renk"
+          }
+        }
+      }
+    },
+    "Not specified": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belirtilmemiş"
+          }
+        }
+      }
+    },
+    "Tops": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üstler"
+          }
+        }
+      }
+    },
+    "Bottoms": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altlar"
+          }
+        }
+      }
+    },
+    "Dresses": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elbiseler"
+          }
+        }
+      }
+    },
+    "Outerwear": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dış giyim"
+          }
+        }
+      }
+    },
+    "Shoes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayakkabılar"
+          }
+        }
+      }
+    },
+    "Accessories": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aksesuarlar"
+          }
+        }
+      }
+    },
+    "Black": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siyah"
+          }
+        }
+      }
+    },
+    "White": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beyaz"
+          }
+        }
+      }
+    },
+    "Grey": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gri"
+          }
+        }
+      }
+    },
+    "Navy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lacivert"
+          }
+        }
+      }
+    },
+    "Beige": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bej"
+          }
+        }
+      }
+    },
+    "Brown": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kahverengi"
+          }
+        }
+      }
+    },
+    "Denim": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denim"
+          }
+        }
+      }
+    },
+    "Blue": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mavi"
+          }
+        }
+      }
+    },
+    "Green": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeşil"
+          }
+        }
+      }
+    },
+    "Olive": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haki"
+          }
+        }
+      }
+    },
+    "Red": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kırmızı"
+          }
+        }
+      }
+    },
+    "Burgundy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bordo"
+          }
+        }
+      }
+    },
+    "Pink": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pembe"
+          }
+        }
+      }
+    },
+    "Orange": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turuncu"
+          }
+        }
+      }
+    },
+    "Yellow": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sarı"
+          }
+        }
+      }
+    },
+    "Purple": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mor"
+          }
+        }
+      }
+    },
+    "Multicolour": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok renkli"
+          }
+        }
+      }
+    },
+    "Spring": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İlkbahar"
+          }
+        }
+      }
+    },
+    "Summer": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yaz"
+          }
+        }
+      }
+    },
+    "Autumn": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonbahar"
+          }
+        }
+      }
+    },
+    "Winter": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kış"
+          }
+        }
+      }
+    },
+    "Casual": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük"
+          }
+        }
+      }
+    },
+    "Smart casual": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart casual"
+          }
+        }
+      }
+    },
+    "Business": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İş"
+          }
+        }
+      }
+    },
+    "Formal": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resmî"
+          }
+        }
+      }
+    },
+    "Sporty": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spor"
+          }
+        }
+      }
+    },
+    "Evening": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akşam"
+          }
+        }
+      }
+    },
+    "Daily": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük"
+          }
+        }
+      }
+    },
+    "Work": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İş"
+          }
+        }
+      }
+    },
+    "Sport": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spor"
+          }
+        }
+      }
+    },
+    "Special event": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Özel etkinlik"
+          }
+        }
+      }
+    },
+    "Occasion": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kullanım amacı"
+          }
+        }
+      }
+    },
+    "Colour preferences": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renk tercihleri"
+          }
+        }
+      }
+    },
+    "Colours I like": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sevdiğim renkler"
+          }
+        }
+      }
+    },
+    "Colours I avoid": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaçındığım renkler"
+          }
+        }
+      }
+    },
+    "No outfit fits this occasion and season yet. Add at least one top and one bottom (or a dress) tagged with a matching style and season.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu kullanım amacı ve mevsim için henüz kombin yok. Uygun stil ve mevsimle işaretlenmiş en az bir üst ve bir alt (ya da bir elbise) ekle."
+          }
+        }
+      }
+    },
+    "Outfit %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kombin %lld"
+          }
+        }
+      }
+    },
+    "Match %lld percent": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yüzde %lld uyum"
+          }
+        }
+      }
+    },
+    "%lld%%": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%%%lld"
+          }
+        }
+      }
+    },
+    "Suits the occasion": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kullanım amacına uygun"
+          }
+        }
+      }
+    },
+    "Balanced colours": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dengeli renkler"
+          }
+        }
+      }
+    },
+    "%@ and %@ go well together": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ve %2$@ birbirine yakışıyor"
+          }
+        }
+      }
+    },
+    "Includes %@, a colour you like": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sevdiğin renk olan %@ içeriyor"
+          }
+        }
+      }
+    },
+    "Pieces that fit you well": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üzerine iyi oturan parçalar"
+          }
+        }
+      }
+    },
+    "Layered for the weather": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hava için katmanlı"
+          }
+        }
+      }
+    },
+    "Measurement tracking": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçü takibi"
+          }
+        }
+      }
+    },
+    "Compare your scans over time and see which clothes may now fit differently.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taramalarını zaman içinde karşılaştır ve hangi kıyafetlerin artık farklı oturabileceğini gör."
+          }
+        }
+      }
+    },
+    "Only one measurement so far": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdilik tek bir ölçüm var"
+          }
+        }
+      }
+    },
+    "Scan again or update your measurements later to compare.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karşılaştırmak için daha sonra yeniden tara veya ölçülerini güncelle."
+          }
+        }
+      }
+    },
+    "Measurement changes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçü değişimleri"
+          }
+        }
+      }
+    },
+    "%@ → %@ cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ → %@ cm"
+          }
+        }
+      }
+    },
+    "%@ → %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ → %@"
+          }
+        }
+      }
+    },
+    "Differences smaller than the measurement uncertainty are shown as \"within measurement error\" and are not treated as real change.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüm belirsizliğinden küçük farklar \"ölçüm hatası sınırında\" olarak gösterilir ve gerçek değişim sayılmaz."
+          }
+        }
+      }
+    },
+    "Clothes that may fit differently": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farklı oturabilecek kıyafetler"
+          }
+        }
+      }
+    },
+    "None of your saved garments are affected.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayıtlı kıyafetlerinin hiçbiri etkilenmiyor."
+          }
+        }
+      }
+    },
+    "%@: %@ → %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$@ → %3$@"
+          }
+        }
+      }
+    },
+    "Increased": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arttı"
+          }
+        }
+      }
+    },
+    "Decreased": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azaldı"
+          }
+        }
+      }
+    },
+    "Within measurement error": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüm hatası sınırında"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

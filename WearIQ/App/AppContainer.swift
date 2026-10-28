@@ -53,6 +53,7 @@ final class AppContainer {
         let context = modelContainer.mainContext
         try context.delete(model: StoredBodyProfile.self)
         try context.delete(model: SavedAnalysis.self)
+        try context.delete(model: WardrobeEntry.self)
         try context.save()
         onboardingCompleted = false
     }

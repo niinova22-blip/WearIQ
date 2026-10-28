@@ -33,6 +33,17 @@ public struct RegionFit: Codable, Hashable, Sendable {
     public enum MissingData: String, Codable, Sendable {
         case bodyMeasurement, garmentMeasurement
     }
+
+    public init(region: FitRegion, verdict: FitVerdict, severity: FitSeverity, estimatedOffsetCm: ClosedRange<Double>?,
+                probabilityIdeal: Double?, confidence: ConfidenceLevel, missing: MissingData?) {
+        self.region = region
+        self.verdict = verdict
+        self.severity = severity
+        self.estimatedOffsetCm = estimatedOffsetCm
+        self.probabilityIdeal = probabilityIdeal
+        self.confidence = confidence
+        self.missing = missing
+    }
 }
 
 public struct SizeFit: Codable, Hashable, Sendable {
@@ -41,6 +52,13 @@ public struct SizeFit: Codable, Hashable, Sendable {
     /// Lower is better. Expected penalty integrated over measurement uncertainty.
     public var penalty: Double
     public var hasCriticalData: Bool
+
+    public init(label: String, regions: [RegionFit], penalty: Double, hasCriticalData: Bool) {
+        self.label = label
+        self.regions = regions
+        self.penalty = penalty
+        self.hasCriticalData = hasCriticalData
+    }
 
     public func region(_ r: FitRegion) -> RegionFit? { regions.first { $0.region == r } }
 }

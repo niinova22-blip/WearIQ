@@ -8,20 +8,28 @@ struct FitResultView: View {
     let imageURL: URL?
     let pageURL: URL?
     let analysis: FitAnalysis
+    var category: GarmentCategory?
+    var fitStyle: FitStyle?
     /// False for "insufficient data" results, which are shown but neither saved nor charged.
     let isSaved: Bool
 
     @State private var selectedLabel: String?
+    @State private var addingToWardrobe = false
+    @State private var showPaywall = false
+    @Environment(AppContainer.self) private var container
     @Environment(\.openURL) private var openURL
 
     init(saved: SavedAnalysis) {
         self.init(productName: saved.productName, brand: saved.brand, imageURL: saved.imageURL,
                   pageURL: saved.pageURL, analysis: saved.analysis ?? FitAnalysis(recommendation: .insufficientData(missing: []), sizes: []),
-                  isSaved: true)
+                  isSaved: true, category: saved.spec?.category, fitStyle: saved.spec?.fitStyle)
     }
 
-    init(productName: String?, brand: String?, imageURL: URL?, pageURL: URL?, analysis: FitAnalysis, isSaved: Bool) {
+    init(productName: String?, brand: String?, imageURL: URL?, pageURL: URL?, analysis: FitAnalysis, isSaved: Bool,
+         category: GarmentCategory? = nil, fitStyle: FitStyle? = nil) {
         self.isSaved = isSaved
+        self.category = category
+        self.fitStyle = fitStyle
         self.productName = productName
         self.brand = brand
         self.imageURL = imageURL
@@ -48,6 +56,13 @@ struct FitResultView: View {
         .background(Theme.screenBackground)
         .navigationTitle("Fit analysis")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $addingToWardrobe) {
+            WardrobeItemEditor(prefill: .init(
+                name: productName, brand: brand, size: selected?.label,
+                category: category.map(WardrobeCategory.init), fitStyle: fitStyle,
+                fitScore: selected?.fitScore))
+        }
+        .sheet(isPresented: $showPaywall) { PaywallView() }
     }
 
     private var header: some View {
@@ -138,13 +153,14 @@ struct FitResultView: View {
                 Button("Open product page") { openURL(pageURL) }
                     .buttonStyle(.primary)
             }
-            HStack {
-                Label("Add to wardrobe", systemImage: "tshirt")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                ComingInPhase(phase: 7)
+            if isSaved {
+                Button {
+                    if container.isPremium { addingToWardrobe = true } else { showPaywall = true }
+                } label: {
+                    Label("Add to wardrobe", systemImage: container.isPremium ? "tshirt" : "crown.fill")
+                }
+                .padding(.top, Theme.Spacing.s)
             }
-            .padding(.top, Theme.Spacing.s)
             Label(isSaved ? LocalizedStringKey("Analysis saved to your history.") : LocalizedStringKey("Not saved and no scan used, because data was missing."),
                   systemImage: isSaved ? "checkmark" : "info.circle")
                 .font(.footnote)

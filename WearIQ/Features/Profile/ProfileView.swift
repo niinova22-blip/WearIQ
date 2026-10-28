@@ -26,6 +26,7 @@ struct ProfileView: View {
                         .foregroundStyle(.secondary)
                 }
                 Button("Scan again") { showRescan = true }
+                NavigationLink("Measurement changes") { MeasurementTrackingView() }
             } header: {
                 Text("Measurements")
             } footer: {
