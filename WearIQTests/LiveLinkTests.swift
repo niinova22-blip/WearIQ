@@ -24,6 +24,8 @@ struct LiveLinkTests {
         "https://www.bershka.com/tr/oversize-kap%C3%BC%C5%9Fonlu-k%C3%BCrk-sweatshirt-c0p240147191.html",
         "https://www.nike.com/tr/t/miler-dri-fit-uv-korumali-uzun-kollu-kislik-erkek-kosu-ustu-oAsVnGBv/IO1233-372",
         "https://www.amazon.com.tr/dp/B0776X8B3X",
+        "https://www.beymen.com/tr/p_etro-lacivert-yun-dis-gomlek_2058378",
+        "https://www.beymen.com/tr/p_moncler-siyah-dis-gomlek_2046383",
     ]
 
     @Test(arguments: links)
