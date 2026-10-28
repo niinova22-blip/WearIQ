@@ -29,11 +29,15 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
             isHighFrameRateTrackingEnabled: false,
             isHighlightingEnabled: true)
         scanner.delegate = context.coordinator
-        try? scanner.startScanning()
         return scanner
     }
 
-    func updateUIViewController(_ controller: DataScannerViewController, context: Context) {}
+    /// Scanning must start once the scanner is on screen; starting it while the view is
+    /// being created can fail silently and leave a frozen camera.
+    func updateUIViewController(_ controller: DataScannerViewController, context: Context) {
+        guard !controller.isScanning else { return }
+        DispatchQueue.main.async { try? controller.startScanning() }
+    }
 
     static func dismantleUIViewController(_ controller: DataScannerViewController, coordinator: Coordinator) {
         controller.stopScanning()
