@@ -81,7 +81,14 @@ struct GarmentDraftView: View {
         switch draft.chartSource {
         case .store: String(localized: "Based on the store's size chart.")
         case .photo: String(localized: "Based on the size chart from your photo.")
-        case .standard: String(localized: "The store publishes no size chart, so this uses typical measurements for these sizes. Brands vary, so treat it as a guide.")
+        case .standard:
+            if let size = draft.chartWarnings.lazy.compactMap({ w -> String? in
+                if case let .anchoredToModel(size) = w { return size } else { return nil }
+            }).first {
+                String(localized: "The store publishes no size chart. Typical measurements were matched to the model, who wears \(size).")
+            } else {
+                String(localized: "The store publishes no size chart, so this uses typical measurements for these sizes. Brands vary, so treat it as a guide.")
+            }
         case nil: nil
         }
     }
@@ -355,7 +362,7 @@ extension ParsedSizeChart.Warning {
         case let .halfMeasurementsDoubled(dim): String(localized: "\(dim.title) was given as a half (flat) measurement and has been doubled.")
         case let .rowValueCountMismatch(label): String(localized: "Couldn't read the row \"\(label)\". Please enter it manually.")
         case let .unrecognisedRow(label): String(localized: "Ignored the row \"\(label)\".")
-        case .standardChartUsed: nil // explained by the chart note
+        case .standardChartUsed, .anchoredToModel: nil // explained by the chart note
         case .chartKindGuessed: nil  // the picker above shows the choice
         case let .implausibleColumnDropped(dim): String(localized: "The chart's \"\(dim.title.lowercased())\" values can't be that measurement, so they were left out.")
         }

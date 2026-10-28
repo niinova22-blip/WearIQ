@@ -23,6 +23,8 @@ public struct ParsedSizeChart: Equatable, Sendable {
         case implausibleColumnDropped(GarmentDimension)
         /// The store had no chart; typical measurements for the size labels were used.
         case standardChartUsed
+        /// The standard chart was aligned to the model, who wears this size.
+        case anchoredToModel(size: String)
         /// The chart didn't say whether it lists body or garment measurements; decided
         /// from which measurements it has.
         case chartKindGuessed(SizeChartKind)

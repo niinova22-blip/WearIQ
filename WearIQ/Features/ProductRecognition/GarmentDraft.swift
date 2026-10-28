@@ -106,7 +106,8 @@ final class GarmentDraft {
             : info.availableSizes
         guard sizes.isEmpty || chartSource == .standard, category != nil,
               let chart = StandardSizeCharts.chart(for: labels, category: category,
-                                                   audience: info.audience ?? fallbackAudience) else { return false }
+                                                   audience: info.audience ?? fallbackAudience,
+                                                   anchor: info.modelFit) else { return false }
         apply(chart)
         chartSource = .standard
         return true

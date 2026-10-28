@@ -63,7 +63,8 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
         let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 2000), configuration: config)
         webView.navigationDelegate = self
         webView.isUserInteractionEnabled = false
-        webView.alpha = 0.01
+        // Full opacity so snapshots are real; it sits behind the app UI, so it is never seen.
+        webView.alpha = 1
         // Pages throttle timers in views that aren't in a window, so attach it invisibly.
         if let window = UIApplication.shared.connectedScenes.compactMap({ ($0 as? UIWindowScene)?.keyWindow }).first {
             window.insertSubview(webView, at: 0)

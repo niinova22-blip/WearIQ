@@ -29,6 +29,29 @@ public enum StandardSizeCharts {
     ]
 
     /// A chart for the given size labels, or nil if none of them is a known label.
+    /// With an `anchor` (the model's body and the size they wear), the whole chart is
+    /// shifted so that size matches the model: this captures how the brand cuts.
+    public static func chart(for labels: [String], category: GarmentCategory?, audience: GarmentAudience?,
+                             anchor: ModelFit? = nil) -> ParsedSizeChart? {
+        guard var chart = chart(for: labels, category: category, audience: audience) else { return nil }
+        guard let anchor, anchor.isAnchor, let worn = anchor.size,
+              let reference = chart.sizes.first(where: { $0.label.uppercased() == worn }) else { return chart }
+        var shifted = false
+        for (dim, value) in [(GarmentDimension.chest, anchor.chestCm), (.waist, anchor.waistCm), (.hip, anchor.hipCm)] {
+            guard let value, let standard = reference.values[dim]?.cm else { continue }
+            // A brand runs a size or so off the standard; more than that is a misread.
+            let offset = max(-8, min(8, value - standard))
+            for i in chart.sizes.indices {
+                if let v = chart.sizes[i].values[dim] {
+                    chart.sizes[i].values[dim] = MeasuredValue(cm: v.cm + offset, uncertaintyCm: max(2, v.uncertaintyCm - 2), source: .manual)
+                }
+            }
+            shifted = true
+        }
+        if shifted { chart.warnings.append(.anchoredToModel(size: worn)) }
+        return chart
+    }
+
     public static func chart(for labels: [String], category: GarmentCategory?, audience: GarmentAudience?) -> ParsedSizeChart? {
         let audience = audience ?? .men
         let sizes = labels.compactMap { label -> SizeEntry? in

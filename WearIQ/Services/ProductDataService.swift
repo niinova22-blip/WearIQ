@@ -79,7 +79,8 @@ struct ProductDataService: ProductDataServicing {
                 return !info.isEmpty && page.sizeGuideControls == 0 && page.elapsed > 8
             }
             if let page {
-                let rendered = parser.parse(html: page.html, pageURL: page.url)
+                var rendered = parser.parse(html: page.html, pageURL: page.url)
+                if rendered.modelFit == nil { rendered.modelFit = ModelFitParser.parse(page.text) }
                 if !rendered.isEmpty { info = info.map { Self.merge($0, rendered) } ?? rendered }
                 renderedPage = page
             }
@@ -148,6 +149,8 @@ struct ProductDataService: ProductDataServicing {
         m.category = a.category ?? b.category
         m.fitStyle = a.fitStyle ?? b.fitStyle
         m.stretch = a.stretch ?? b.stretch
+        m.audience = a.audience ?? b.audience
+        m.modelFit = a.modelFit ?? b.modelFit
         return m
     }
 

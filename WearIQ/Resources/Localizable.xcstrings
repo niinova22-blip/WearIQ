@@ -3970,6 +3970,16 @@
           }
         }
       }
+    },
+    "The store publishes no size chart. Typical measurements were matched to the model, who wears %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mağaza beden tablosu yayımlamıyor. Standart ölçüler, %@ beden giyen mankenin ölçülerine göre uyarlandı."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

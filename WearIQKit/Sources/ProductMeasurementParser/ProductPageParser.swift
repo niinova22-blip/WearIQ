@@ -24,6 +24,8 @@ public struct ProductInfo: Equatable, Sendable {
     public var fitStyle: FitStyle?
     public var stretch: FabricStretch?
     public var audience: GarmentAudience?
+    /// The model's measurements and worn size, if the page states them.
+    public var modelFit: ModelFit?
 
     public init() {}
 
@@ -60,6 +62,7 @@ public struct ProductPageParser: Sendable {
         if info.availableSizes.isEmpty { info.availableSizes = Self.embeddedSizes(in: html) }
         info.sizeChartImageURLs = Self.sizeChartImages(in: html, base: pageURL)
         info.sizeChartSections = HTMLSizeTables.sections(in: html)
+        info.modelFit = ModelFitParser.parse(Self.visibleText(html))
 
         let text = [info.name, info.categoryText].compactMap { $0 }.joined(separator: " ")
         info.category = GarmentClassifier.category(from: text)
@@ -190,6 +193,13 @@ public struct ProductPageParser: Sendable {
     }
 
     // MARK: - Meta tags
+
+    /// Page text without scripts, styles and tags.
+    static func visibleText(_ html: String) -> String {
+        html.replacingOccurrences(of: #"(?is)<(script|style)\b[^>]*>.*?</\1>"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"<[^>]+>"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "&nbsp;", with: " ")
+    }
 
     /// The page's main heading, for stores with neither JSON-LD nor OpenGraph.
     static func firstHeading(in html: String) -> String? {
