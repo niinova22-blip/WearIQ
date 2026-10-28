@@ -42,6 +42,8 @@ struct GarmentDraftView: View {
         .navigationDestination(item: $result) { route in
             FitResultView(productName: draft.info.name, brand: draft.info.brand, imageURL: draft.info.imageURL,
                           pageURL: draft.info.pageURL, analysis: route.analysis, isSaved: route.saved)
+                // Ads only ever appear after a result, never before a scan.
+                .onDisappear { container.ads.showInterstitialIfDue(isPremium: container.isPremium) }
         }
         .sheet(isPresented: $showQuotaLimit) {
             PaywallView(reason: "You've used today's free scans. They renew tomorrow, or go unlimited with Premium.")
@@ -216,6 +218,7 @@ struct GarmentDraftView: View {
         do {
             switch try container.analysisCoordinator().run(draft, preference: preference) {
             case let .analyzed(saved):
+                container.ads.analysisCompleted()
                 if let analysis = saved.analysis { result = ResultRoute(analysis: analysis, saved: true) }
             case let .insufficientData(analysis):
                 result = ResultRoute(analysis: analysis, saved: false)

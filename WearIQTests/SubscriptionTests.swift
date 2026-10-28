@@ -36,7 +36,7 @@ import Testing
 
 /// Runs real StoreKit 2 purchase flows against the local WearIQ.storekit configuration.
 @MainActor
-@Suite(.serialized) struct StoreKitFlowTests {
+@Suite(.serialized, .timeLimit(.minutes(1))) struct StoreKitFlowTests {
     private func makeSession() throws -> SKTestSession {
         let session = try SKTestSession(configurationFileNamed: "WearIQ")
         session.resetToDefaultState()

@@ -20,6 +20,12 @@ settings:
 packages:
   WearIQKit:
     path: WearIQKit
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads
+    from: 12.0.0
+  GoogleUserMessagingPlatform:
+    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform
+    from: 3.0.0
 
 targets:
   WearIQ:
@@ -40,9 +46,23 @@ targets:
         product: ProductMeasurementParser
       - package: WearIQKit
         product: ScanQuota
+      - package: GoogleMobileAds
+      - package: GoogleUserMessagingPlatform
+    info:
+      path: WearIQ/Info.plist
+      properties:
+        # AdMob: Google's public TEST app id until the real one is provided.
+        GADApplicationIdentifier: ca-app-pub-3940256099942544~1458002511
+        WQBannerAdUnitID: ca-app-pub-3940256099942544/2435281174
+        WQInterstitialAdUnitID: ca-app-pub-3940256099942544/4411468910
+        SKAdNetworkItems:
+          - SKAdNetworkIdentifier: cstr6suwn9.skadnetwork
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.niinova.weariq
+        OTHER_LDFLAGS: ["$(inherited)", "-ObjC"]
         PRODUCT_NAME: WearIQ
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor

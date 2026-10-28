@@ -14,6 +14,7 @@ final class AppContainer {
     let fitEngine: any FitAnalyzing
 
     let subscriptions = SubscriptionService()
+    let ads = AdvertisingService()
     /// Mirrors the StoreKit entitlement; drives quota, ads and premium features.
     private(set) var isPremium = false
 

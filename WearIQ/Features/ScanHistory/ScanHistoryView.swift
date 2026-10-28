@@ -27,6 +27,7 @@ struct ScanHistoryView: View {
                                        description: Text("Garments you analyse are saved here."))
             }
         }
+        .safeAreaInset(edge: .bottom) { BannerAdSlot() }
         .navigationTitle("History")
     }
 }
