@@ -55,8 +55,16 @@ struct LiveLinkTests {
         var lines = ["CONTROLS \(link)", "  opened: \(page?.sizeGuideControls ?? -1) snapshot: \(page?.snapshot != nil)"]
         lines += (page?.sizeRelatedControls ?? []).map { "  " + $0 }
         let text = page?.text ?? ""
-        if let r = text.range(of: "ÜRÜN BOYUTLARI", options: .caseInsensitive) ?? text.range(of: "beden", options: .caseInsensitive) {
-            lines.append("  TEXT: " + text[r.lowerBound...].prefix(400).replacingOccurrences(of: "\n", with: " | "))
+        for word in ["Göğüs", "Gogus", "Chest", "Bel ", "Waist"] {
+            if let r = text.range(of: word, options: .caseInsensitive) {
+                lines.append("  TEXT(\(word)): " + text[r.lowerBound...].prefix(500).replacingOccurrences(of: "\n", with: " | "))
+                break
+            }
+        }
+        // Snapshots are uploaded as a workflow artifact for inspection.
+        if let data = page?.snapshot?.pngData(), let dir = ProcessInfo.processInfo.environment["WEARIQ_SNAPSHOT_DIR"] {
+            let name = (URL(string: link)?.host ?? "page") + ".png"
+            try? data.write(to: URL(fileURLWithPath: dir).appendingPathComponent(name))
         }
         print(lines.joined(separator: "\n"))
     }
