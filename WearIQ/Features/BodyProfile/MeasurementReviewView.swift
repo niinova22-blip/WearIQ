@@ -16,6 +16,15 @@ struct MeasurementReviewView: View {
 
     var body: some View {
         List {
+            if !model.estimated.isEmpty {
+                Section {
+                    Label(model.scanned.isEmpty
+                          ? String(localized: "These values are estimated from your height and weight, not measured. Check the ones that matter most (chest, waist, hip) with a tape measure.")
+                          : String(localized: "\(model.scanned.count) values come from your photos and \(model.estimated.count) are estimated from your height and weight. Check the estimated ones with a tape measure."),
+                          systemImage: "info.circle")
+                        .font(.subheadline)
+                }
+            }
             if !model.lowConfidence.isEmpty {
                 Section {
                     Label("Values marked low confidence are rough estimates from photos. For better size advice, measure them with a tape and tap to correct.",
@@ -71,7 +80,7 @@ struct MeasurementReviewView: View {
                 if let v = model.value(d) {
                     Text(v.source == .scan ? v.confidence.title : v.source.title)
                         .font(.caption)
-                        .foregroundStyle(v.confidence == .low && v.source == .scan ? .orange : .secondary)
+                        .foregroundStyle((v.confidence == .low && v.source == .scan) || v.source == .estimated ? .orange : .secondary)
                 }
             }
             Spacer()
@@ -106,7 +115,7 @@ extension MeasuredValue {
     /// "98 cm" for measured values, "98 ± 4 cm" for estimates.
     var formatted: String {
         let value = cm.formatted(.number.precision(.fractionLength(0...1)))
-        if source == .scan, uncertaintyCm >= 0.5 {
+        if source == .scan || source == .estimated, uncertaintyCm >= 0.5 {
             let u = uncertaintyCm.formatted(.number.precision(.fractionLength(0)))
             return "\(value) ± \(u) cm"
         }

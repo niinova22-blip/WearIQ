@@ -5,8 +5,20 @@ import VisionKit
 struct BarcodeScannerView: UIViewControllerRepresentable {
     let onCode: (String) -> Void
 
+    /// The device can scan at all. `isAvailable` additionally needs camera permission,
+    /// so it is checked after asking (see `requestAccess`).
+    static var isSupported: Bool { DataScannerViewController.isSupported }
+
     static var isAvailable: Bool {
         DataScannerViewController.isSupported && DataScannerViewController.isAvailable
+    }
+
+    /// Asks for the camera if needed; true when scanning can start.
+    static func requestAccess() async -> Bool {
+        if CameraController.authorizationStatus == .notDetermined {
+            _ = await CameraController.requestAccess()
+        }
+        return isAvailable
     }
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
@@ -48,9 +60,8 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     }
 }
 
-/// Looks up a barcode in a product catalogue. No catalogue with garment measurements
-/// is freely available, so the default implementation finds nothing and the UI moves
-/// on to the size chart photo / manual route with the barcode attached.
+/// Looks up a barcode in a product catalogue to name the product. No catalogue has
+/// garment measurements, so the size chart still comes from a photo, link or by hand.
 protocol BarcodeLookupServicing {
     func product(forGTIN gtin: String) async -> ProductInfoLookupResult
 }
@@ -62,4 +73,31 @@ enum ProductInfoLookupResult {
 
 struct NoCatalogBarcodeLookup: BarcodeLookupServicing {
     func product(forGTIN gtin: String) async -> ProductInfoLookupResult { .notFound }
+}
+
+/// UPCitemdb's free lookup (no key, about 100 requests a day per IP). Only the barcode
+/// number is sent. Codes starting with 2 are store-internal numbers that no public
+/// catalogue knows, so they aren't sent at all.
+struct UPCItemDBLookup: BarcodeLookupServicing {
+    var session: URLSession = .shared
+
+    func product(forGTIN gtin: String) async -> ProductInfoLookupResult {
+        guard !Self.isStoreInternal(gtin),
+              let url = URL(string: "https://api.upcitemdb.com/prod/trial/lookup?upc=\(gtin)") else { return .notFound }
+        var request = URLRequest(url: url, timeoutInterval: 10)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        guard let (data, response) = try? await session.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let item = (json["items"] as? [[String: Any]])?.first,
+              let title = (item["title"] as? String).flatMap({ $0.isEmpty ? nil : $0 }) else { return .notFound }
+        let brand = (item["brand"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let image = (item["images"] as? [String])?.lazy.compactMap { URL(string: $0) }.first { $0.scheme == "https" }
+        return .found(name: title, brand: brand, imageURL: image)
+    }
+
+    /// EAN-13 prefixes 20–29 are reserved for in-store use (price/weight labels, shop codes).
+    static func isStoreInternal(_ gtin: String) -> Bool {
+        gtin.count == 13 && gtin.hasPrefix("2")
+    }
 }

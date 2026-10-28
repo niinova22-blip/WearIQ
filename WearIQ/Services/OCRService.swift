@@ -1,9 +1,17 @@
 import ProductMeasurementParser
+import WearIQCore
 import UIKit
 import Vision
 
 protocol SizeChartReading {
     func readSizeChart(from image: UIImage) async throws -> ParsedSizeChart
+}
+
+/// What was read from a size chart image. Images with several tables (one per fit)
+/// give several sections; `chosen` is the one matching the product's fit, if any.
+struct SizeChartScan {
+    var sections: [SizeChartSection]
+    var chosen: SizeChartSection?
 }
 
 enum OCRError: LocalizedError {
@@ -23,6 +31,25 @@ enum OCRError: LocalizedError {
 /// On-device text recognition (Vision) → table rows → size chart.
 struct OCRService: SizeChartReading {
     func readSizeChart(from image: UIImage) async throws -> ParsedSizeChart {
+        let result = try await readSections(from: image, fit: nil)
+        guard let chart = (result.chosen ?? result.sections.first)?.chart else { throw OCRError.noSizeChartFound }
+        return chart
+    }
+
+    /// Reads every table in the image. Tables with sizes in rows are read by cell position;
+    /// otherwise the classic layout (sizes across the top) is parsed from text lines.
+    func readSections(from image: UIImage, fit: FitStyle?) async throws -> SizeChartScan {
+        let boxes = try await recognize(image)
+        var sections = SizeTableReader.sections(from: boxes)
+        if sections.isEmpty {
+            let chart = SizeChartParser().parse(OCRLineAssembler.assemble(boxes))
+            if !chart.sizes.isEmpty { sections = [SizeChartSection(title: nil, fitStyle: nil, chart: chart)] }
+        }
+        guard !sections.isEmpty else { throw OCRError.noSizeChartFound }
+        return SizeChartScan(sections: sections, chosen: SizeTableReader.best(sections, fit: fit))
+    }
+
+    private func recognize(_ image: UIImage) async throws -> [TextBox] {
         guard let cgImage = image.cgImage else { throw OCRError.unreadableImage }
         let orientation = CGImagePropertyOrientation(image.imageOrientation)
 
@@ -35,14 +62,12 @@ struct OCRService: SizeChartReading {
             return (request.results ?? []).compactMap { obs -> TextBox? in
                 guard let text = obs.topCandidates(1).first?.string else { return nil }
                 let b = obs.boundingBox
-                return TextBox(text: text, minX: b.minX, midY: 1 - b.midY, height: b.height)
+                return TextBox(text: text, minX: b.minX, midY: 1 - b.midY, height: b.height, width: b.width)
             }
         }.value
 
         guard !boxes.isEmpty else { throw OCRError.noTextFound }
-        let chart = SizeChartParser().parse(OCRLineAssembler.assemble(boxes))
-        guard !chart.sizes.isEmpty else { throw OCRError.noSizeChartFound }
-        return chart
+        return boxes
     }
 }
 

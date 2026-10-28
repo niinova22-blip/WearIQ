@@ -1,5 +1,6 @@
 import AVFoundation
 import BodyMeasurementEngine
+import BodyScanVision
 import Observation
 import WearIQCore
 
@@ -25,7 +26,7 @@ final class BodyScanViewModel {
     var voiceGuidance = true
 
     let camera = CameraController()
-    private let heightCm: Double
+    let basics: BodyBasics
     private let vision = VisionBodyAnalyzer()
     private let guidance = PoseGuidance()
     private let speech = AVSpeechSynthesizer()
@@ -40,8 +41,8 @@ final class BodyScanViewModel {
     /// How long the pose must be held before the countdown starts.
     private let holdDuration: TimeInterval = 1.0
 
-    init(heightCm: Double) {
-        self.heightCm = heightCm
+    init(basics: BodyBasics) {
+        self.basics = basics
     }
 
     func start() async {
@@ -140,7 +141,7 @@ final class BodyScanViewModel {
     private func analyze() {
         guard let front = frontImage else { return retry() }
         let side = sideImage
-        let heightCm = heightCm
+        let basics = basics
         stage = .analyzing
         camera.onFrame = nil
 
@@ -155,7 +156,13 @@ final class BodyScanViewModel {
                         let s = try vision.analyze(img)
                         return try silhouette.analyzeSide(mask: s.mask, front: frontObs)
                     }
-                    return try BodyMeasurementEngine().measure(heightCm: heightCm, front: frontObs, side: sideObs)
+                    var scanned = try BodyMeasurementEngine().measure(heightCm: basics.heightCm, front: frontObs, side: sideObs)
+                    scanned.weightKg = basics.weightKg
+                    scanned.sex = basics.sex
+                    // Photo values that disagree wildly with height/weight statistics are
+                    // detection errors; the estimate fills them and any value the photos missed.
+                    let prior = AnthropometricPrior().estimate(heightCm: basics.heightCm, weightKg: basics.weightKg, sex: basics.sex)
+                    return MeasurementFusion.fuse(scan: scanned, prior: prior).profile
                 }
             }.value
 

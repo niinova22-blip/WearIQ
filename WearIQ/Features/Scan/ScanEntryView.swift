@@ -10,13 +10,15 @@ struct ScanEntryView: View {
     @State private var linkError: String?
     @State private var failedLinkURL: URL?
     @State private var showBarcode = false
+    @State private var barcodeError: String?
+    @State private var lookingUpBarcode = false
     @State private var photoItem: PhotosPickerItem?
     @State private var readingPhoto = false
     @State private var photoError: String?
     @State private var route: DraftRoute?
 
     private let productService: ProductDataServicing = ProductDataService()
-    private let barcodeLookup: BarcodeLookupServicing = NoCatalogBarcodeLookup()
+    private let barcodeLookup: BarcodeLookupServicing = UPCItemDBLookup()
 
     struct DraftRoute: Hashable, Identifiable {
         let id = UUID()
@@ -93,11 +95,26 @@ struct ScanEntryView: View {
             Label("Scan a barcode", systemImage: "barcode.viewfinder").font(.headline)
             Text("Identifies the product from its EAN/UPC code. A barcode alone has no measurements.")
                 .font(.subheadline).foregroundStyle(.secondary)
-            if BarcodeScannerView.isAvailable {
-                Button("Open barcode scanner") { showBarcode = true }
+            if BarcodeScannerView.isSupported {
+                Button("Open barcode scanner") {
+                    Task {
+                        if await BarcodeScannerView.requestAccess() {
+                            showBarcode = true
+                        } else {
+                            barcodeError = String(localized: "Camera access is off. Allow it in Settings to scan barcodes.")
+                        }
+                    }
+                }
             } else {
-                Text("Barcode scanning isn't available on this device or camera access is off.")
+                Text("Barcode scanning isn't available on this device.")
                     .font(.footnote).foregroundStyle(.secondary)
+            }
+            if lookingUpBarcode {
+                HStack { ProgressView(); Text("Looking up the product…") }.font(.subheadline)
+            }
+            if let barcodeError {
+                Label(barcodeError, systemImage: "exclamationmark.triangle")
+                    .font(.subheadline).foregroundStyle(.orange)
             }
         }
     }
@@ -153,7 +170,15 @@ struct ScanEntryView: View {
         loadingLink = true
         defer { loadingLink = false }
         do {
-            open(GarmentDraft(info: try await productService.product(at: url)))
+            let lookup = try await productService.product(at: url)
+            let draft = GarmentDraft(info: lookup.info)
+            if let chart = lookup.chart {
+                draft.apply(chart)
+            } else {
+                // No readable chart: start the table with the store's sizes so only numbers are missing.
+                lookup.info.availableSizes.forEach { draft.addSize(label: $0) }
+            }
+            open(draft)
             linkText = ""
         } catch {
             failedLinkURL = url
@@ -162,12 +187,17 @@ struct ScanEntryView: View {
     }
 
     private func openBarcode(_ code: String) async {
+        barcodeError = nil
+        lookingUpBarcode = true
+        defer { lookingUpBarcode = false }
         var info = ProductInfo()
         info.gtin = code
         if case let .found(name, brand, imageURL) = await barcodeLookup.product(forGTIN: code) {
             info.name = name
             info.brand = brand
             info.imageURL = imageURL
+            info.category = name.flatMap(GarmentClassifier.category(from:))
+            info.fitStyle = name.flatMap(GarmentClassifier.fitStyle(from:))
         }
         open(GarmentDraft(info: info))
     }
@@ -180,9 +210,8 @@ struct ScanEntryView: View {
             guard let data = try await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else {
                 throw OCRError.unreadableImage
             }
-            let chart = try await OCRService().readSizeChart(from: image)
             let draft = GarmentDraft()
-            draft.apply(chart)
+            draft.apply(try await OCRService().readSections(from: image, fit: nil))
             open(draft)
         } catch {
             photoError = error.localizedDescription

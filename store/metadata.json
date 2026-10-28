@@ -1,0 +1,25 @@
+{
+  "primaryCategory": "LIFESTYLE",
+  "secondaryCategory": "SHOPPING",
+  "reviewNotes": "WearIQ needs no account. Body scan: allow camera, prop the phone about 2-3 m away and follow the voice cues; or tap \"Enter measurements manually\" to type values instead (e.g. height 178, chest 100, waist 86). To analyse a garment: Scan tab > \"Enter a size chart manually\" > category Shirt, chart shows Garment measurements, add size M with chest 112 > Analyze fit. Free users get 4 analyses per day; the paywall appears after that or from the Wardrobe/Style tabs. Photos are processed on-device with Apple Vision and never uploaded.",
+  "localizations": {
+    "tr": {
+      "name": "WearIQ",
+      "subtitle": "Beden önerisi ve kıyafet uyumu",
+      "privacyPolicyUrl": "https://niinova22-blip.github.io/WearIQ/privacy.html",
+      "supportUrl": "https://niinova22-blip.github.io/WearIQ/support.html",
+      "keywords": "beden,beden önerisi,kıyafet,uyum,ölçü,vücut ölçüsü,gardırop,kombin,stil,online alışveriş",
+      "promotionalText": "Almadan önce bedenini bil: vücut ölçülerini bir kez çıkar, her kıyafetin nasıl duracağını bölge bölge gör.",
+      "description": "WearIQ, vücut ölçülerini bir kez çıkarır ve aldığın her kıyafetin üzerinde nasıl duracağını bölge bölge gösterir.\n\n• Bir kez tara: Telefonunla önden ve yandan iki fotoğraf. Fotoğraflar cihazında işlenir, yüklenmez. İstersen ölçülerini mezurayla kendin de girebilirsin.\n• Ürün bağlantısı, barkod veya beden tablosu ekran görüntüsüyle kıyafeti ekle.\n• Omuz, göğüs, bel, kol ve boy için \"dar\", \"ideal\", \"bol\" gibi açık değerlendirmeler ve tahmini cm farkı.\n• Her öneride dürüst bir güven seviyesi. Veri eksikse tahmin yürütmek yerine bunu açıkça söyleriz.\n• Her gün 4 ücretsiz analiz.\n\nPremium ile: sınırsız analiz, reklamsız kullanım, dijital gardırop, kombin önerileri ve ölçü değişimi takibi.\n\nPremium aylık ya da yıllık otomatik yenilenen bir aboneliktir. Ödeme, satın alma onayıyla Apple Kimliği hesabından alınır. Abonelik, dönem bitiminden en az 24 saat önce iptal edilmezse yenilenir. Aboneliğini App Store hesap ayarlarından yönetebilir ve iptal edebilirsin.\n\nKullanım Koşulları: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\nGizlilik Politikası: https://niinova22-blip.github.io/WearIQ/privacy.html\n\nWearIQ bir sağlık uygulaması değildir ve tıbbi değerlendirme yapmaz."
+    },
+    "en-US": {
+      "name": "WearIQ",
+      "subtitle": "Size advice & fit check",
+      "privacyPolicyUrl": "https://niinova22-blip.github.io/WearIQ/privacy.html",
+      "supportUrl": "https://niinova22-blip.github.io/WearIQ/support.html",
+      "keywords": "size,fit,clothing size,body measurements,size chart,wardrobe,outfit,style,shopping",
+      "promotionalText": "Know your size before you buy: measure yourself once, then see how each garment fits, region by region.",
+      "description": "WearIQ measures you once, then shows how each garment will fit, region by region.\n\n• Scan once: two photos with your phone, front and side. Photos are processed on your device and never uploaded. You can also type your measurements from a tape measure.\n• Add clothes from a product link, a barcode or a size chart screenshot.\n• Clear verdicts like \"tight\", \"ideal\" or \"loose\" for shoulders, chest, waist, sleeves and length, with the estimated difference in cm.\n• An honest confidence level with every recommendation. When data is missing, we say so instead of guessing.\n• 4 free analyses every day.\n\nPremium adds unlimited analyses, no ads, a digital wardrobe, outfit suggestions and measurement tracking.\n\nPremium is an auto-renewing monthly or yearly subscription. Payment is charged to your Apple ID account at confirmation of purchase. The subscription renews unless cancelled at least 24 hours before the end of the current period. Manage or cancel it in your App Store account settings.\n\nTerms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\nPrivacy Policy: https://niinova22-blip.github.io/WearIQ/privacy.html\n\nWearIQ is not a health app and does not provide medical advice."
+    }
+  }
+}

@@ -1,12 +1,14 @@
+#if canImport(Vision)
 import BodyMeasurementEngine
 import CoreVideo
+import Foundation
 import Vision
 
-enum VisionAnalysisError: LocalizedError {
+public enum VisionAnalysisError: LocalizedError {
     case noPersonFound
     case maskUnavailable
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .noPersonFound: String(localized: "No person was found in the photo.")
         case .maskUnavailable: String(localized: "The body outline could not be detected.")
@@ -16,8 +18,8 @@ enum VisionAnalysisError: LocalizedError {
 
 /// Thin wrapper around Apple Vision. Converts Vision's normalised, bottom-left-origin
 /// coordinates into the y-down coordinate systems the measurement engine uses.
-struct VisionBodyAnalyzer {
-    private static let jointMap: [VNHumanBodyPoseObservation.JointName: BodyJoint] = [
+public struct VisionBodyAnalyzer: Sendable {
+    nonisolated(unsafe) private static let jointMap: [VNHumanBodyPoseObservation.JointName: BodyJoint] = [
         .nose: .nose, .neck: .neck,
         .leftShoulder: .leftShoulder, .rightShoulder: .rightShoulder,
         .leftElbow: .leftElbow, .rightElbow: .rightElbow,
@@ -27,8 +29,10 @@ struct VisionBodyAnalyzer {
         .leftAnkle: .leftAnkle, .rightAnkle: .rightAnkle,
     ]
 
+    public init() {}
+
     /// Fast pose-only detection for live guidance. Normalised coordinates, y down.
-    func detectJoints(in buffer: CVPixelBuffer) -> [BodyJoint: DetectedJoint] {
+    public func detectJoints(in buffer: CVPixelBuffer) -> [BodyJoint: DetectedJoint] {
         let request = VNDetectHumanBodyPoseRequest()
         let handler = VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up)
         guard (try? handler.perform([request])) != nil,
@@ -44,7 +48,7 @@ struct VisionBodyAnalyzer {
     }
 
     /// Full analysis of a captured still: segmentation mask plus joints in mask pixels.
-    func analyze(_ image: CGImage) throws -> (mask: BinaryMask, joints: [BodyJoint: Point2D]) {
+    public func analyze(_ image: CGImage) throws -> (mask: BinaryMask, joints: [BodyJoint: Point2D]) {
         let pose = VNDetectHumanBodyPoseRequest()
         let segmentation = VNGeneratePersonSegmentationRequest()
         segmentation.qualityLevel = .accurate
@@ -78,3 +82,4 @@ struct VisionBodyAnalyzer {
         return BinaryMask(width: width, height: height, bytesPerRow: bytesPerRow, bytes: raw)
     }
 }
+#endif

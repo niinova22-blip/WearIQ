@@ -7,8 +7,8 @@ struct BodyScanView: View {
     let onFinished: (BodyProfile) -> Void
     let onManualEntry: () -> Void
 
-    init(heightCm: Double, onFinished: @escaping (BodyProfile) -> Void, onManualEntry: @escaping () -> Void) {
-        _model = State(initialValue: BodyScanViewModel(heightCm: heightCm))
+    init(body: BodyBasics, onFinished: @escaping (BodyProfile) -> Void, onManualEntry: @escaping () -> Void) {
+        _model = State(initialValue: BodyScanViewModel(basics: body))
         self.onFinished = onFinished
         self.onManualEntry = onManualEntry
     }
@@ -45,20 +45,22 @@ struct BodyScanView: View {
         .sensoryFeedback(.success, trigger: model.pose)
     }
 
+    // Text on this screen is read from 2–3 m away, so it is much larger than usual.
+
     private var header: some View {
-        HStack(spacing: Theme.Spacing.s) {
+        HStack(spacing: Theme.Spacing.m) {
             stepBadge(1, active: model.pose == .front, title: "Front")
             stepBadge(2, active: model.pose == .side, title: "Side")
         }
-        .padding(Theme.Spacing.s)
-        .background(.ultraThinMaterial, in: Capsule())
+        .padding(.vertical, Theme.Spacing.s)
+        .padding(.horizontal, Theme.Spacing.m)
+        .background(.black.opacity(0.6), in: Capsule())
     }
 
     private func stepBadge(_ n: Int, active: Bool, title: LocalizedStringKey) -> some View {
         Label { Text(title) } icon: { Text("\(n)").monospacedDigit() }
-            .font(.subheadline.weight(active ? .bold : .regular))
-            .foregroundStyle(active ? .primary : .secondary)
-            .padding(.horizontal, Theme.Spacing.s)
+            .font(.system(size: 26, weight: active ? .heavy : .regular, design: .rounded))
+            .foregroundStyle(active ? .white : .white.opacity(0.5))
     }
 
     @ViewBuilder
@@ -70,25 +72,31 @@ struct BodyScanView: View {
                             tint: issue == nil ? .green : .white)
         case let .countdown(n):
             Text("\(n)")
-                .font(.system(size: 120, weight: .bold, design: .rounded))
+                .font(.system(size: 220, weight: .heavy, design: .rounded))
                 .foregroundStyle(.white)
                 .contentTransition(.numericText())
-                .shadow(radius: 8)
+                .shadow(color: .black.opacity(0.8), radius: 12)
                 .accessibilityLabel(Text("Taking photo in \(n)"))
         case .analyzing:
-            VStack(spacing: Theme.Spacing.s) {
-                ProgressView().tint(.white)
-                Text("Measuring on your device…").foregroundStyle(.white)
+            VStack(spacing: Theme.Spacing.m) {
+                ProgressView().tint(.white).controlSize(.large)
+                Text("Measuring on your device…")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
             }
             .padding(Theme.Spacing.l)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.cornerRadius))
+            .background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: Theme.cornerRadius))
         case let .failed(message):
             Card {
                 Label("Scan didn't work", systemImage: "exclamationmark.triangle.fill")
                     .font(.headline)
                 Text(message).font(.subheadline)
-                Button("Try again") { model.retry(); Task { await model.start() } }
+                Button("Continue with estimated values") { onFinished(model.basics.estimatedProfile()) }
                     .buttonStyle(.primary)
+                Text("Estimated from your height and weight. You can correct each value with a tape measure.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Button("Try again") { model.retry(); Task { await model.start() } }
+                    .frame(maxWidth: .infinity)
                 Button("Enter measurements manually", action: onManualEntry)
                     .frame(maxWidth: .infinity)
             }
@@ -97,20 +105,30 @@ struct BodyScanView: View {
         }
         if model.pose == .side, model.stage != .analyzing, model.stage != .finished {
             Button("Skip side photo (less accurate)") { model.skipSidePhoto() }
-                .font(.footnote)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(.white)
+                .padding(.vertical, Theme.Spacing.s)
+                .padding(.horizontal, Theme.Spacing.m)
+                .background(.black.opacity(0.6), in: Capsule())
                 .padding(.top, Theme.Spacing.s)
         }
     }
 
     private func instructionCard(_ text: String, symbol: String, tint: Color) -> some View {
-        Label(text, systemImage: symbol)
-            .font(.title3.weight(.semibold))
-            .foregroundStyle(tint)
-            .multilineTextAlignment(.center)
-            .padding(Theme.Spacing.m)
-            .frame(maxWidth: .infinity)
-            .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: Theme.cornerRadius))
-            .accessibilityAddTraits(.updatesFrequently)
+        VStack(spacing: Theme.Spacing.s) {
+            Image(systemName: symbol)
+                .font(.system(size: 56, weight: .bold))
+            Text(text)
+                .font(.system(size: 36, weight: .heavy, design: .rounded))
+                .minimumScaleFactor(0.6)
+                .lineLimit(3)
+        }
+        .foregroundStyle(tint)
+        .multilineTextAlignment(.center)
+        .padding(Theme.Spacing.l)
+        .frame(maxWidth: .infinity)
+        .background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: Theme.cornerRadius))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.updatesFrequently)
     }
 }

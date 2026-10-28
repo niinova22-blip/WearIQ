@@ -3620,6 +3620,186 @@
           }
         }
       }
+    },
+    "Weight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kilo"
+          }
+        }
+      }
+    },
+    "Body type": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tipi"
+          }
+        }
+      }
+    },
+    "Male": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erkek"
+          }
+        }
+      }
+    },
+    "Female": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kadın"
+          }
+        }
+      }
+    },
+    "Prefer not to say": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belirtmek istemiyorum"
+          }
+        }
+      }
+    },
+    "Your weight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kilon"
+          }
+        }
+      }
+    },
+    "Used to estimate values the photos can't show clearly. Stays on this device.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafların net gösteremediği ölçüleri tahmin etmek için kullanılır. Cihazında kalır."
+          }
+        }
+      }
+    },
+    "%lld kg": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kg"
+          }
+        }
+      }
+    },
+    "Estimated from height and weight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boy ve kilodan tahmin"
+          }
+        }
+      }
+    },
+    "These values are estimated from your height and weight, not measured. Check the ones that matter most (chest, waist, hip) with a tape measure.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu değerler ölçülmedi, boy ve kilondan tahmin edildi. En önemlilerini (göğüs, bel, kalça) mezurayla kontrol et."
+          }
+        }
+      }
+    },
+    "%lld values come from your photos and %lld are estimated from your height and weight. Check the estimated ones with a tape measure.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld değer fotoğraflarından ölçüldü, %2$lld değer boy ve kilondan tahmin edildi. Tahmini olanları mezurayla kontrol et."
+          }
+        }
+      }
+    },
+    "Continue with estimated values": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tahmini değerlerle devam et"
+          }
+        }
+      }
+    },
+    "Estimated from your height and weight. You can correct each value with a tape measure.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boy ve kilondan tahmin edilir. Her değeri mezurayla düzeltebilirsin."
+          }
+        }
+      }
+    },
+    "Table": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tablo"
+          }
+        }
+      }
+    },
+    "Table %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tablo %lld"
+          }
+        }
+      }
+    },
+    "Camera access is off. Allow it in Settings to scan barcodes.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera izni kapalı. Barkod taramak için Ayarlar'dan izin ver."
+          }
+        }
+      }
+    },
+    "Barcode scanning isn't available on this device.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu cihazda barkod tarama kullanılamıyor."
+          }
+        }
+      }
+    },
+    "Looking up the product…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün aranıyor…"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

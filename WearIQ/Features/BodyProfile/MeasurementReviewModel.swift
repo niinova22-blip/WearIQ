@@ -49,6 +49,15 @@ final class MeasurementReviewModel {
         Self.order.filter { profile[$0]?.confidence == .low }
     }
 
+    /// Values that came from height/weight statistics rather than the photos.
+    var estimated: [BodyDimension] {
+        Self.order.filter { profile[$0]?.source == .estimated }
+    }
+
+    var scanned: [BodyDimension] {
+        Self.order.filter { profile[$0]?.source == .scan }
+    }
+
     var canSave: Bool { profile[.height] != nil }
 
     func finalizedProfile(now: Date = Date()) -> BodyProfile {
@@ -106,6 +115,7 @@ extension MeasurementSource {
         case .scan: String(localized: "Scanned")
         case .manual: String(localized: "Measured")
         case .userProvided: String(localized: "Entered")
+        case .estimated: String(localized: "Estimated from height and weight")
         }
     }
 }

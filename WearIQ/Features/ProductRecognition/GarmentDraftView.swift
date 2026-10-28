@@ -105,6 +105,13 @@ struct GarmentDraftView: View {
                 Text("Body measurements").tag(SizeChartKind?.some(.body))
                 Text("Garment measurements").tag(SizeChartKind?.some(.garment))
             }
+            if draft.chartSections.count > 1 {
+                Picker("Table", selection: Binding(get: { draft.selectedSection ?? 0 }, set: { draft.selectSection($0) })) {
+                    ForEach(Array(draft.chartSections.enumerated()), id: \.offset) { i, section in
+                        Text(section.title ?? String(localized: "Table \(i + 1)")).tag(i)
+                    }
+                }
+            }
             PhotosPicker(selection: $photoItem, matching: .images) {
                 if readingPhoto {
                     HStack { ProgressView(); Text("Reading size chart…") }
@@ -209,7 +216,7 @@ struct GarmentDraftView: View {
             guard let data = try await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else {
                 throw OCRError.unreadableImage
             }
-            draft.apply(try await OCRService().readSizeChart(from: image))
+            draft.apply(try await OCRService().readSections(from: image, fit: draft.info.fitStyle))
         } catch {
             errorMessage = error.localizedDescription
         }

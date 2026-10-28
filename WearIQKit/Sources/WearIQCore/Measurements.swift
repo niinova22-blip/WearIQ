@@ -5,6 +5,12 @@ public enum MeasurementSource: String, Codable, Sendable {
     case scan
     case manual
     case userProvided   // e.g. height typed during onboarding
+    case estimated      // predicted from height, weight and sex (population statistics)
+}
+
+/// Used only to pick the matching body-proportion statistics.
+public enum BodySex: String, Codable, CaseIterable, Sendable {
+    case male, female
 }
 
 /// A length in centimetres with an explicit uncertainty (approx. one standard deviation).
@@ -60,10 +66,15 @@ public enum BodyDimension: String, Codable, CaseIterable, Sendable {
 public struct BodyProfile: Codable, Hashable, Sendable {
     public var values: [BodyDimension: MeasuredValue]
     public var createdAt: Date
+    public var weightKg: Double?
+    public var sex: BodySex?
 
-    public init(values: [BodyDimension: MeasuredValue] = [:], createdAt: Date = Date()) {
+    public init(values: [BodyDimension: MeasuredValue] = [:], createdAt: Date = Date(),
+                weightKg: Double? = nil, sex: BodySex? = nil) {
         self.values = values
         self.createdAt = createdAt
+        self.weightKg = weightKg
+        self.sex = sex
     }
 
     public subscript(_ d: BodyDimension) -> MeasuredValue? {

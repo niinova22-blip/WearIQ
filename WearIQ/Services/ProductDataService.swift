@@ -1,8 +1,15 @@
 import Foundation
 import ProductMeasurementParser
+import UIKit
+
+/// A product page plus its size chart, when the store links one as an image.
+struct ProductLookup {
+    var info: ProductInfo
+    var chart: SizeChartScan?
+}
 
 protocol ProductDataServicing {
-    func product(at url: URL) async throws -> ProductInfo
+    func product(at url: URL) async throws -> ProductLookup
 }
 
 enum ProductDataError: LocalizedError, Equatable {
@@ -25,12 +32,19 @@ enum ProductDataError: LocalizedError, Equatable {
     }
 }
 
-/// Fetches a product page and reads the structured data the store publishes.
-/// No scraping of private APIs, no login, no bypassing bot protection: if a store
-/// doesn't publish data, the user is offered the size chart screenshot route instead.
+/// Fetches a product page and reads the structured data the store publishes, plus the
+/// size chart image the page links to (read on-device with OCR).
+/// No private APIs, no login, no bypassing bot protection: if a store doesn't publish
+/// data, the user is offered the size chart screenshot route instead.
 struct ProductDataService: ProductDataServicing {
     var session: URLSession = .shared
     var parser = ProductPageParser()
+    var chartReader = OCRService()
+
+    /// Stores serve their regular mobile page to a mobile browser; some serve an empty
+    /// shell or an error to unknown clients.
+    static let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+    private static let maxChartBytes = 8_000_000
 
     static func normalizedURL(from input: String) -> URL? {
         // Share sheets often paste "Product name https://…"; take the first link.
@@ -42,8 +56,9 @@ struct ProductDataService: ProductDataServicing {
         return url
     }
 
-    func product(at url: URL) async throws -> ProductInfo {
+    func product(at url: URL) async throws -> ProductLookup {
         var request = URLRequest(url: url, timeoutInterval: 15)
+        request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("text/html,application/xhtml+xml", forHTTPHeaderField: "Accept")
         request.setValue(Locale.preferredLanguages.prefix(2).joined(separator: ","), forHTTPHeaderField: "Accept-Language")
 
@@ -60,6 +75,22 @@ struct ProductDataService: ProductDataServicing {
         let html = String(decoding: data, as: UTF8.self)
         let info = parser.parse(html: html, pageURL: response.url ?? url)
         if info.isEmpty { throw ProductDataError.notAProductPage }
-        return info
+        return ProductLookup(info: info, chart: await readChart(info))
+    }
+
+    /// Tries the linked chart images in page order; a chart that can't be read is not an
+    /// error, the user can still add one by hand.
+    private func readChart(_ info: ProductInfo) async -> SizeChartScan? {
+        for imageURL in info.sizeChartImageURLs.prefix(2) {
+            var request = URLRequest(url: imageURL, timeoutInterval: 15)
+            request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
+            guard let (data, response) = try? await session.data(for: request),
+                  (response as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) ?? true,
+                  data.count <= Self.maxChartBytes,
+                  let image = UIImage(data: data),
+                  let scan = try? await chartReader.readSections(from: image, fit: info.fitStyle) else { continue }
+            return scan
+        }
+        return nil
     }
 }

@@ -80,4 +80,25 @@ import WearIQCore
         #expect(GarmentClassifier.stretch(fromComposition: "%92 Polyester %8 Elastan") == .high)
         #expect(GarmentClassifier.stretch(fromComposition: "Cotton blend") == nil)
     }
+
+    @Test func embeddedStateGivesSizesAndChartImage() {
+        // Shape of a marketplace page that renders from a JSON state blob.
+        let html = #"""
+        <script type="application/ld+json">{"@type":"Product","name":"Slim Fit Oxford Gömlek","brand":{"name":"Örnek"}}</script>
+        <script>window.__STATE__={"sizeChartUrl":"https://cdn.example.com/charts/shirt.jpeg",
+        "variants":[{"value":"S","beautifiedValue":"s","inStock":false},{"value":"M","inStock":true},{"value":"L"},{"value":"S"}],
+        "price":{"value":"899"}}</script>
+        """#
+        let info = parser.parse(html: html, pageURL: url)
+        #expect(info.availableSizes == ["S", "M", "L"])
+        #expect(info.sizeChartImageURLs == [URL(string: "https://cdn.example.com/charts/shirt.jpeg")!])
+        #expect(info.fitStyle == .slim)
+    }
+
+    @Test func sizeChartImgTag() {
+        let html = #"<h1>Pantolon</h1><img class="x" src="/media/beden-tablosu/pantolon.png"><img src="/media/logo.png">"#
+        let info = parser.parse(html: html, pageURL: url)
+        #expect(info.sizeChartImageURLs.count == 1)
+        #expect(info.sizeChartImageURLs.first?.path == "/media/beden-tablosu/pantolon.png")
+    }
 }

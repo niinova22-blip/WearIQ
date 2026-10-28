@@ -17,6 +17,9 @@ final class GarmentDraft {
     var chartKind: SizeChartKind?
     var sizes: [SizeEntry] = []
     private(set) var chartWarnings: [ParsedSizeChart.Warning] = []
+    /// All tables read from a chart image (e.g. slim / regular / oversize).
+    private(set) var chartSections: [SizeChartSection] = []
+    private(set) var selectedSection: Int?
 
     init(info: ProductInfo = ProductInfo()) {
         self.info = info
@@ -65,6 +68,22 @@ final class GarmentDraft {
         sizes = chart.sizes
         chartWarnings = chart.warnings
         if let kind = chart.kind { chartKind = kind }
+    }
+
+    /// Keeps every table; applies the one matching the product's fit, or the first one
+    /// (the user can switch, see `selectSection`).
+    func apply(_ scan: SizeChartScan) {
+        chartSections = scan.sections
+        let index = scan.chosen.flatMap { c in scan.sections.firstIndex(of: c) } ?? 0
+        selectSection(index)
+    }
+
+    func selectSection(_ index: Int) {
+        guard chartSections.indices.contains(index) else { return }
+        selectedSection = index
+        let section = chartSections[index]
+        apply(section.chart)
+        if let fit = section.fitStyle { fitStyle = fit }
     }
 
     func addSize(label: String) {

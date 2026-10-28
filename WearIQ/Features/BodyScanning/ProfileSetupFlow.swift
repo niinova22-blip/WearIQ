@@ -1,8 +1,9 @@
 import AVFoundation
+import BodyMeasurementEngine
 import SwiftUI
 import WearIQCore
 
-/// Height & preferences → camera permission → front/side scan → review & correct.
+/// Height, weight & preferences → camera permission → front/side scan → review & correct.
 /// Used after onboarding and for re-scanning from the profile tab.
 struct ProfileSetupFlow: View {
     enum Step: Hashable {
@@ -14,13 +15,15 @@ struct ProfileSetupFlow: View {
     let onFinished: () -> Void
 
     @AppStorage("heightCm") private var heightCm: Double = 175
+    @AppStorage("weightKg") private var weightKg: Double = 75
+    @AppStorage("bodySex") private var sexRaw: String = ""
     @AppStorage("fitPreference") private var fitPreference: FitPreference = .asDesigned
     @State private var path: [Step] = []
     @State private var profile = BodyProfile()
 
     var body: some View {
         NavigationStack(path: $path) {
-            HeightPreferencesView(heightCm: $heightCm, preference: $fitPreference) {
+            HeightPreferencesView(heightCm: $heightCm, weightKg: $weightKg, sexRaw: $sexRaw, preference: $fitPreference) {
                 path.append(.scanGuide)
             }
             .navigationDestination(for: Step.self) { step in
@@ -28,7 +31,7 @@ struct ProfileSetupFlow: View {
                 case .scanGuide:
                     ScanGuideView(onScan: { path.append(.scan) }, onManual: startManualEntry)
                 case .scan:
-                    BodyScanView(heightCm: heightCm) { scanned in
+                    BodyScanView(body: bodyBasics) { scanned in
                         profile = scanned
                         path.append(.review)
                     } onManualEntry: {
@@ -41,14 +44,35 @@ struct ProfileSetupFlow: View {
         }
     }
 
+    private var bodyBasics: BodyBasics {
+        BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw))
+    }
+
+    /// Starts from height/weight estimates so the user corrects values instead of typing all of them.
     private func startManualEntry() {
-        profile = BodyProfile(values: [.height: MeasuredValue(cm: heightCm, uncertaintyCm: 1, source: .userProvided)])
+        profile = bodyBasics.estimatedProfile()
         path.append(.review)
+    }
+}
+
+/// What the user tells us before scanning.
+struct BodyBasics: Equatable, Sendable {
+    var heightCm: Double
+    var weightKg: Double
+    var sex: BodySex?
+
+    /// Height as typed, everything else predicted from height, weight and sex.
+    func estimatedProfile() -> BodyProfile {
+        var values = AnthropometricPrior().estimate(heightCm: heightCm, weightKg: weightKg, sex: sex)
+        values[.height] = MeasuredValue(cm: heightCm, uncertaintyCm: 1, source: .userProvided)
+        return BodyProfile(values: values, weightKg: weightKg, sex: sex)
     }
 }
 
 struct HeightPreferencesView: View {
     @Binding var heightCm: Double
+    @Binding var weightKg: Double
+    @Binding var sexRaw: String
     @Binding var preference: FitPreference
     let onContinue: () -> Void
 
@@ -63,6 +87,21 @@ struct HeightPreferencesView: View {
                 Text("Your height")
             } footer: {
                 Text("Your height is the ruler for every other measurement, so please enter it accurately.")
+            }
+            Section {
+                Picker("Weight", selection: Binding(get: { Int(weightKg) }, set: { weightKg = Double($0) })) {
+                    ForEach(35...200, id: \.self) { Text("\($0) kg").tag($0) }
+                }
+                .pickerStyle(.wheel)
+                Picker("Body type", selection: $sexRaw) {
+                    Text("Male").tag(BodySex.male.rawValue)
+                    Text("Female").tag(BodySex.female.rawValue)
+                    Text("Prefer not to say").tag("")
+                }
+            } header: {
+                Text("Your weight")
+            } footer: {
+                Text("Used to estimate values the photos can't show clearly. Stays on this device.")
             }
             Section("How do you like clothes to fit?") {
                 Picker("Fit", selection: $preference) {

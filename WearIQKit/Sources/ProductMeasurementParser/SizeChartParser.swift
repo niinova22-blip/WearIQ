@@ -44,15 +44,8 @@ public struct SizeChartParser: Sendable {
             warnings.append(.unitAssumedCentimetres)
         }
 
-        let kind: SizeChartKind?
-        if Self.containsAny(lower, ["vucut olc", "body measure", "beden olculeri", "to fit", "fits body"]) {
-            kind = .body
-        } else if Self.containsAny(lower, ["urun olc", "garment", "product measure", "flat", "duz olc", "giysi olc"]) {
-            kind = .garment
-        } else {
-            kind = nil
-            warnings.append(.chartKindUnknown)
-        }
+        let kind = Self.chartKind(lower)
+        if kind == nil { warnings.append(.chartKindUnknown) }
 
         var sizeLabels: [String] = []
         var columns: [[GarmentDimension: MeasuredValue]] = []
@@ -98,6 +91,13 @@ public struct SizeChartParser: Sendable {
         return ParsedSizeChart(sizes: sizes, kind: kind, unit: unit, warnings: warnings)
     }
 
+    /// Whether folded chart text says the values are body or garment measurements.
+    static func chartKind(_ folded: String) -> SizeChartKind? {
+        if containsAny(folded, ["vucut olc", "body measure", "beden olculeri", "to fit", "fits body"]) { return .body }
+        if containsAny(folded, ["urun olc", "garment", "product measure", "flat", "duz olc", "giysi olc"]) { return .garment }
+        return nil
+    }
+
     // MARK: - Tokenising
 
     static func tokens(_ line: String) -> [String] {
@@ -107,7 +107,7 @@ public struct SizeChartParser: Sendable {
         return s.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "|" || $0 == ";" }).map(String.init)
     }
 
-    private static let letterSizes: Set<String> = ["XXXS", "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "2XL", "3XL", "4XL", "5XL"]
+    static let letterSizes: Set<String> = ["XXXS", "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "2XL", "3XL", "4XL", "5XL"]
 
     /// A header row is mostly size labels (letter sizes or EU/waist numbers).
     static func sizeHeader(_ tokens: [String]) -> [String]? {

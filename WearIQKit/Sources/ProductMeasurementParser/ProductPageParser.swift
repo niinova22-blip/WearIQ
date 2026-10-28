@@ -14,6 +14,8 @@ public struct ProductInfo: Equatable, Sendable {
     public var material: String?
     /// Size labels offered by the store, in page order, de-duplicated.
     public var availableSizes: [String] = []
+    /// Size chart images the store links from the page (read with on-device OCR).
+    public var sizeChartImageURLs: [URL] = []
 
     /// Inferred from name/category; `nil` when the text doesn't say.
     public var category: GarmentCategory?
@@ -52,11 +54,57 @@ public struct ProductPageParser: Sendable {
         if info.brand == nil { info.brand = og["product:brand"] ?? og["og:brand"] }
         if info.imageURL == nil, let img = og["og:image"] { info.imageURL = URL(string: img, relativeTo: pageURL)?.absoluteURL }
 
+        if info.availableSizes.isEmpty { info.availableSizes = Self.embeddedSizes(in: html) }
+        info.sizeChartImageURLs = Self.sizeChartImages(in: html, base: pageURL)
+
         let text = [info.name, info.categoryText].compactMap { $0 }.joined(separator: " ")
         info.category = GarmentClassifier.category(from: text)
         info.fitStyle = GarmentClassifier.fitStyle(from: text)
         info.stretch = info.material.flatMap(GarmentClassifier.stretch(fromComposition:))
         return info
+    }
+
+    // MARK: - Embedded page data
+
+    /// Many shops render from a JSON state blob instead of JSON-LD. Size labels there
+    /// sit under keys like "size" or "value"; only letter sizes are taken, because a
+    /// bare number under "value" could be anything.
+    static func embeddedSizes(in html: String) -> [String] {
+        let pattern = #""(?:size|sizeName|value|attributeValue|beautifiedValue)"\s*:\s*"(XXS|XS|S|M|L|XL|XXL|XXXL|2XL|3XL|4XL|5XL)""#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return [] }
+        let ns = html as NSString
+        var sizes: [String] = []
+        for m in regex.matches(in: html, range: NSRange(location: 0, length: ns.length)) {
+            let s = ns.substring(with: m.range(at: 1)).uppercased()
+            if !sizes.contains(s) { sizes.append(s) }
+        }
+        return sizes
+    }
+
+    /// Image links whose key or file name says "size chart" (any common spelling,
+    /// Turkish included). JSON-escaped slashes are unescaped.
+    static func sizeChartImages(in html: String, base: URL?) -> [URL] {
+        let patterns = [
+            #""(?:size_?chart|size_?guide|beden_?tablosu)[A-Za-z_]*"\s*:\s*"([^"]+?)""#,
+            #"<img[^>]+src\s*=\s*["']([^"']*(?:size-?chart|size-?guide|beden-?tablosu|olcu-?tablosu)[^"']*)["']"#,
+        ]
+        var urls: [URL] = []
+        let ns = html as NSString
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { continue }
+            for m in regex.matches(in: html, range: NSRange(location: 0, length: ns.length)) {
+                let raw = ns.substring(with: m.range(at: 1))
+                    .replacingOccurrences(of: #"\u002F"#, with: "/", options: .caseInsensitive)
+                    .replacingOccurrences(of: #"\/"#, with: "/")
+                    .replacingOccurrences(of: "&amp;", with: "&")
+                guard let url = URL(string: raw, relativeTo: base)?.absoluteURL,
+                      ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+                      ["jpg", "jpeg", "png", "webp", "gif"].contains(url.pathExtension.lowercased()),
+                      !urls.contains(url) else { continue }
+                urls.append(url)
+            }
+        }
+        return urls
     }
 
     // MARK: - JSON-LD

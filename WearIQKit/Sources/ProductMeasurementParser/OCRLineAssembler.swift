@@ -6,12 +6,14 @@ public struct TextBox: Sendable, Equatable {
     public var minX: Double
     public var midY: Double
     public var height: Double
+    public var width: Double
 
-    public init(text: String, minX: Double, midY: Double, height: Double) {
+    public init(text: String, minX: Double, midY: Double, height: Double, width: Double = 0) {
         self.text = text
         self.minX = minX
         self.midY = midY
         self.height = height
+        self.width = width
     }
 }
 
