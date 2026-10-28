@@ -55,6 +55,9 @@ public enum Occasion: String, Codable, CaseIterable, Sendable {
         case .specialEvent: [.formal: 1, .evening: 0.9, .business: 0.6, .smartCasual: 0.5]
         }
     }
+
+    /// Styles that clearly suit the occasion (for suggesting pieces to add).
+    public var suitedStyles: Set<StyleTag> { Set(styleFit.filter { $0.value >= 0.8 }.keys) }
 }
 
 public struct WardrobeItem: Codable, Hashable, Identifiable, Sendable {

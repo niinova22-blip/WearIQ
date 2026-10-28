@@ -1,5 +1,6 @@
 import AVFoundation
 import BodyMeasurementEngine
+import ProductMeasurementParser
 import SwiftUI
 import WearIQCore
 
@@ -19,12 +20,15 @@ struct ProfileSetupFlow: View {
     @AppStorage("heightCm") private var heightCm: Double = 175
     @AppStorage("weightKg") private var weightKg: Double = 75
     @AppStorage("bodySex") private var sexRaw: String = ""
+    @AppStorage("usualTopSize") private var usualTopSize: String = ""
+    @AppStorage("usualWaistSize") private var usualWaistSize: String = ""
     @AppStorage("fitPreference") private var fitPreference: FitPreference = .asDesigned
     @State private var path: [Step] = []
 
     var body: some View {
         NavigationStack(path: $path) {
-            HeightPreferencesView(heightCm: $heightCm, weightKg: $weightKg, sexRaw: $sexRaw, preference: $fitPreference) {
+            HeightPreferencesView(heightCm: $heightCm, weightKg: $weightKg, sexRaw: $sexRaw,
+                                  usualTopSize: $usualTopSize, usualWaistSize: $usualWaistSize, preference: $fitPreference) {
                 path.append(.scanGuide)
             }
             .navigationDestination(for: Step.self) { step in
@@ -45,7 +49,8 @@ struct ProfileSetupFlow: View {
     }
 
     private var bodyBasics: BodyBasics {
-        BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw))
+        BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw),
+                   usualTopSize: usualTopSize, usualWaistSize: usualWaistSize)
     }
 
     /// Starts from height/weight estimates so the user corrects values instead of typing all of them.
@@ -59,10 +64,40 @@ struct BodyBasics: Equatable, Sendable {
     var heightCm: Double
     var weightKg: Double
     var sex: BodySex?
+    /// The sizes the user usually buys ("M", waist "32"); empty if not given.
+    var usualTopSize: String = ""
+    var usualWaistSize: String = ""
 
-    /// Height as typed, everything else predicted from height, weight and sex.
-    func estimatedProfile() -> BodyProfile {
+    /// Best estimate without photos: height/weight statistics, sharpened by the sizes the
+    /// user usually wears (a size label pins chest, waist and hip to a few centimetres).
+    func prior() -> [BodyDimension: MeasuredValue] {
         var values = AnthropometricPrior().estimate(heightCm: heightCm, weightKg: weightKg, sex: sex)
+        let audience: GarmentAudience? = sex.map { $0 == .female ? .women : .men }
+        var fromSizes: [BodyDimension: MeasuredValue] = [:]
+        if !usualTopSize.isEmpty, let size = StandardSizeCharts.chart(for: [usualTopSize], category: .shirt, audience: audience)?.sizes.first {
+            fromSizes[.chest] = size.values[.chest]
+            fromSizes[.waist] = size.values[.waist]
+            fromSizes[.hip] = size.values[.hip]
+        }
+        if !usualWaistSize.isEmpty, let size = StandardSizeCharts.chart(for: [usualWaistSize], category: .pants, audience: audience)?.sizes.first {
+            // A trouser size describes the waist better than a top size does.
+            fromSizes[.waist] = size.values[.waist]
+            fromSizes[.hip] = size.values[.hip] ?? fromSizes[.hip]
+        }
+        for (dim, s) in fromSizes {
+            // Size charts give ranges; brands differ, so count it as a ±4 cm reading.
+            let reading = MeasuredValue(cm: s.cm, uncertaintyCm: 4, source: .estimated)
+            guard let p = values[dim] else { values[dim] = reading; continue }
+            let vp = p.uncertaintyCm * p.uncertaintyCm, vs = reading.uncertaintyCm * reading.uncertaintyCm
+            values[dim] = MeasuredValue(cm: (p.cm / vp + reading.cm / vs) / (1 / vp + 1 / vs),
+                                        uncertaintyCm: (1 / (1 / vp + 1 / vs)).squareRoot(), source: .estimated)
+        }
+        return values
+    }
+
+    /// Height as typed, everything else estimated.
+    func estimatedProfile() -> BodyProfile {
+        var values = prior()
         values[.height] = MeasuredValue(cm: heightCm, uncertaintyCm: 1, source: .userProvided)
         return BodyProfile(values: values, weightKg: weightKg, sex: sex)
     }
@@ -72,6 +107,8 @@ struct HeightPreferencesView: View {
     @Binding var heightCm: Double
     @Binding var weightKg: Double
     @Binding var sexRaw: String
+    @Binding var usualTopSize: String
+    @Binding var usualWaistSize: String
     @Binding var preference: FitPreference
     let onContinue: () -> Void
 
@@ -101,6 +138,20 @@ struct HeightPreferencesView: View {
                 Text("Your weight")
             } footer: {
                 Text("Used to estimate values the photos can't show clearly. Stays on this device.")
+            }
+            Section {
+                Picker("Tops", selection: $usualTopSize) {
+                    Text("Not sure").tag("")
+                    ForEach(["XS", "S", "M", "L", "XL", "XXL", "3XL"], id: \.self) { Text($0).tag($0) }
+                }
+                Picker("Trousers (waist)", selection: $usualWaistSize) {
+                    Text("Not sure").tag("")
+                    ForEach(["26", "28", "29", "30", "31", "32", "33", "34", "36", "38", "40"], id: \.self) { Text($0).tag($0) }
+                }
+            } header: {
+                Text("Sizes you usually wear")
+            } footer: {
+                Text("Makes chest, waist and hip estimates much closer.")
             }
             Section("How do you like clothes to fit?") {
                 Picker("Fit", selection: $preference) {

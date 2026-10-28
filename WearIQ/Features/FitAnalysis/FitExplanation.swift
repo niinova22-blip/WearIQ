@@ -101,3 +101,50 @@ enum FitExplanation {
         return sentences.joined(separator: " ")
     }
 }
+
+extension FitExplanation {
+    /// How one size will look and feel, in a sentence or two, built from the region results.
+    /// A clearly loose body also drops the shoulder seam, so sleeves and length look longer
+    /// than their numbers suggest; that is said in words, the numbers stay as measured.
+    static func summary(for size: SizeFit, recommended: String?) -> String {
+        func verdict(_ r: FitRegion) -> FitVerdict? {
+            size.regions.first { $0.region == r && $0.verdict != .insufficientData }?.verdict
+        }
+        let girth = verdict(.chest) ?? verdict(.waist) ?? verdict(.hip)
+        let sleeve = verdict(.sleeve)
+        let length = verdict(.bodyLength) ?? verdict(.inseam)
+        let isRecommended = size.label == recommended
+        var parts: [String] = []
+
+        switch girth {
+        case .loose?:
+            parts.append(String(localized: "Clearly roomy through the body."))
+            if sleeve != .short || length != .short {
+                parts.append(String(localized: "The shoulder seam will sit lower, so sleeves and length can look a little longer."))
+            }
+            parts.append(isRecommended || recommended == nil
+                ? String(localized: "Good if you like an oversized look.")
+                : String(localized: "Wearable if you like an oversized look; for a cleaner fit choose \(recommended!)."))
+        case .slightlyLoose?:
+            parts.append(String(localized: "A relaxed, comfortable fit with a little room."))
+        case .tight?:
+            parts.append(String(localized: "Tight through the body; it may pull when you move."))
+            if let recommended, !isRecommended { parts.append(String(localized: "\(recommended) will be more comfortable.")) }
+        case .slightlyTight?:
+            parts.append(String(localized: "Close-fitting; fine if you like it snug."))
+        default:
+            parts.append(isRecommended ? String(localized: "Fits your body well.") : String(localized: "The body fits."))
+        }
+
+        switch (sleeve, length) {
+        case (.short?, .short?): parts.append(String(localized: "Sleeves and length will be short."))
+        case (.short?, _): parts.append(String(localized: "Sleeves will be a little short."))
+        case (_, .short?): parts.append(String(localized: "It will be a little short in length."))
+        case (.long?, _), (_, .long?):
+            if girth != .loose { parts.append(String(localized: "A bit long; you may want to roll the sleeves or tuck it in.")) }
+        default: break
+        }
+        return parts.joined(separator: " ")
+    }
+}
+

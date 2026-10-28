@@ -13,6 +13,8 @@ struct FitResultView: View {
     var fitStyle: FitStyle?
     /// What the size chart was based on (store, photo, standard sizes).
     var chartNote: String?
+    /// The size the user already has (from the tag), compared with the recommendation.
+    var tagSize: String?
     /// False for "insufficient data" results, which are shown but neither saved nor charged.
     let isSaved: Bool
 
@@ -29,8 +31,9 @@ struct FitResultView: View {
     }
 
     init(productName: String?, brand: String?, imageURL: URL?, pageURL: URL?, analysis: FitAnalysis, isSaved: Bool,
-         category: GarmentCategory? = nil, fitStyle: FitStyle? = nil, chartNote: String? = nil) {
+         category: GarmentCategory? = nil, fitStyle: FitStyle? = nil, chartNote: String? = nil, tagSize: String? = nil) {
         self.chartNote = chartNote
+        self.tagSize = tagSize
         self.isSaved = isSaved
         self.category = category
         self.fitStyle = fitStyle
@@ -64,7 +67,7 @@ struct FitResultView: View {
             WardrobeItemEditor(prefill: .init(
                 name: productName, brand: brand, size: selected?.label,
                 category: category.map { WardrobeCategory($0) }, fitStyle: fitStyle,
-                fitScore: selected?.fitScore))
+                fitScore: selected?.fitScore, imageURL: imageURL))
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
     }
@@ -112,6 +115,14 @@ struct FitResultView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+            }
+            if let tagSize, let recommended = analysis.recommendedSize?.label {
+                Label(tagSize == recommended
+                      ? String(localized: "The size on your tag, \(tagSize), is the right one.")
+                      : String(localized: "Your tag says \(tagSize); \(recommended) should fit you better."),
+                      systemImage: tagSize == recommended ? "checkmark.seal.fill" : "arrow.left.arrow.right")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(tagSize == recommended ? Color.green : Color.orange)
             }
             Text(FitExplanation.text(for: analysis))
                 .font(.callout)
@@ -161,6 +172,12 @@ struct FitResultView: View {
     private func regionsCard(_ size: SizeFit) -> some View {
         Card {
             Text("Size \(size.label), region by region").font(.headline)
+            Text(FitExplanation.summary(for: size, recommended: analysis.recommendedSize?.label))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 4)
+                .contentTransition(.opacity)
             ForEach(size.regions, id: \.region) { region in
                 HStack(alignment: .firstTextBaseline) {
                     Image(systemName: region.severity.symbol)

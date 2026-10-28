@@ -20,6 +20,7 @@ struct WardrobeItemEditor: View {
     @State private var seasons: Set<Season>
     @State private var styles: Set<StyleTag>
     @State private var photo: Data?
+    private let prefillImageURL: URL?
     @State private var photoItem: PhotosPickerItem?
     private let fitScore: Double?
 
@@ -35,6 +36,7 @@ struct WardrobeItemEditor: View {
         _styles = State(initialValue: existing?.styles ?? [.casual])
         _photo = State(initialValue: existing?.photo)
         fitScore = existing?.fitScore ?? prefill?.fitScore
+        prefillImageURL = existing == nil ? prefill?.imageURL : nil
     }
 
     /// Values carried over from a fit analysis ("Add to wardrobe").
@@ -45,6 +47,8 @@ struct WardrobeItemEditor: View {
         var category: WardrobeCategory?
         var fitStyle: FitStyle?
         var fitScore: Double?
+        /// Product photo from the store page; downloaded as the item's photo.
+        var imageURL: URL?
     }
 
     var body: some View {
@@ -99,6 +103,12 @@ struct WardrobeItemEditor: View {
             }
             .onChange(of: photoItem) { _, item in
                 Task { photo = try? await item?.loadTransferable(type: Data.self).flatMap(Self.downscaled) }
+            }
+            .task {
+                // Use the store's product photo so the wardrobe shows the real garment.
+                guard photo == nil, let url = prefillImageURL,
+                      let (data, _) = try? await URLSession.shared.data(from: url) else { return }
+                photo = Self.downscaled(data)
             }
         }
     }

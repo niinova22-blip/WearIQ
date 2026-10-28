@@ -24,6 +24,8 @@ final class GarmentDraft {
         case standard   // typical measurements for the size labels
     }
     private(set) var chartSource: ChartSource?
+    /// The size the user already has (e.g. from the garment's tag); the result opens on it.
+    var preferredLabel: String?
 
     /// All tables read from a chart image (e.g. slim / regular / oversize).
     private(set) var chartSections: [SizeChartSection] = []

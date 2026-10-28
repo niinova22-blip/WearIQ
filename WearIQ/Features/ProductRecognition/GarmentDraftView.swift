@@ -55,7 +55,8 @@ struct GarmentDraftView: View {
         .navigationDestination(item: $result) { route in
             FitResultView(productName: draft.info.name, brand: draft.info.brand, imageURL: draft.info.imageURL,
                           pageURL: draft.info.pageURL, analysis: route.analysis, isSaved: route.saved,
-                          category: draft.category, fitStyle: draft.fitStyle, chartNote: chartNote)
+                          category: draft.category, fitStyle: draft.fitStyle, chartNote: chartNote,
+                          tagSize: draft.preferredLabel)
                 // Ads only ever appear after a result, never before a scan.
                 .onDisappear { container.ads.showInterstitialIfDue(isPremium: container.isPremium) }
         }

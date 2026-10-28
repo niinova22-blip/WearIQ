@@ -95,8 +95,8 @@ struct WardrobeRow: View {
                     entry.color.swatch.overlay(Image(systemName: entry.category.symbol).foregroundStyle(.white.opacity(0.8)))
                 }
             }
-            .frame(width: 52, height: 52)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .frame(width: 60, height: 72)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name).font(.headline)

@@ -85,7 +85,8 @@ struct NoCatalogBarcodeLookup: BarcodeLookupServicing {
 struct UPCItemDBLookup: BarcodeLookupServicing {
     var session: URLSession = .shared
 
-    func product(forGTIN gtin: String) async -> ProductInfoLookupResult {
+    func product(forGTIN raw: String) async -> ProductInfoLookupResult {
+        let gtin = Self.normalized(raw)
         guard !Self.isStoreInternal(gtin),
               let url = URL(string: "https://api.upcitemdb.com/prod/trial/lookup?upc=\(gtin)") else { return .notFound }
         var request = URLRequest(url: url, timeoutInterval: 10)
@@ -98,6 +99,13 @@ struct UPCItemDBLookup: BarcodeLookupServicing {
         let brand = (item["brand"] as? String).flatMap { $0.isEmpty ? nil : $0 }
         let image = (item["images"] as? [String])?.lazy.compactMap { URL(string: $0) }.first { $0.scheme == "https" }
         return .found(name: title, brand: brand, imageURL: image)
+    }
+
+    /// GTIN-14 and padded codes ("00706208778047") to the 12/13-digit form catalogues use.
+    static func normalized(_ code: String) -> String {
+        var c = code
+        while c.count > 12, c.hasPrefix("0") { c.removeFirst() }
+        return c
     }
 
     /// EAN-13 prefixes 20–29 are reserved for in-store use (price/weight labels, shop codes).

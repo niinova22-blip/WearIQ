@@ -17,6 +17,8 @@ final class BodyScanViewModel {
         case countdown(Int)
         case analyzing
         case failed(String)
+        /// Measured; "scan complete" is shown and spoken before moving on.
+        case completed
         case finished
     }
 
@@ -161,8 +163,7 @@ final class BodyScanViewModel {
                     scanned.sex = basics.sex
                     // Photo values that disagree wildly with height/weight statistics are
                     // detection errors; the estimate fills them and any value the photos missed.
-                    let prior = AnthropometricPrior().estimate(heightCm: basics.heightCm, weightKg: basics.weightKg, sex: basics.sex)
-                    return MeasurementFusion.fuse(scan: scanned, prior: prior).profile
+                    return MeasurementFusion.fuse(scan: scanned, prior: basics.prior()).profile
                 }
             }.value
 
@@ -174,6 +175,9 @@ final class BodyScanViewModel {
             switch outcome {
             case let .success(profile):
                 result = profile
+                stage = .completed
+                speak(String(localized: "Scan complete. Your measurements are ready."))
+                try? await Task.sleep(for: .seconds(2))
                 stage = .finished
             case let .failure(error):
                 stage = .failed(Self.message(for: error))
@@ -189,9 +193,24 @@ final class BodyScanViewModel {
         lastSpokenAt = now
         speech.stopSpeaking(at: .word)
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: Locale.current.language.languageCode?.identifier)
+        utterance.voice = Self.voice
+        // A little slower and lower than the default sounds calmer and more natural.
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.92
+        utterance.pitchMultiplier = 0.95
+        utterance.preUtteranceDelay = 0.05
         speech.speak(utterance)
     }
+
+    /// The most natural installed voice for the app language: premium, then enhanced
+    /// (Siri-quality voices the user may have downloaded), then the default.
+    private static let voice: AVSpeechSynthesisVoice? = {
+        let language = Locale.current.language.languageCode?.identifier ?? "en"
+        let voices = AVSpeechSynthesisVoice.speechVoices().filter { $0.language.hasPrefix(language) }
+        return voices.first { $0.quality == .premium }
+            ?? voices.first { $0.quality == .enhanced }
+            ?? AVSpeechSynthesisVoice(language: Locale.current.identifier.replacingOccurrences(of: "_", with: "-"))
+            ?? AVSpeechSynthesisVoice(language: language)
+    }()
 
     private static func message(for error: Error) -> String {
         switch error {

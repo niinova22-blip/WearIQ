@@ -3980,6 +3980,536 @@
           }
         }
       }
+    },
+    "This barcode isn't in any public catalogue. Most clothing barcodes are brand-internal.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu barkod açık kataloglarda yok. Giysi barkodlarının çoğu markaya özeldir."
+          }
+        }
+      }
+    },
+    "What is it?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ne?"
+          }
+        }
+      }
+    },
+    "Slim": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar"
+          }
+        }
+      }
+    },
+    "Regular": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        }
+      }
+    },
+    "Oversize": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bol"
+          }
+        }
+      }
+    },
+    "Size on the tag": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etiketteki beden"
+          }
+        }
+      }
+    },
+    "Quick check": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hızlı kontrol"
+          }
+        }
+      }
+    },
+    "Quick check without a link": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linksiz hızlı kontrol"
+          }
+        }
+      }
+    },
+    "The size on your tag, %@, is the right one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etiketteki %@ beden sana uygun."
+          }
+        }
+      }
+    },
+    "Your tag says %@; %@ should fit you better.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etikette %1$@ yazıyor; sana %2$@ daha iyi oturur."
+          }
+        }
+      }
+    },
+    "Trousers (waist)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantolon (bel)"
+          }
+        }
+      }
+    },
+    "Not sure": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilmiyorum"
+          }
+        }
+      }
+    },
+    "Sizes you usually wear": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genelde giydiğin bedenler"
+          }
+        }
+      }
+    },
+    "Makes chest, waist and hip estimates much closer.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs, bel ve kalça tahminlerini çok daha isabetli yapar."
+          }
+        }
+      }
+    },
+    "Scan complete. Your measurements are ready.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarama tamamlandı. Ölçülerin hazır."
+          }
+        }
+      }
+    },
+    "Scan complete": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarama tamamlandı"
+          }
+        }
+      }
+    },
+    "Season and colours": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mevsim ve renkler"
+          }
+        }
+      }
+    },
+    "Outfit of the day": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günün kombini"
+          }
+        }
+      }
+    },
+    "%@ · %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Shuffle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karıştır"
+          }
+        }
+      }
+    },
+    "Remove from saved": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydedilenlerden çıkar"
+          }
+        }
+      }
+    },
+    "Save outfit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kombini kaydet"
+          }
+        }
+      }
+    },
+    "More ideas": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diğer fikirler"
+          }
+        }
+      }
+    },
+    "Saved outfits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydettiğin kombinler"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaldır"
+          }
+        }
+      }
+    },
+    "Pieces that would add the most": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En çok kombin açacak parçalar"
+          }
+        }
+      }
+    },
+    "%lld more outfits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld yeni kombin"
+          }
+        }
+      }
+    },
+    "+%lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld"
+          }
+        }
+      }
+    },
+    "No outfit for this yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bunun için henüz kombin yok"
+          }
+        }
+      }
+    },
+    "Add at least a top and a bottom (or a dress) that suit this occasion and season.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu kullanım ve mevsime uygun en az bir üst ve bir alt (ya da elbise) ekle."
+          }
+        }
+      }
+    },
+    "White shirt or tee": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beyaz gömlek ya da tişört"
+          }
+        }
+      }
+    },
+    "Navy top": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lacivert üst"
+          }
+        }
+      }
+    },
+    "Beige trousers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bej pantolon"
+          }
+        }
+      }
+    },
+    "Dark jeans": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koyu kot pantolon"
+          }
+        }
+      }
+    },
+    "Black trousers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siyah pantolon"
+          }
+        }
+      }
+    },
+    "Navy jacket": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lacivert ceket"
+          }
+        }
+      }
+    },
+    "White sneakers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beyaz sneaker"
+          }
+        }
+      }
+    },
+    "Brown shoes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kahverengi ayakkabı"
+          }
+        }
+      }
+    },
+    "%lld%% match": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%%%lld uyum"
+          }
+        }
+      }
+    },
+    "Clearly roomy through the body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gövdede belirgin bol durur."
+          }
+        }
+      }
+    },
+    "The shoulder seam will sit lower, so sleeves and length can look a little longer.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz dikişi aşağı düşeceği için kollar ve boy biraz uzun görünebilir."
+          }
+        }
+      }
+    },
+    "Good if you like an oversized look.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oversize görünüm seviyorsan uygun."
+          }
+        }
+      }
+    },
+    "Wearable if you like an oversized look; for a cleaner fit choose %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oversize görünüm seviyorsan giyilebilir; daha düzgün oturması için %@ öneriyoruz."
+          }
+        }
+      }
+    },
+    "A relaxed, comfortable fit with a little room.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz pay bırakan rahat bir duruşu var."
+          }
+        }
+      }
+    },
+    "Tight through the body; it may pull when you move.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gövdede dar gelir; hareket ederken gerilebilir."
+          }
+        }
+      }
+    },
+    "%@ will be more comfortable.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ daha rahat olur."
+          }
+        }
+      }
+    },
+    "Close-fitting; fine if you like it snug.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücuda oturur; dar kesim seviyorsan uygun."
+          }
+        }
+      }
+    },
+    "Fits your body well.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücuduna iyi oturur."
+          }
+        }
+      }
+    },
+    "The body fits.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gövde uyuyor."
+          }
+        }
+      }
+    },
+    "Sleeves and length will be short.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar ve boy kısa kalır."
+          }
+        }
+      }
+    },
+    "Sleeves will be a little short.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar biraz kısa kalır."
+          }
+        }
+      }
+    },
+    "It will be a little short in length.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boyu biraz kısa kalır."
+          }
+        }
+      }
+    },
+    "A bit long; you may want to roll the sleeves or tuck it in.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz uzun; kolları kıvırabilir ya da içine sokabilirsin."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

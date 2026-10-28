@@ -17,6 +17,8 @@ struct ScanEntryView: View {
     @State private var readingPhoto = false
     @State private var photoError: String?
     @State private var route: DraftRoute?
+    @State private var showQuickCheck = false
+    @State private var quickCheckBarcode: String?
 
     private let productService: ProductDataServicing = ProductDataService()
     private let barcodeLookup: BarcodeLookupServicing = UPCItemDBLookup()
@@ -38,7 +40,10 @@ struct ScanEntryView: View {
                     photoTile
                 }
                 statusMessages
-                Button("Enter a size chart manually") { open(GarmentDraft()) }
+                Button("Quick check without a link") {
+                    quickCheckBarcode = nil
+                    showQuickCheck = true
+                }
                     .font(.subheadline)
                     .padding(.top, Theme.Spacing.s)
             }
@@ -48,6 +53,12 @@ struct ScanEntryView: View {
         .navigationTitle("Scan a garment")
         .navigationDestination(item: $route) { GarmentDraftView(draft: $0.draft, autoAnalyze: $0.autoAnalyze) }
         .fullScreenCover(isPresented: $showBarcode) { barcodeSheet }
+        .sheet(isPresented: $showQuickCheck) {
+            QuickCheckSheet(barcode: quickCheckBarcode) { draft in
+                draft.fillStandardChart(fallbackAudience: profileAudience)
+                open(draft, autoAnalyze: true)
+            }
+        }
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
             Task { await readPhoto(item) }
@@ -214,8 +225,17 @@ struct ScanEntryView: View {
             info.imageURL = imageURL
             info.category = name.flatMap(GarmentClassifier.category(from:))
             info.fitStyle = name.flatMap(GarmentClassifier.fitStyle(from:))
+            info.audience = name.flatMap(GarmentClassifier.audience(from:))
         }
-        open(GarmentDraft(info: info))
+        guard info.category != nil else {
+            // Unknown product: ask only what's on the tag instead of showing an empty form.
+            quickCheckBarcode = code
+            showQuickCheck = true
+            return
+        }
+        let draft = GarmentDraft(info: info)
+        draft.fillStandardChart(fallbackAudience: profileAudience)
+        open(draft, autoAnalyze: true)
     }
 
     private func readPhoto(_ item: PhotosPickerItem) async {

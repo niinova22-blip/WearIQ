@@ -15,7 +15,7 @@ enum Theme {
     static let screenBackground = Color(uiColor: .systemGroupedBackground)
     /// Brand gradient for primary actions and highlights.
     static let accentGradient = LinearGradient(
-        colors: [Color(red: 0.42, green: 0.40, blue: 0.98), Color(red: 0.30, green: 0.24, blue: 0.80)],
+        colors: [Color(red: 1.00, green: 0.48, blue: 0.35), Color(red: 0.91, green: 0.27, blue: 0.49)],
         startPoint: .topLeading, endPoint: .bottomTrailing)
 }
 

@@ -116,6 +116,14 @@ public struct SilhouetteAnalyzer: Sendable {
             }
         }
 
+        // Arms touching the body widen the torso rows. The shoulder joints bound how wide
+        // a torso can be; wider rows are dropped and left to the estimate.
+        let shoulderSpan = ls.distance(to: rs)
+        let maxRatio: [BodyLevel: Double] = [.chest: 1.25, .waist: 1.2, .hip: 1.35]
+        for (level, ratio) in maxRatio {
+            if let sample = levels[level], sample.extentPx > ratio * shoulderSpan { levels[level] = nil }
+        }
+
         return ScanObservation(personHeightPx: Double(floor - top), floorY: Double(floor),
                                joints: joints, levels: levels, crotchY: crotchY.map(Double.init))
     }

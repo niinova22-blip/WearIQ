@@ -100,10 +100,24 @@ struct BodyScanView: View {
                 Button("Enter measurements manually", action: onManualEntry)
                     .frame(maxWidth: .infinity)
             }
+        case .completed:
+            VStack(spacing: Theme.Spacing.m) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 88, weight: .bold))
+                    .foregroundStyle(.green)
+                    .symbolEffect(.bounce, value: model.stage)
+                Text("Scan complete")
+                    .font(.system(size: 36, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+            .padding(Theme.Spacing.xl)
+            .background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .transition(.scale.combined(with: .opacity))
+            .sensoryFeedback(.success, trigger: model.stage)
         case .finished:
             EmptyView()
         }
-        if model.pose == .side, model.stage != .analyzing, model.stage != .finished {
+        if model.pose == .side, model.stage != .analyzing, model.stage != .finished, model.stage != .completed {
             Button("Skip side photo (less accurate)") { model.skipSidePhoto() }
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.white)
