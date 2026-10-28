@@ -1,4 +1,5 @@
 import FitEngine
+import OutfitRecommendationEngine
 import SwiftUI
 import WearIQCore
 
@@ -59,7 +60,7 @@ struct FitResultView: View {
         .sheet(isPresented: $addingToWardrobe) {
             WardrobeItemEditor(prefill: .init(
                 name: productName, brand: brand, size: selected?.label,
-                category: category.map(WardrobeCategory.init), fitStyle: fitStyle,
+                category: category.map { WardrobeCategory($0) }, fitStyle: fitStyle,
                 fitScore: selected?.fitScore))
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
