@@ -9,6 +9,12 @@
             "state": "translated",
             "value": "WearIQ, vücut ölçülerini taramak ve barkod ya da beden etiketi okumak için kamerayı kullanır. Fotoğraflar cihazında işlenir, yüklenmez."
           }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ uses the camera to scan your body measurements and read barcodes or size labels. Photos are processed on your device and are not uploaded."
+          }
         }
       }
     },
@@ -19,6 +25,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "WearIQ, seçtiğin beden tablosu ekran görüntülerini ve kıyafet fotoğraflarını okur. Cihazında işlenir."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ reads size chart screenshots and garment photos you choose. They are processed on your device."
           }
         }
       }
@@ -31,6 +43,12 @@
             "state": "translated",
             "value": "İzin verirsen sana daha ilgili reklamlar gösterebiliriz. Vücut ölçülerin asla reklamverenlerle paylaşılmaz."
           }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowing tracking lets us show more relevant ads. Your body measurements are never shared with advertisers."
+          }
         }
       }
     },
@@ -38,6 +56,12 @@
       "extractionState": "manual",
       "localizations": {
         "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ"
+          }
+        },
+        "en": {
           "stringUnit": {
             "state": "translated",
             "value": "WearIQ"
