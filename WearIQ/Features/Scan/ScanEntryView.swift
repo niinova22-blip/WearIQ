@@ -33,9 +33,13 @@ struct ScanEntryView: View {
         ScrollView {
             VStack(spacing: Theme.Spacing.m) {
                 linkCard
-                barcodeCard
-                photoCard
+                HStack(spacing: Theme.Spacing.m) {
+                    barcodeTile
+                    photoTile
+                }
+                statusMessages
                 Button("Enter a size chart manually") { open(GarmentDraft()) }
+                    .font(.subheadline)
                     .padding(.top, Theme.Spacing.s)
             }
             .padding(Theme.Spacing.m)
@@ -55,89 +59,89 @@ struct ScanEntryView: View {
     private var linkCard: some View {
         Card {
             Label("Paste a product link", systemImage: "link").font(.headline)
-            Text("Reads the product name, sizes and size chart where the store publishes them.")
-                .font(.subheadline).foregroundStyle(.secondary)
             HStack {
                 TextField("https://…", text: $linkText)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .textFieldStyle(.roundedBorder)
+                    .onSubmit { Task { await loadLink() } }
                 PasteButton(payloadType: String.self) { strings in
-                    if let s = strings.first { linkText = s }
+                    if let s = strings.first {
+                        linkText = s
+                        Task { await loadLink() }
+                    }
                 }
                 .labelStyle(.iconOnly)
             }
             Button {
                 Task { await loadLink() }
             } label: {
-                if loadingLink { ProgressView().tint(.white) } else { Text("Read product") }
+                if loadingLink {
+                    HStack { ProgressView().tint(.white); Text("Reading the product…") }
+                } else {
+                    Text("Check the fit")
+                }
             }
             .buttonStyle(.primary)
             .disabled(linkText.isEmpty || loadingLink)
             if let linkError {
-                VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-                    Label(linkError, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
-                    Text("You can still continue: add a screenshot of the store's size chart or type the measurements.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                    Button("Continue with this link") {
-                        var info = ProductInfo()
-                        info.pageURL = failedLinkURL
-                        open(GarmentDraft(info: info))
-                    }
-                    .disabled(failedLinkURL == nil)
+                Label(linkError, systemImage: "exclamationmark.triangle")
+                    .font(.subheadline).foregroundStyle(.orange)
+                Button("Continue with this link") {
+                    var info = ProductInfo()
+                    info.pageURL = failedLinkURL
+                    open(GarmentDraft(info: info))
                 }
                 .font(.subheadline)
+                .disabled(failedLinkURL == nil)
             }
         }
     }
 
-    private var barcodeCard: some View {
-        Card {
-            Label("Scan a barcode", systemImage: "barcode.viewfinder").font(.headline)
-            Text("Identifies the product from its EAN/UPC code. A barcode alone has no measurements.")
-                .font(.subheadline).foregroundStyle(.secondary)
-            if BarcodeScannerView.isSupported {
-                Button("Open barcode scanner") {
-                    Task {
-                        if await BarcodeScannerView.requestAccess() {
-                            showBarcode = true
-                        } else {
-                            barcodeError = String(localized: "Camera access is off. Allow it in Settings to scan barcodes.")
-                        }
+    private func tile(_ title: LocalizedStringKey, symbol: String, busy: Bool) -> some View {
+        VStack(spacing: Theme.Spacing.s) {
+            if busy { ProgressView() } else { Image(systemName: symbol).font(.title2) }
+            Text(title).font(.subheadline.weight(.medium)).multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, minHeight: 88)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var barcodeTile: some View {
+        if BarcodeScannerView.isSupported {
+            Button {
+                Task {
+                    if await BarcodeScannerView.requestAccess() {
+                        showBarcode = true
+                    } else {
+                        barcodeError = String(localized: "Camera access is off. Allow it in Settings to scan barcodes.")
                     }
                 }
-            } else {
-                Text("Barcode scanning isn't available on this device.")
-                    .font(.footnote).foregroundStyle(.secondary)
+            } label: {
+                tile("Scan a barcode", symbol: "barcode.viewfinder", busy: lookingUpBarcode)
             }
-            if lookingUpBarcode {
-                HStack { ProgressView(); Text("Looking up the product…") }.font(.subheadline)
-            }
-            if let barcodeError {
-                Label(barcodeError, systemImage: "exclamationmark.triangle")
-                    .font(.subheadline).foregroundStyle(.orange)
-            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
         }
     }
 
-    private var photoCard: some View {
-        Card {
-            Label("Read a size chart photo", systemImage: "text.viewfinder").font(.headline)
-            Text("Extracts measurements from a size chart screenshot or garment label on your device.")
-                .font(.subheadline).foregroundStyle(.secondary)
-            PhotosPicker(selection: $photoItem, matching: .images) {
-                if readingPhoto {
-                    HStack { ProgressView(); Text("Reading size chart…") }
-                } else {
-                    Text("Choose a photo")
-                }
-            }
-            .disabled(readingPhoto)
-            if let photoError {
-                Label(photoError, systemImage: "exclamationmark.triangle")
-                    .font(.subheadline).foregroundStyle(.orange)
-            }
+    private var photoTile: some View {
+        PhotosPicker(selection: $photoItem, matching: .images) {
+            tile("Size chart photo", symbol: "text.viewfinder", busy: readingPhoto)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.tint)
+        .disabled(readingPhoto)
+    }
+
+    @ViewBuilder
+    private var statusMessages: some View {
+        ForEach([barcodeError, photoError].compactMap { $0 }, id: \.self) { message in
+            Label(message, systemImage: "exclamationmark.triangle")
+                .font(.subheadline).foregroundStyle(.orange)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

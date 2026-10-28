@@ -53,7 +53,7 @@ public struct ProductPageParser: Sendable {
         }
 
         let og = Self.metaTags(in: html)
-        if info.name == nil { info.name = og["og:title"] }
+        if info.name == nil { info.name = og["og:title"] ?? Self.firstHeading(in: html) }
         if info.brand == nil { info.brand = og["product:brand"] ?? og["og:brand"] }
         if info.imageURL == nil, let img = og["og:image"] { info.imageURL = URL(string: img, relativeTo: pageURL)?.absoluteURL }
 
@@ -190,6 +190,16 @@ public struct ProductPageParser: Sendable {
     }
 
     // MARK: - Meta tags
+
+    /// The page's main heading, for stores with neither JSON-LD nor OpenGraph.
+    static func firstHeading(in html: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: #"<h1\b[^>]*>(.*?)</h1>"#, options: [.caseInsensitive, .dotMatchesLineSeparators]),
+              let m = regex.firstMatch(in: html, range: NSRange(location: 0, length: (html as NSString).length)) else { return nil }
+        let text = (html as NSString).substring(with: m.range(at: 1))
+            .replacingOccurrences(of: #"<[^>]+>"#, with: " ", options: .regularExpression)
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return text.isEmpty || text.count > 150 ? nil : decodeEntities(text)
+    }
 
     static func metaTags(in html: String) -> [String: String] {
         let pattern = #"<meta\s+[^>]*>"#

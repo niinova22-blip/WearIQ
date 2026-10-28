@@ -20,6 +20,11 @@ name: Release to TestFlight
 
 on:
   workflow_dispatch:
+    inputs:
+      unlock_premium:
+        description: Unlock Premium for testers (turn OFF for App Store submission builds)
+        type: boolean
+        default: true
   push:
     tags: ["v*"]
 
@@ -67,6 +72,11 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier ${{ vars.ADMOB_APP_ID }}" WearIQ/Info.plist
           /usr/libexec/PlistBuddy -c "Set :WQBannerAdUnitID ${{ vars.ADMOB_BANNER_ID }}" WearIQ/Info.plist
           /usr/libexec/PlistBuddy -c "Set :WQInterstitialAdUnitID ${{ vars.ADMOB_INTERSTITIAL_ID }}" WearIQ/Info.plist
+          # Tag pushes (store submissions) never unlock Premium.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.unlock_premium }}" = "true" ]; then
+            /usr/libexec/PlistBuddy -c "Add :WQUnlockPremium bool true" WearIQ/Info.plist
+            echo "::notice::Premium unlocked for testers in this build"
+          fi
 
       - name: Archive (unsigned)
         run: |

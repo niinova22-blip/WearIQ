@@ -30,7 +30,7 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
     /// Returns how many such controls the page has.
     static let openSizeGuides = #"""
     (() => {
-      const re = /(beden tablosu|beden rehberi|ürün boyutları|ürün ölçüleri|ölçü tablosu|size guide|size chart|product measurements|^ölçüler$|^olculer$|^measurements$|^dimensions$)/i;
+      const re = /(beden tablosu|beden.{0,12}rehber|numara rehberi|ürün boyutları|ürün ölçüleri|ölçü tablosu|ölçüm tablosu|olcum tablosu|size guide|size chart|product measurements|^ölçüler$|^olculer$|^measurements$|^dimensions$)/i;
       // Size recommender widgets ask questions instead of showing a chart.
       const widget = /recommend|fitanalytics|fit-finder|truefit|sizebay/i;
       for (const el of document.querySelectorAll('button, [role="button"], [role="tab"], summary, a')) {

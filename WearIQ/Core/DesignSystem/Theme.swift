@@ -13,6 +13,10 @@ enum Theme {
     static let cornerRadius: CGFloat = 20
     static let cardBackground = Color(uiColor: .secondarySystemGroupedBackground)
     static let screenBackground = Color(uiColor: .systemGroupedBackground)
+    /// Brand gradient for primary actions and highlights.
+    static let accentGradient = LinearGradient(
+        colors: [Color(red: 0.42, green: 0.40, blue: 0.98), Color(red: 0.30, green: 0.24, blue: 0.80)],
+        startPoint: .topLeading, endPoint: .bottomTrailing)
 }
 
 extension FitSeverity {
@@ -37,47 +41,43 @@ extension FitSeverity {
     }
 }
 
-/// Large rounded card used across the app.
+/// Large rounded card used across the app: soft shadow in light mode, hairline edge in dark.
 struct Card<Content: View>: View {
     @ViewBuilder var content: Content
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) { content }
-            .padding(Theme.Spacing.m)
+            .padding(Theme.Spacing.m + 2)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                    .strokeBorder(.white.opacity(scheme == .dark ? 0.07 : 0), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(scheme == .dark ? 0 : 0.06), radius: 14, y: 6)
     }
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: 54)
             .foregroundStyle(.white)
-            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .opacity(configuration.isPressed ? 0.85 : 1)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(.snappy(duration: 0.15), value: configuration.isPressed)
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(isEnabled ? AnyShapeStyle(Theme.accentGradient) : AnyShapeStyle(Color.gray.opacity(0.45)))
+            }
+            .shadow(color: Color.accentColor.opacity(isEnabled ? 0.35 : 0), radius: 14, y: 6)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+            .sensoryFeedback(.impact(weight: .light), trigger: configuration.isPressed) { _, pressed in pressed }
     }
 }
 
 extension ButtonStyle where Self == PrimaryButtonStyle {
     static var primary: PrimaryButtonStyle { PrimaryButtonStyle() }
-}
-
-/// Honest marker for features that are planned but not built yet. Shown instead of
-/// fake buttons so nothing in the UI pretends to work when it doesn't.
-struct ComingInPhase: View {
-    let phase: Int
-
-    var body: some View {
-        Label("Coming in phase \(phase)", systemImage: "hammer")
-            .font(.footnote.weight(.medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(.quaternary, in: Capsule())
-            .accessibilityLabel(Text("Not available yet, planned for phase \(phase)"))
-    }
 }

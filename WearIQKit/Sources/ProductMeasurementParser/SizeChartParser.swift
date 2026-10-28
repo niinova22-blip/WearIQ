@@ -59,6 +59,18 @@ extension ParsedSizeChart {
             for i in chart.sizes.indices { chart.sizes[i].values[dim] = nil }
             chart.warnings.append(.implausibleColumnDropped(dim))
         }
+        // Values no garment has are something else (a person's height, weight, a price).
+        let maximum: [GarmentDimension: Double] = [.chest: 180, .waist: 180, .hip: 190, .thigh: 100,
+                                                    .shoulderWidth: 70, .sleeveLength: 100, .bodyLength: 120,
+                                                    .inseam: 110, .outseam: 135]
+        for (dim, max) in maximum {
+            guard let maxVal = chart.sizes.compactMap({ $0.values[dim]?.cm }).max(), maxVal > max else { continue }
+            for i in chart.sizes.indices { chart.sizes[i].values[dim] = nil }
+            chart.warnings.append(.implausibleColumnDropped(dim))
+        }
+        // A size label appears once in a real chart.
+        var seen = Set<String>()
+        chart.sizes = chart.sizes.filter { seen.insert($0.label.uppercased()).inserted }
         chart.sizes.removeAll { $0.values.isEmpty }
         // Garment lengths (sleeve, garment length, shoulder seam to seam) only appear in
         // charts that measure the garment; charts with girths only describe bodies.

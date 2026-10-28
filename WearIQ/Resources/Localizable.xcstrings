@@ -3870,6 +3870,106 @@
           }
         }
       }
+    },
+    "Will it fit you?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sana olacak mı?"
+          }
+        }
+      }
+    },
+    "Paste a product link and see your size in seconds.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün linkini yapıştır, bedenini saniyeler içinde gör."
+          }
+        }
+      }
+    },
+    "Check a garment": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet kontrol et"
+          }
+        }
+      }
+    },
+    "Unlimited": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sınırsız"
+          }
+        }
+      }
+    },
+    "%lld/%lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "Set up": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oluştur"
+          }
+        }
+      }
+    },
+    "%lld measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ölçü"
+          }
+        }
+      }
+    },
+    "Check the fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyumu kontrol et"
+          }
+        }
+      }
+    },
+    "Reading the product…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün okunuyor…"
+          }
+        }
+      }
+    },
+    "Size chart photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu fotoğrafı"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

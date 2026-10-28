@@ -88,17 +88,34 @@ struct FitResultView: View {
         }
     }
 
+    /// Big recommended size up front, the explanation underneath.
     private var recommendationCard: some View {
-        Card {
-            Text(analysis.recommendation.headline)
-                .font(.title2.bold())
-            if case let .size(_, confidence) = analysis.recommendation {
-                Label(confidence.title, systemImage: "gauge.medium")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            HStack(alignment: .center, spacing: Theme.Spacing.m) {
+                if case let .size(label, _) = analysis.recommendation {
+                    Text(label)
+                        .font(.system(size: 44, weight: .bold, design: .rounded))
+                        .minimumScaleFactor(0.5)
+                        .foregroundStyle(.white)
+                        .frame(width: 92, height: 92)
+                        .background(Theme.accentGradient, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                        .shadow(color: Color.accentColor.opacity(0.35), radius: 16, y: 8)
+                        .accessibilityHidden(true)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(analysis.recommendation.headline)
+                        .font(.title3.bold())
+                        .fixedSize(horizontal: false, vertical: true)
+                    if case let .size(_, confidence) = analysis.recommendation {
+                        Label(confidence.title, systemImage: "gauge.with.dots.needle.67percent")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             Text(FitExplanation.text(for: analysis))
-                .font(.body)
+                .font(.callout)
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if let chartNote {
                 Label(chartNote, systemImage: "info.circle")
@@ -106,6 +123,10 @@ struct FitResultView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(Theme.Spacing.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .transition(.scale(scale: 0.96).combined(with: .opacity))
     }
 
     private var sizePicker: some View {
@@ -114,7 +135,7 @@ struct FitResultView: View {
                 ForEach(analysis.sizes, id: \.label) { size in
                     let isRecommended = size.label == analysis.recommendedSize?.label
                     Button {
-                        withAnimation(.snappy) { selectedLabel = size.label }
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selectedLabel = size.label }
                     } label: {
                         VStack(spacing: 2) {
                             Text(size.label).font(.headline)
@@ -124,8 +145,10 @@ struct FitResultView: View {
                         }
                         .frame(minWidth: 52, minHeight: 48)
                         .padding(.horizontal, Theme.Spacing.s)
-                        .background(selectedLabel == size.label ? Color.accentColor : Theme.cardBackground,
-                                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(selectedLabel == size.label ? AnyShapeStyle(Theme.accentGradient) : AnyShapeStyle(Theme.cardBackground))
+                        }
                         .foregroundStyle(selectedLabel == size.label ? .white : .primary)
                     }
                     .accessibilityLabel(isRecommended ? Text("Size \(size.label), recommended") : Text("Size \(size.label)"))
@@ -170,10 +193,11 @@ struct FitResultView: View {
                 }
                 .padding(.top, Theme.Spacing.s)
             }
-            Label(isSaved ? LocalizedStringKey("Analysis saved to your history.") : LocalizedStringKey("Not saved and no scan used, because data was missing."),
-                  systemImage: isSaved ? "checkmark" : "info.circle")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            if !isSaved {
+                Label("Not saved and no scan used, because data was missing.", systemImage: "info.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

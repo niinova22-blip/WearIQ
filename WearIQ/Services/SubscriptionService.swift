@@ -105,6 +105,11 @@ final class SubscriptionService {
         await refreshEntitlements()
     }
 
+    /// Tester builds can unlock Premium without a purchase: the release workflow sets
+    /// WQUnlockPremium for TestFlight builds and must leave it off for App Store
+    /// submissions, or App Review couldn't see the paywall.
+    static let testerUnlock = Bundle.main.object(forInfoDictionaryKey: "WQUnlockPremium") as? Bool ?? false
+
     func refreshEntitlements() async {
         var records: [EntitlementRecord] = []
         for await result in Transaction.currentEntitlements {
@@ -112,7 +117,7 @@ final class SubscriptionService {
             records.append(EntitlementRecord(productID: t.productID, expirationDate: t.expirationDate,
                                              revocationDate: t.revocationDate, isUpgraded: t.isUpgraded))
         }
-        let premium = PremiumStatus.isPremium(records, now: Date())
+        let premium = Self.testerUnlock || PremiumStatus.isPremium(records, now: Date())
         if premium != isPremium {
             isPremium = premium
         }

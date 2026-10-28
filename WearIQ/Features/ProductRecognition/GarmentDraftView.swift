@@ -109,9 +109,6 @@ struct GarmentDraftView: View {
             if let gtin = draft.info.gtin {
                 LabeledContent("Barcode", value: gtin)
             }
-            if !draft.info.availableSizes.isEmpty {
-                LabeledContent("Sizes on the page", value: draft.info.availableSizes.joined(separator: ", "))
-            }
         }
     }
 
@@ -132,8 +129,6 @@ struct GarmentDraftView: View {
             }
         } header: {
             Text("Garment")
-        } footer: {
-            Text("Fit and stretch change how much room the garment needs. Check the product description if unsure.")
         }
     }
 
@@ -166,8 +161,6 @@ struct GarmentDraftView: View {
             }
         } header: {
             Text("Size chart")
-        } footer: {
-            Text("Body measurements describe the person a size is made for (\"fits chest 96–100\"). Garment measurements are the clothing itself, laid flat.")
         }
     }
 

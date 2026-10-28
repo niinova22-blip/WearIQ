@@ -11,10 +11,11 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Theme.Spacing.m) {
-                quotaCard
-                profileCard
-                Button("Scan a garment") { selectTab(.scan) }
-                    .buttonStyle(.primary)
+                heroCard
+                HStack(spacing: Theme.Spacing.m) {
+                    quotaTile
+                    profileTile
+                }
                 if !analyses.isEmpty { recentCard }
             }
             .padding(Theme.Spacing.m)
@@ -28,47 +29,64 @@ struct HomeView: View {
         .onChange(of: analyses.count) { remaining = container.quota.remaining() }
     }
 
-    private var quotaCard: some View {
+    private var heroCard: some View {
+        Button { selectTab(.scan) } label: {
+            VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+                Image(systemName: "tshirt.fill")
+                    .font(.system(size: 30, weight: .semibold))
+                Text("Will it fit you?")
+                    .font(.system(.title, design: .rounded, weight: .bold))
+                Text("Paste a product link and see your size in seconds.")
+                    .font(.callout)
+                    .opacity(0.85)
+                HStack {
+                    Text("Check a garment").font(.headline)
+                    Image(systemName: "arrow.right")
+                }
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, 10)
+                .background(.white.opacity(0.2), in: Capsule())
+            }
+            .foregroundStyle(.white)
+            .padding(Theme.Spacing.l)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.accentGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .shadow(color: Color.accentColor.opacity(0.3), radius: 20, y: 10)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .light), trigger: analyses.count)
+    }
+
+    private var quotaTile: some View {
         Card {
             if container.isPremium {
-                Label("Premium: unlimited scans", systemImage: "crown.fill")
-                    .font(.headline)
+                Image(systemName: "crown.fill").font(.title2).foregroundStyle(.yellow)
+                Text("Premium").font(.headline)
+                Text("Unlimited").font(.footnote).foregroundStyle(.secondary)
             } else {
-                Text("Scans left today")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Text("\(remaining) / \(container.quota.dailyLimit)")
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                Text("\(remaining)/\(container.quota.dailyLimit)")
+                    .font(.system(.title, design: .rounded, weight: .bold))
                     .contentTransition(.numericText())
-                Text("Free scans renew every day.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                Text("Scans left today").font(.footnote).foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)
     }
 
-    private var profileCard: some View {
-        Card {
-            Text("Body profile")
-                .font(.headline)
-            if let profile = profiles.first?.profile {
-                Text("\(profile.values.count) measurements saved")
-                    .foregroundStyle(.secondary)
-                let rough = profile.values.values.filter { $0.confidence == .low }.count
-                if rough > 0 {
-                    Label("\(rough) values are rough estimates. Correct them with a tape measure for better advice.",
-                          systemImage: "ruler")
-                        .font(.footnote)
-                        .foregroundStyle(.orange)
+    private var profileTile: some View {
+        Button { selectTab(.profile) } label: {
+            Card {
+                Image(systemName: "figure.stand").font(.title2).foregroundStyle(.tint)
+                if let profile = profiles.first?.profile {
+                    Text("Body profile").font(.headline)
+                    Text("\(profile.values.count) measurements").font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Text("Body profile").font(.headline)
+                    Text("Set up").font(.footnote).foregroundStyle(.tint)
                 }
-                Button("View measurements") { selectTab(.profile) }
-            } else {
-                Text("No measurements yet. Scan your body or enter values with a tape measure.")
-                    .foregroundStyle(.secondary)
-                Button("Set up body profile") { selectTab(.profile) }
             }
         }
+        .buttonStyle(.plain)
     }
 
     private var recentCard: some View {
