@@ -53,43 +53,43 @@ import Testing
         #expect(service.products.allSatisfy { !$0.displayPrice.isEmpty })
     }
 
+    // Purchases are simulated with SKTestSession.buyProduct: product.purchase() needs a
+    // UI scene to confirm in and can't complete inside a hosted unit test.
+
     @Test func purchaseActivatesPremiumAndExpiryEndsIt() async throws {
         let session = try makeSession()
         let service = SubscriptionService()
         var mirrored: [Bool] = []
         service.onPremiumChange = { mirrored.append($0) }
-        await service.loadProducts()
-        let monthly = try #require(service.products.first { $0.id == PremiumProduct.monthly })
 
-        #expect(await service.purchase(monthly) == .purchased)
+        _ = try await session.buyProduct(identifier: PremiumProduct.monthly)
+        await service.refreshEntitlements()
         #expect(service.isPremium)
         #expect(mirrored.last == true)
 
         try session.expireSubscription(productIdentifier: PremiumProduct.monthly)
         await service.refreshEntitlements()
         #expect(!service.isPremium)
+        #expect(mirrored.last == false)
     }
 
     @Test func refundRevokesPremium() async throws {
         let session = try makeSession()
         let service = SubscriptionService()
-        await service.loadProducts()
-        let yearly = try #require(service.products.first { $0.id == PremiumProduct.yearly })
-        #expect(await service.purchase(yearly) == .purchased)
+        let transaction = try await session.buyProduct(identifier: PremiumProduct.yearly)
+        await service.refreshEntitlements()
+        #expect(service.isPremium)
 
-        let transaction = try #require(session.allTransactions().first)
-        try session.refundTransaction(identifier: UInt(transaction.identifier))
+        try session.refundTransaction(identifier: UInt(transaction.id))
         await service.refreshEntitlements()
         #expect(!service.isPremium)
     }
 
-    @Test func restoreKeepsExistingEntitlement() async throws {
-        _ = try makeSession()
-        let service = SubscriptionService()
-        await service.loadProducts()
-        let monthly = try #require(service.products.first { $0.id == PremiumProduct.monthly })
-        _ = await service.purchase(monthly)
+    @Test func entitlementSurvivesNewServiceInstance() async throws {
+        let session = try makeSession()
+        _ = try await session.buyProduct(identifier: PremiumProduct.monthly)
 
+        // Simulates an app relaunch / restore: a fresh service reads current entitlements.
         let fresh = SubscriptionService()
         await fresh.refreshEntitlements()
         #expect(fresh.isPremium)

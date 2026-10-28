@@ -53,6 +53,10 @@ jobs:
             -default-test-execution-time-allowance 60 \
             -maximum-test-execution-time-allowance 120 \
             -quiet CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
+      - name: Show test failures
+        if: failure()
+        run: |
+          xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact | python3 -c "import json,sys; d=json.load(sys.stdin); [print(f['testIdentifierString'], '::', f['failureText']) for f in d.get('testFailures', [])]" || true
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v5
