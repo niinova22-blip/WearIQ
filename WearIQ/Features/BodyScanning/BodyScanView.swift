@@ -34,7 +34,7 @@ struct BodyScanView: View {
                 } label: {
                     Image(systemName: model.voiceGuidance ? "speaker.wave.2.fill" : "speaker.slash.fill")
                 }
-                .accessibilityLabel(Text(model.voiceGuidance ? "Turn voice guidance off" : "Turn voice guidance on"))
+                .accessibilityLabel(model.voiceGuidance ? Text("Turn voice guidance off") : Text("Turn voice guidance on"))
             }
         }
         .task { await model.start() }

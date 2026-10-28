@@ -47,7 +47,7 @@ struct OnboardingView: View {
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
 
-            Button(page == pages.count - 1 ? "Get started" : "Continue") {
+            Button(page == pages.count - 1 ? LocalizedStringKey("Get started") : LocalizedStringKey("Continue")) {
                 if page < pages.count - 1 {
                     withAnimation { page += 1 }
                 } else {

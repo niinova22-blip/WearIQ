@@ -27,6 +27,10 @@ final class AppContainer {
         self.fitEngine = fitEngine
     }
 
+    func analysisCoordinator() -> FitAnalysisCoordinator {
+        FitAnalysisCoordinator(context: modelContainer.mainContext, quota: quota, engine: fitEngine, isPremium: isPremium)
+    }
+
     static func live() -> AppContainer {
         AppContainer(modelContainer: PersistenceController.makeContainer(inMemory: false),
                      quotaStore: KeychainQuotaStore(),
@@ -45,6 +49,7 @@ final class AppContainer {
     func deleteAllPersonalData() throws {
         let context = modelContainer.mainContext
         try context.delete(model: StoredBodyProfile.self)
+        try context.delete(model: SavedAnalysis.self)
         try context.save()
         onboardingCompleted = false
     }

@@ -65,6 +65,10 @@ targets:
         product: WearIQCore
       - package: WearIQKit
         product: ScanQuota
+      - package: WearIQKit
+        product: FitEngine
+      - package: WearIQKit
+        product: ProductMeasurementParser
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

@@ -31,6 +31,7 @@ docs/VALIDATION.md     Ölçüm doğruluğu test protokolü
 | 1. Proje, mimari, tasarım sistemi, navigasyon | ✅ |
 | 4. FIT Engine çekirdeği (öne alındı) | ✅ motor + testler. Bolluk payları henüz kalibre edilmedi |
 | 5. Günlük kota yöneticisi | ✅ motor + Keychain deposu. Paywall bağlantısı yok |
-| 2. Onboarding, kamera, vücut tarama, ölçü düzeltme | ✅ kod yazıldı. Gerçek cihazda henüz denenmedi |
-| 3. Ürün linki, barkod, OCR | ⏳ Beden tablosu ayrıştırıcı hazır, Vision OCR/link servisi yok |
+| 2. Onboarding, kamera, vücut tarama, ölçü düzeltme | ✅ CI'da derleniyor, testler geçiyor. Gerçek cihazda henüz denenmedi |
+| 3. Ürün linki, barkod, OCR, kıyafet taslağı | ✅ Barkoddan ürün kataloğu eşlemesi yok (ücretsiz katalog yok) |
+| 5. (kısmi) Sonuç ekranı + kota bağlantısı | ✅ Geçmiş listesi henüz yok |
 | 6–8 | ⏳ |

@@ -1,0 +1,315 @@
+import FitEngine
+import PhotosUI
+import ProductMeasurementParser
+import SwiftUI
+import WearIQCore
+
+struct GarmentDraftView: View {
+    @Environment(AppContainer.self) private var container
+    @Bindable var draft: GarmentDraft
+    @AppStorage("fitPreference") private var preference: FitPreference = .asDesigned
+
+    @State private var photoItem: PhotosPickerItem?
+    @State private var readingPhoto = false
+    @State private var errorMessage: String?
+    @State private var newSizeLabel = ""
+    @State private var result: ResultRoute?
+    @State private var showQuotaLimit = false
+    @State private var showNeedsProfile = false
+
+    struct ResultRoute: Hashable, Identifiable {
+        let id = UUID()
+        let analysis: FitAnalysis
+        let saved: Bool
+    }
+
+    var body: some View {
+        Form {
+            productSection
+            garmentSection
+            chartSection
+            if draft.category != nil { sizeSections }
+            addSizeSection
+            issuesSection
+        }
+        .navigationTitle("Garment details")
+        .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) { analyzeBar }
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            Task { await readChart(from: item) }
+        }
+        .navigationDestination(item: $result) { route in
+            FitResultView(productName: draft.info.name, brand: draft.info.brand, imageURL: draft.info.imageURL,
+                          pageURL: draft.info.pageURL, analysis: route.analysis, isSaved: route.saved)
+        }
+        .sheet(isPresented: $showQuotaLimit) { QuotaLimitView() }
+        .alert("Body profile needed", isPresented: $showNeedsProfile) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Scan your body or enter your measurements in the Profile tab first.")
+        }
+        .alert("Something went wrong", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    // MARK: Sections
+
+    private var productSection: some View {
+        Section("Product") {
+            TextField("Product name", text: Binding(get: { draft.info.name ?? "" }, set: { draft.info.name = $0.isEmpty ? nil : $0 }))
+            TextField("Brand", text: Binding(get: { draft.info.brand ?? "" }, set: { draft.info.brand = $0.isEmpty ? nil : $0 }))
+            if let gtin = draft.info.gtin {
+                LabeledContent("Barcode", value: gtin)
+            }
+            if !draft.info.availableSizes.isEmpty {
+                LabeledContent("Sizes on the page", value: draft.info.availableSizes.joined(separator: ", "))
+            }
+        }
+    }
+
+    private var garmentSection: some View {
+        Section {
+            Picker("Category", selection: $draft.category) {
+                Text("Choose").tag(GarmentCategory?.none)
+                ForEach(GarmentCategory.allCases, id: \.self) { Text($0.title).tag(GarmentCategory?.some($0)) }
+            }
+            Picker("Fit", selection: $draft.fitStyle) {
+                ForEach(FitStyle.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            Picker("Stretch", selection: $draft.stretch) {
+                ForEach(FabricStretch.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            Picker("Fabric thickness", selection: $draft.thickness) {
+                ForEach(FabricThickness.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+        } header: {
+            Text("Garment")
+        } footer: {
+            Text("Fit and stretch change how much room the garment needs. Check the product description if unsure.")
+        }
+    }
+
+    private var chartSection: some View {
+        Section {
+            Picker("The size chart shows", selection: $draft.chartKind) {
+                Text("Choose").tag(SizeChartKind?.none)
+                Text("Body measurements").tag(SizeChartKind?.some(.body))
+                Text("Garment measurements").tag(SizeChartKind?.some(.garment))
+            }
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                if readingPhoto {
+                    HStack { ProgressView(); Text("Reading size chart…") }
+                } else {
+                    Label("Read size chart from a photo", systemImage: "text.viewfinder")
+                }
+            }
+            .disabled(readingPhoto)
+            ForEach(Array(draft.chartWarnings.enumerated()), id: \.offset) { _, warning in
+                if let text = warning.message {
+                    Label(text, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(.orange)
+                }
+            }
+        } header: {
+            Text("Size chart")
+        } footer: {
+            Text("Body measurements describe the person a size is made for (\"fits chest 96–100\"). Garment measurements are the clothing itself, laid flat.")
+        }
+    }
+
+    @ViewBuilder
+    private var sizeSections: some View {
+        if let category = draft.category {
+            ForEach(Array(draft.sizes.enumerated()), id: \.element.label) { index, size in
+                Section {
+                    ForEach(GarmentDraft.dimensions(for: category), id: \.self) { dim in
+                        HStack {
+                            Text(dim.title)
+                            Spacer()
+                            TextField("—", value: Binding<Double?>(
+                                get: { draft.sizes.indices.contains(index) ? draft.sizes[index].values[dim]?.cm : nil },
+                                set: { draft.setValue($0, size: index, dimension: dim) }
+                            ), format: .number.precision(.fractionLength(0...1)))
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 90)
+                            Text("cm").foregroundStyle(.secondary)
+                        }
+                    }
+                    Button("Remove size \(size.label)", role: .destructive) { draft.removeSize(at: index) }
+                } header: {
+                    Text("Size \(size.label)")
+                }
+            }
+        }
+    }
+
+    private var addSizeSection: some View {
+        Section {
+            HStack {
+                TextField("New size, e.g. M or 32", text: $newSizeLabel)
+                    .textInputAutocapitalization(.characters)
+                Button("Add") {
+                    draft.addSize(label: newSizeLabel)
+                    newSizeLabel = ""
+                }
+                .disabled(newSizeLabel.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        } footer: {
+            if draft.sizes.isEmpty, !draft.info.availableSizes.isEmpty {
+                Button("Add sizes from the product page") {
+                    draft.info.availableSizes.forEach { draft.addSize(label: $0) }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var issuesSection: some View {
+        let issues = draft.issues
+        if !issues.isEmpty {
+            Section("Still needed") {
+                ForEach(Array(issues.enumerated()), id: \.offset) { _, issue in
+                    Label(issue.message, systemImage: "circle.dashed")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private var analyzeBar: some View {
+        VStack(spacing: Theme.Spacing.xs) {
+            Button("Analyze fit", action: analyze)
+                .buttonStyle(.primary)
+                .disabled(draft.spec == nil)
+            if !container.isPremium {
+                Text("\(container.quota.remaining()) free scans left today")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(Theme.Spacing.m)
+        .background(.bar)
+    }
+
+    // MARK: Actions
+
+    private func readChart(from item: PhotosPickerItem) async {
+        readingPhoto = true
+        defer { readingPhoto = false; photoItem = nil }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else {
+                throw OCRError.unreadableImage
+            }
+            draft.apply(try await OCRService().readSizeChart(from: image))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func analyze() {
+        do {
+            switch try container.analysisCoordinator().run(draft, preference: preference) {
+            case let .analyzed(saved):
+                if let analysis = saved.analysis { result = ResultRoute(analysis: analysis, saved: true) }
+            case let .insufficientData(analysis):
+                result = ResultRoute(analysis: analysis, saved: false)
+            case .needsBodyProfile:
+                showNeedsProfile = true
+            case .quotaExhausted:
+                showQuotaLimit = true
+            case .invalidDraft:
+                break // button is disabled in this state
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Display names
+
+extension GarmentCategory {
+    var title: String {
+        switch self {
+        case .shirt: String(localized: "Shirt")
+        case .tshirt: String(localized: "T-shirt")
+        case .jacket: String(localized: "Jacket")
+        case .pants: String(localized: "Trousers")
+        }
+    }
+}
+
+extension FitStyle {
+    var title: String {
+        switch self {
+        case .slim: String(localized: "Slim fit")
+        case .regular: String(localized: "Regular fit")
+        case .relaxed: String(localized: "Relaxed fit")
+        case .oversized: String(localized: "Oversized")
+        }
+    }
+}
+
+extension FabricStretch {
+    var title: String {
+        switch self {
+        case .none: String(localized: "No stretch")
+        case .low: String(localized: "A little stretch")
+        case .medium: String(localized: "Stretchy")
+        case .high: String(localized: "Very stretchy")
+        }
+    }
+}
+
+extension FabricThickness {
+    var title: String {
+        switch self {
+        case .thin: String(localized: "Thin")
+        case .medium: String(localized: "Medium")
+        case .thick: String(localized: "Thick")
+        }
+    }
+}
+
+extension GarmentDimension {
+    var title: String {
+        switch self {
+        case .shoulderWidth: String(localized: "Shoulder width")
+        case .sleeveLength: String(localized: "Sleeve length")
+        case .chest: String(localized: "Chest")
+        case .waist: String(localized: "Waist")
+        case .hip: String(localized: "Hip")
+        case .thigh: String(localized: "Thigh")
+        case .bodyLength: String(localized: "Length")
+        case .inseam: String(localized: "Inseam")
+        case .outseam: String(localized: "Outseam")
+        }
+    }
+}
+
+extension GarmentDraft.Issue {
+    var message: String {
+        switch self {
+        case .missingCategory: String(localized: "Choose the garment category.")
+        case .missingChartKind: String(localized: "Say whether the chart shows body or garment measurements.")
+        case .noSizes: String(localized: "Add at least one size with its measurements.")
+        case let .missingCriticalMeasurement(dim): String(localized: "Add the \(dim.title.lowercased()) measurement for at least one size.")
+        }
+    }
+}
+
+extension ParsedSizeChart.Warning {
+    var message: String? {
+        switch self {
+        case .unitAssumedCentimetres: String(localized: "No unit was found; values were read as centimetres.")
+        case .chartKindUnknown: nil // covered by the "size chart shows" picker
+        case let .halfMeasurementsDoubled(dim): String(localized: "\(dim.title) was given as a half (flat) measurement and has been doubled.")
+        case let .rowValueCountMismatch(label): String(localized: "Couldn't read the row \"\(label)\". Please enter it manually.")
+        case let .unrecognisedRow(label): String(localized: "Ignored the row \"\(label)\".")
+        }
+    }
+}

@@ -1450,6 +1450,1066 @@
           }
         }
       }
+    },
+    "That doesn't look like a product link.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu bir ürün bağlantısına benzemiyor."
+          }
+        }
+      }
+    },
+    "This store doesn't allow its product pages to be read automatically.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu mağaza ürün sayfalarının otomatik okunmasına izin vermiyor."
+          }
+        }
+      }
+    },
+    "No product information was found on this page.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu sayfada ürün bilgisi bulunamadı."
+          }
+        }
+      }
+    },
+    "You appear to be offline.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İnternet bağlantın yok gibi görünüyor."
+          }
+        }
+      }
+    },
+    "The image couldn't be opened.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Görsel açılamadı."
+          }
+        }
+      }
+    },
+    "No text was found in the image.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Görselde metin bulunamadı."
+          }
+        }
+      }
+    },
+    "No size chart was recognised. Crop the image to the table or enter the values manually.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu tanınamadı. Görseli tabloya göre kırp veya değerleri elle gir."
+          }
+        }
+      }
+    },
+    "Shoulders": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz"
+          }
+        }
+      }
+    },
+    "Sleeves": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kol"
+          }
+        }
+      }
+    },
+    "Length": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boy"
+          }
+        }
+      }
+    },
+    "Hips": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalça"
+          }
+        }
+      }
+    },
+    "Thighs": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üst bacak"
+          }
+        }
+      }
+    },
+    "Leg length": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paça boyu"
+          }
+        }
+      }
+    },
+    "Outer leg length": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dış bacak boyu"
+          }
+        }
+      }
+    },
+    "Tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar"
+          }
+        }
+      }
+    },
+    "Slightly tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hafif dar"
+          }
+        }
+      }
+    },
+    "Good fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İdeal"
+          }
+        }
+      }
+    },
+    "Slightly loose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hafif bol"
+          }
+        }
+      }
+    },
+    "Loose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bol"
+          }
+        }
+      }
+    },
+    "Short": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısa"
+          }
+        }
+      }
+    },
+    "Long": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uzun"
+          }
+        }
+      }
+    },
+    "Not enough data": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yetersiz veri"
+          }
+        }
+      }
+    },
+    "about %lld cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yaklaşık %lld cm"
+          }
+        }
+      }
+    },
+    "about %lld–%lld cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yaklaşık %lld–%lld cm"
+          }
+        }
+      }
+    },
+    "Your profile lacks this measurement": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profilinde bu ölçü yok"
+          }
+        }
+      }
+    },
+    "The size chart lacks this measurement": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosunda bu ölçü yok"
+          }
+        }
+      }
+    },
+    "Recommended size: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önerilen beden: %@"
+          }
+        }
+      }
+    },
+    "Between %@ and %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ile %@ arasında"
+          }
+        }
+      }
+    },
+    "Not enough data for a size recommendation": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden önerisi için yeterli veri yok"
+          }
+        }
+      }
+    },
+    "We need the %@ measurement for both you and the garment to recommend a size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden önerebilmek için hem senin hem kıyafetin %@ ölçüsü gerekiyor."
+          }
+        }
+      }
+    },
+    "%@ and %@ fit about equally well. Pick %@ for a closer fit or %@ for more room.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ve %2$@ yaklaşık aynı derecede uygun. Daha oturan bir görünüm için %3$@, daha rahatı için %4$@ seç."
+          }
+        }
+      }
+    },
+    "%@ suits your %@ best.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ beden %2$@ için en uygunu."
+          }
+        }
+      }
+    },
+    "%@: %@%@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$@%3$@."
+          }
+        }
+      }
+    },
+    "%@ would likely be tight in the %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ beden %2$@ bölgesinde muhtemelen dar gelir."
+          }
+        }
+      }
+    },
+    "Some of your measurements are estimates, so treat this as a guide.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bazı ölçülerin tahmini, bu yüzden sonucu yol gösterici olarak değerlendir."
+          }
+        }
+      }
+    },
+    "Fit analysis": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyum analizi"
+          }
+        }
+      }
+    },
+    "Garment": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet"
+          }
+        }
+      }
+    },
+    "Size %@, recommended": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beden, önerilen"
+          }
+        }
+      }
+    },
+    "Size %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beden"
+          }
+        }
+      }
+    },
+    "Size %@, region by region": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beden, bölge bölge"
+          }
+        }
+      }
+    },
+    "Open product page": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün sayfasını aç"
+          }
+        }
+      }
+    },
+    "Add to wardrobe": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gardıroba ekle"
+          }
+        }
+      }
+    },
+    "Analysis saved to your history.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analiz geçmişine kaydedildi."
+          }
+        }
+      }
+    },
+    "Not saved and no scan used, because data was missing.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veri eksik olduğu için kaydedilmedi ve hak kullanılmadı."
+          }
+        }
+      }
+    },
+    "Garment details": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet bilgileri"
+          }
+        }
+      }
+    },
+    "Body profile needed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut profili gerekli"
+          }
+        }
+      }
+    },
+    "Scan your body or enter your measurements in the Profile tab first.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce Profil sekmesinden vücudunu tara veya ölçülerini gir."
+          }
+        }
+      }
+    },
+    "Something went wrong": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir şeyler ters gitti"
+          }
+        }
+      }
+    },
+    "Product": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün"
+          }
+        }
+      }
+    },
+    "Product name": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün adı"
+          }
+        }
+      }
+    },
+    "Brand": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marka"
+          }
+        }
+      }
+    },
+    "Barcode": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barkod"
+          }
+        }
+      }
+    },
+    "Sizes on the page": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sayfadaki bedenler"
+          }
+        }
+      }
+    },
+    "Category": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kategori"
+          }
+        }
+      }
+    },
+    "Choose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seç"
+          }
+        }
+      }
+    },
+    "Stretch": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esneklik"
+          }
+        }
+      }
+    },
+    "Fabric thickness": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumaş kalınlığı"
+          }
+        }
+      }
+    },
+    "Fit and stretch change how much room the garment needs. Check the product description if unsure.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalıp ve esneklik, kıyafetin ne kadar bolluk payı gerektirdiğini değiştirir. Emin değilsen ürün açıklamasına bak."
+          }
+        }
+      }
+    },
+    "The size chart shows": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu neyi gösteriyor"
+          }
+        }
+      }
+    },
+    "Body measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut ölçüleri"
+          }
+        }
+      }
+    },
+    "Garment measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet ölçüleri"
+          }
+        }
+      }
+    },
+    "Reading size chart…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu okunuyor…"
+          }
+        }
+      }
+    },
+    "Read size chart from a photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosunu fotoğraftan oku"
+          }
+        }
+      }
+    },
+    "Size chart": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu"
+          }
+        }
+      }
+    },
+    "Body measurements describe the person a size is made for (\"fits chest 96–100\"). Garment measurements are the clothing itself, laid flat.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut ölçüleri bedenin hangi kişiye uygun olduğunu anlatır (\"göğüs 96–100'e uygun\"). Kıyafet ölçüleri ise düz serilmiş giysinin kendi ölçüleridir."
+          }
+        }
+      }
+    },
+    "Remove size %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bedeni kaldır"
+          }
+        }
+      }
+    },
+    "New size, e.g. M or 32": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeni beden, ör. M veya 32"
+          }
+        }
+      }
+    },
+    "Add sizes from the product page": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün sayfasındaki bedenleri ekle"
+          }
+        }
+      }
+    },
+    "Still needed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eksik bilgiler"
+          }
+        }
+      }
+    },
+    "Analyze fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyumu analiz et"
+          }
+        }
+      }
+    },
+    "%lld free scans left today": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün %lld ücretsiz tarama hakkın kaldı"
+          }
+        }
+      }
+    },
+    "Shirt": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gömlek"
+          }
+        }
+      }
+    },
+    "T-shirt": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tişört"
+          }
+        }
+      }
+    },
+    "Jacket": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ceket"
+          }
+        }
+      }
+    },
+    "Trousers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantolon"
+          }
+        }
+      }
+    },
+    "Slim fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slim fit"
+          }
+        }
+      }
+    },
+    "Regular fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regular fit"
+          }
+        }
+      }
+    },
+    "Relaxed fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relaxed fit"
+          }
+        }
+      }
+    },
+    "Oversized": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oversize"
+          }
+        }
+      }
+    },
+    "No stretch": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esnemez"
+          }
+        }
+      }
+    },
+    "A little stretch": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Az esnek"
+          }
+        }
+      }
+    },
+    "Stretchy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esnek"
+          }
+        }
+      }
+    },
+    "Very stretchy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok esnek"
+          }
+        }
+      }
+    },
+    "Thin": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İnce"
+          }
+        }
+      }
+    },
+    "Medium": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orta"
+          }
+        }
+      }
+    },
+    "Thick": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalın"
+          }
+        }
+      }
+    },
+    "Sleeve length": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kol boyu"
+          }
+        }
+      }
+    },
+    "Choose the garment category.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet kategorisini seç."
+          }
+        }
+      }
+    },
+    "Say whether the chart shows body or garment measurements.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tablonun vücut mu kıyafet ölçüsü mü gösterdiğini belirt."
+          }
+        }
+      }
+    },
+    "Add at least one size with its measurements.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüleriyle birlikte en az bir beden ekle."
+          }
+        }
+      }
+    },
+    "Add the %@ measurement for at least one size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En az bir beden için %@ ölçüsünü ekle."
+          }
+        }
+      }
+    },
+    "No unit was found; values were read as centimetres.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birim bulunamadı, değerler santimetre olarak okundu."
+          }
+        }
+      }
+    },
+    "%@ was given as a half (flat) measurement and has been doubled.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ yarım (düz) ölçü olarak verilmişti, iki katına çıkarıldı."
+          }
+        }
+      }
+    },
+    "Couldn't read the row \"%@\". Please enter it manually.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" satırı okunamadı. Lütfen elle gir."
+          }
+        }
+      }
+    },
+    "Ignored the row \"%@\".": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" satırı yok sayıldı."
+          }
+        }
+      }
+    },
+    "Enter a size chart manually": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosunu elle gir"
+          }
+        }
+      }
+    },
+    "Read product": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürünü oku"
+          }
+        }
+      }
+    },
+    "You can still continue: add a screenshot of the store's size chart or type the measurements.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yine de devam edebilirsin: mağazanın beden tablosunun ekran görüntüsünü ekle veya ölçüleri yaz."
+          }
+        }
+      }
+    },
+    "Continue with this link": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu bağlantıyla devam et"
+          }
+        }
+      }
+    },
+    "Open barcode scanner": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barkod tarayıcıyı aç"
+          }
+        }
+      }
+    },
+    "Barcode scanning isn't available on this device or camera access is off.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu cihazda barkod tarama kullanılamıyor veya kamera erişimi kapalı."
+          }
+        }
+      }
+    },
+    "Choose a photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf seç"
+          }
+        }
+      }
+    },
+    "You've used today's free scans": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünkü ücretsiz taramalarını kullandın"
+          }
+        }
+      }
+    },
+    "Free scans renew tomorrow. Your saved analyses stay available and opening them doesn't use a scan.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ücretsiz taramalar yarın yenilenir. Kayıtlı analizlerin erişilebilir kalır ve onları açmak hak tüketmez."
+          }
+        }
+      }
+    },
+    "Premium: unlimited scans, no ads": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium: sınırsız tarama, reklamsız"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapat"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
