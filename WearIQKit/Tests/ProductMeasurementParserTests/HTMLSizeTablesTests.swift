@@ -33,4 +33,31 @@ import WearIQCore
         #expect(chart.sizes.map(\.label) == ["30", "32"])
         #expect(chart.sizes[1].values[.hip]?.cm == 100)
     }
+
+    @Test func flatLayGuideWithSleeveWidthAndBracketedSizes() throws {
+        // Rendered "product dimensions" panel of a large fashion store (jacket).
+        let html = """
+        <table><tr><th>BÖLGE</th><th>S (US S)</th><th>M (US M)</th><th>L (US L)</th><th>XL (US XL)</th></tr>
+        <tr><td>Göğüs</td><td>57.0</td><td>59.0</td><td>61.0</td><td>63.0</td></tr>
+        <tr><td>Önden uzunluk</td><td>64.5</td><td>66.0</td><td>67.5</td><td>69.0</td></tr>
+        <tr><td>Kol uzunluğu</td><td>59.0</td><td>60.0</td><td>61.0</td><td>62.0</td></tr>
+        <tr><td>Kol genişliği</td><td>20.5</td><td>21.5</td><td>22.5</td><td>23.5</td></tr>
+        <tr><td>Sırt genişliği</td><td>51.0</td><td>52.0</td><td>53.0</td><td>54.0</td></tr></table>
+        """
+        let chart = try #require(HTMLSizeTables.sections(in: html).first).chart
+        #expect(chart.sizes.map(\.label) == ["S", "M", "L", "XL"])
+        let m = try #require(chart.sizes.first { $0.label == "M" })
+        #expect(m.values[.chest]?.cm == 118)
+        #expect(m.values[.sleeveLength]?.cm == 60)
+        #expect(m.values[.bodyLength]?.cm == 66)
+        #expect(chart.kind == .garment)
+    }
+
+    @Test func bracketedVariantSizesAreShortened() {
+        let html = #"<script type="application/ld+json">{"@type":"ProductGroup","name":"Yünlü Regular Fit Ceket","hasVariant":[{"@type":"Product","size":"S (US S)"},{"@type":"Product","size":"M (US M)"}]}</script>"#
+        let info = ProductPageParser().parse(html: html, pageURL: nil)
+        #expect(info.availableSizes == ["S", "M"])
+        #expect(info.category == .jacket)
+        #expect(info.fitStyle == .regular)
+    }
 }

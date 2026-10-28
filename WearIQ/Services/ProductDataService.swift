@@ -1,6 +1,7 @@
 import Foundation
 import ProductMeasurementParser
 import UIKit
+import WearIQCore
 
 /// A product page plus its size chart, when the store links one as an image.
 struct ProductLookup {
@@ -59,6 +60,7 @@ struct ProductDataService: ProductDataServicing {
     func product(at url: URL) async throws -> ProductLookup {
         var info: ProductInfo?
         var directError: Error?
+        var renderedPage: WebPageLoader.Page?
         do {
             info = try await fetchDirect(url)
         } catch ProductDataError.offline {
@@ -70,14 +72,38 @@ struct ProductDataService: ProductDataServicing {
         // Many stores render sizes and charts with JavaScript, or answer plain HTTP
         // clients with a browser check. Load those like Safari does.
         if info.map(Self.lacksSizeData) ?? true {
-            let rendered = await WebPageLoader.load(url) { page in
-                !Self.lacksSizeData(parser.parse(html: page.html, pageURL: page.url))
-            }.map { parser.parse(html: $0.html, pageURL: $0.url) }
-            if let rendered, !rendered.isEmpty { info = info.map { Self.merge($0, rendered) } ?? rendered }
+            let page = await WebPageLoader.load(url) { page in
+                let info = parser.parse(html: page.html, pageURL: page.url)
+                if !info.sizeChartSections.isEmpty || !info.sizeChartImageURLs.isEmpty { return true }
+                // Product found but no size guide button after a few seconds: nothing more will come.
+                return !info.isEmpty && page.sizeGuideControls == 0 && page.elapsed > 5
+            }
+            if let page {
+                let rendered = parser.parse(html: page.html, pageURL: page.url)
+                if !rendered.isEmpty { info = info.map { Self.merge($0, rendered) } ?? rendered }
+                renderedPage = page
+            }
         }
 
         guard let info else { throw directError ?? ProductDataError.notAProductPage }
-        return ProductLookup(info: info, chart: await readChart(info))
+        if let chart = await readChart(info) { return ProductLookup(info: info, chart: chart) }
+        return ProductLookup(info: info, chart: await readRenderedGuide(renderedPage, fit: info.fitStyle))
+    }
+
+    /// Last resorts for size guides that aren't tables or linked images: the page's
+    /// visible text, then OCR of a snapshot of the opened guide.
+    private func readRenderedGuide(_ page: WebPageLoader.Page?, fit: FitStyle?) async -> SizeChartScan? {
+        guard let page else { return nil }
+        let text = page.text.replacingOccurrences(of: "\t", with: "  ")
+        let chart = SizeChartParser().parse(text)
+        if chart.sizes.count >= 2 {
+            let section = SizeChartSection(title: nil, fitStyle: nil, chart: chart)
+            return SizeChartScan(sections: [section], chosen: section)
+        }
+        if let snapshot = page.snapshot {
+            return try? await chartReader.readSections(from: snapshot, fit: fit)
+        }
+        return nil
     }
 
     private func fetchDirect(_ url: URL) async throws -> ProductInfo {
@@ -101,8 +127,9 @@ struct ProductDataService: ProductDataServicing {
         return info
     }
 
+    /// No size chart yet: the rendered page may have one behind a button.
     static func lacksSizeData(_ info: ProductInfo) -> Bool {
-        info.isEmpty || (info.sizeChartSections.isEmpty && info.sizeChartImageURLs.isEmpty && info.availableSizes.isEmpty)
+        info.isEmpty || (info.sizeChartSections.isEmpty && info.sizeChartImageURLs.isEmpty)
     }
 
     /// Fills what the plain fetch missed from the rendered page.

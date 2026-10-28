@@ -109,7 +109,8 @@ public enum SizeTableReader {
 
     /// Words that head columns we read, plus columns we deliberately skip; both count
     /// as columns so that values stay aligned.
-    private static let skippedColumns = ["etek", "yaka", "collar", "neck", "hem", "paca genisligi", "bilek", "kapanis"]
+    private static let skippedColumns = ["etek", "yaka", "collar", "neck", "hem", "paca genisligi", "bilek", "kapanis",
+                                         "kol genis", "sirt genis", "sleeve width", "back width", "pazu"]
 
     static func columns(_ boxes: [TextBox]) -> [Column] {
         var cols: [Column] = []
@@ -136,7 +137,7 @@ public enum SizeTableReader {
 
     static func sizeLabel(_ row: [TextBox]) -> String? {
         guard let first = row.first else { return nil }
-        let t = first.text.trimmingCharacters(in: .whitespaces).uppercased()
+        let t = (first.text.components(separatedBy: " (").first ?? first.text).trimmingCharacters(in: .whitespaces).uppercased()
         if SizeChartParser.letterSizes.contains(t) { return t }
         // Numeric sizes (EU 34–60, waist 26–44) followed by measurements.
         if let n = Int(t), (24...64).contains(n), row.count >= 3 { return t }

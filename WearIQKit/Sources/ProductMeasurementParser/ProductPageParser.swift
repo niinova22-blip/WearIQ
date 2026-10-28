@@ -149,7 +149,9 @@ public struct ProductPageParser: Sendable {
         info.material = string(p["material"])
 
         var sizes: [String] = []
-        func add(_ s: String?) {
+        func add(_ raw: String?) {
+            // "S (US S)" → "S": keep the store's own label, drop the conversion in brackets.
+            let s = raw.map { $0.components(separatedBy: " (").first ?? $0 }?.trimmingCharacters(in: .whitespaces)
             guard let s, !s.isEmpty, !sizes.contains(s) else { return }
             sizes.append(s)
         }

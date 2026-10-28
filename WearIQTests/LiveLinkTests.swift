@@ -15,7 +15,7 @@ struct LiveLinkTests {
         "https://www.mavi.com/kahverengi-gomlek/p/0212083-70219",
         "https://www.boyner.com.tr/the-north-face-nf0a8g0r8k21-m-quest-jacket-lacivert-erkek-spor-mont-p-15851698",
         "https://www.amazon.com.tr/dp/B0HBZ8KJND",
-        "https://www.zara.com/tr/tr/man-shirts-l737.html",
+        "https://www.zara.com/tr/tr/yun-karisimli-regular-fit-ceket-p08281765.html?v1=557405763&v2=1885841",
         "https://www.defacto.com.tr/erkek-gomlek",
     ]
 

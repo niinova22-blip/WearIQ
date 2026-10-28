@@ -174,7 +174,13 @@ public struct SizeChartParser: Sendable {
     ]
 
     /// Order matters: "iç bacak" must win over the generic "boy"/"length".
+    /// Rows that name a body part but measure something we don't use (sleeve or leg
+    /// opening width, back width); without this "Kol genişliği" would be read as sleeve length.
+    private static let notMeasured = ["kol genis", "sleeve width", "bicep", "pazu", "paca genis", "leg opening",
+                                      "etek genis", "bilek", "sirt genis", "back width", "yaka"]
+
     static func dimension(for line: String) -> GarmentDimension? {
+        if notMeasured.contains(where: line.contains) { return nil }
         for (dim, keys) in [labelMap[6], labelMap[7]] + labelMap where keys.contains(where: line.contains) {
             // "Boy" alone in a height-based chart means body height, which we don't map.
             if dim == .bodyLength, line.contains("vucut boyu") || line.contains("height") { return nil }
