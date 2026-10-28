@@ -76,7 +76,7 @@ struct ProductDataService: ProductDataServicing {
                 let info = parser.parse(html: page.html, pageURL: page.url)
                 if !info.sizeChartSections.isEmpty || !info.sizeChartImageURLs.isEmpty { return true }
                 // Product found but no size guide button after a few seconds: nothing more will come.
-                return !info.isEmpty && page.sizeGuideControls == 0 && page.elapsed > 5
+                return !info.isEmpty && page.sizeGuideControls == 0 && page.elapsed > 8
             }
             if let page {
                 let rendered = parser.parse(html: page.html, pageURL: page.url)

@@ -30,11 +30,14 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
     /// Returns how many such controls the page has.
     static let openSizeGuides = #"""
     (() => {
-      const re = /(beden tablosu|beden rehberi|ürün boyutları|ürün ölçüleri|ölçü tablosu|size guide|size chart|product measurements|measurements)/i;
-      for (const el of document.querySelectorAll('button, [role="button"], summary, a')) {
+      const re = /(beden tablosu|beden rehberi|ürün boyutları|ürün ölçüleri|ölçü tablosu|size guide|size chart|product measurements|^ölçüler$|^olculer$|^measurements$|^dimensions$)/i;
+      // Size recommender widgets ask questions instead of showing a chart.
+      const widget = /recommend|fitanalytics|fit-finder|truefit|sizebay/i;
+      for (const el of document.querySelectorAll('button, [role="button"], [role="tab"], summary, a')) {
         if (el.dataset.wqOpened) continue;
         const text = (el.innerText || el.getAttribute('aria-label') || '').trim();
         if (!text || text.length > 40 || !re.test(text)) continue;
+        if (widget.test((el.className || '').toString() + ' ' + (el.getAttribute('data-qa-action') || ''))) continue;
         const href = el.getAttribute('href');
         if (el.tagName === 'A' && href && !href.startsWith('#') && !href.startsWith('javascript')) continue;
         el.dataset.wqOpened = '1';

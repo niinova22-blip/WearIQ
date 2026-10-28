@@ -99,8 +99,13 @@ final class GarmentDraft {
     /// so the user gets advice without typing a table. Returns false if the labels are unknown.
     @discardableResult
     func fillStandardChart(fallbackAudience: GarmentAudience?) -> Bool {
-        guard sizes.isEmpty || chartSource == .standard,
-              let chart = StandardSizeCharts.chart(for: info.availableSizes, category: category,
+        // Without the store's size list, use the usual range so the user still gets
+        // their standard size.
+        let labels = info.availableSizes.isEmpty
+            ? (category == .pants ? ["28", "29", "30", "31", "32", "33", "34", "36", "38"] : ["XS", "S", "M", "L", "XL", "XXL"])
+            : info.availableSizes
+        guard sizes.isEmpty || chartSource == .standard, category != nil,
+              let chart = StandardSizeCharts.chart(for: labels, category: category,
                                                    audience: info.audience ?? fallbackAudience) else { return false }
         apply(chart)
         chartSource = .standard
