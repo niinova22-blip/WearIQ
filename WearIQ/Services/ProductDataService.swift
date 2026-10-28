@@ -57,6 +57,30 @@ struct ProductDataService: ProductDataServicing {
     }
 
     func product(at url: URL) async throws -> ProductLookup {
+        var info: ProductInfo?
+        var directError: Error?
+        do {
+            info = try await fetchDirect(url)
+        } catch ProductDataError.offline {
+            throw ProductDataError.offline
+        } catch {
+            directError = error
+        }
+
+        // Many stores render sizes and charts with JavaScript, or answer plain HTTP
+        // clients with a browser check. Load those like Safari does.
+        if info.map(Self.lacksSizeData) ?? true {
+            let rendered = await WebPageLoader.load(url) { page in
+                !Self.lacksSizeData(parser.parse(html: page.html, pageURL: page.url))
+            }.map { parser.parse(html: $0.html, pageURL: $0.url) }
+            if let rendered, !rendered.isEmpty { info = info.map { Self.merge($0, rendered) } ?? rendered }
+        }
+
+        guard let info else { throw directError ?? ProductDataError.notAProductPage }
+        return ProductLookup(info: info, chart: await readChart(info))
+    }
+
+    private func fetchDirect(_ url: URL) async throws -> ProductInfo {
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("text/html,application/xhtml+xml", forHTTPHeaderField: "Accept")
@@ -72,15 +96,41 @@ struct ProductDataService: ProductDataServicing {
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             throw ProductDataError.blocked(statusCode: http.statusCode)
         }
-        let html = String(decoding: data, as: UTF8.self)
-        let info = parser.parse(html: html, pageURL: response.url ?? url)
+        let info = parser.parse(html: String(decoding: data, as: UTF8.self), pageURL: response.url ?? url)
         if info.isEmpty { throw ProductDataError.notAProductPage }
-        return ProductLookup(info: info, chart: await readChart(info))
+        return info
+    }
+
+    static func lacksSizeData(_ info: ProductInfo) -> Bool {
+        info.isEmpty || (info.sizeChartSections.isEmpty && info.sizeChartImageURLs.isEmpty && info.availableSizes.isEmpty)
+    }
+
+    /// Fills what the plain fetch missed from the rendered page.
+    static func merge(_ a: ProductInfo, _ b: ProductInfo) -> ProductInfo {
+        var m = a
+        m.name = a.name ?? b.name
+        m.brand = a.brand ?? b.brand
+        m.imageURL = a.imageURL ?? b.imageURL
+        m.gtin = a.gtin ?? b.gtin
+        m.sku = a.sku ?? b.sku
+        m.categoryText = a.categoryText ?? b.categoryText
+        m.material = a.material ?? b.material
+        if a.availableSizes.isEmpty { m.availableSizes = b.availableSizes }
+        if a.sizeChartImageURLs.isEmpty { m.sizeChartImageURLs = b.sizeChartImageURLs }
+        if a.sizeChartSections.isEmpty { m.sizeChartSections = b.sizeChartSections }
+        m.category = a.category ?? b.category
+        m.fitStyle = a.fitStyle ?? b.fitStyle
+        m.stretch = a.stretch ?? b.stretch
+        return m
     }
 
     /// Tries the linked chart images in page order; a chart that can't be read is not an
     /// error, the user can still add one by hand.
     private func readChart(_ info: ProductInfo) async -> SizeChartScan? {
+        if !info.sizeChartSections.isEmpty {
+            return SizeChartScan(sections: info.sizeChartSections,
+                                 chosen: SizeTableReader.best(info.sizeChartSections, fit: info.fitStyle))
+        }
         for imageURL in info.sizeChartImageURLs.prefix(2) {
             var request = URLRequest(url: imageURL, timeoutInterval: 15)
             request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")

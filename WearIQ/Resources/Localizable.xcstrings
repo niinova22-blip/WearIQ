@@ -3800,6 +3800,16 @@
           }
         }
       }
+    },
+    "The chart's \"%@\" values can't be that measurement, so they were left out.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tablodaki \"%@\" değerleri bu ölçü olamaz, bu yüzden dahil edilmedi."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

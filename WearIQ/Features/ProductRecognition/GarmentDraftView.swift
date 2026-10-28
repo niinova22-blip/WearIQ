@@ -323,6 +323,7 @@ extension ParsedSizeChart.Warning {
         case let .halfMeasurementsDoubled(dim): String(localized: "\(dim.title) was given as a half (flat) measurement and has been doubled.")
         case let .rowValueCountMismatch(label): String(localized: "Couldn't read the row \"\(label)\". Please enter it manually.")
         case let .unrecognisedRow(label): String(localized: "Ignored the row \"\(label)\".")
+        case let .implausibleColumnDropped(dim): String(localized: "The chart's \"\(dim.title.lowercased())\" values can't be that measurement, so they were left out.")
         }
     }
 }

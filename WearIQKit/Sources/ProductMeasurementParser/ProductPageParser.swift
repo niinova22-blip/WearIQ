@@ -16,6 +16,8 @@ public struct ProductInfo: Equatable, Sendable {
     public var availableSizes: [String] = []
     /// Size chart images the store links from the page (read with on-device OCR).
     public var sizeChartImageURLs: [URL] = []
+    /// Size charts published as HTML tables in the page itself.
+    public var sizeChartSections: [SizeChartSection] = []
 
     /// Inferred from name/category; `nil` when the text doesn't say.
     public var category: GarmentCategory?
@@ -56,6 +58,7 @@ public struct ProductPageParser: Sendable {
 
         if info.availableSizes.isEmpty { info.availableSizes = Self.embeddedSizes(in: html) }
         info.sizeChartImageURLs = Self.sizeChartImages(in: html, base: pageURL)
+        info.sizeChartSections = HTMLSizeTables.sections(in: html)
 
         let text = [info.name, info.categoryText].compactMap { $0 }.joined(separator: " ")
         info.category = GarmentClassifier.category(from: text)

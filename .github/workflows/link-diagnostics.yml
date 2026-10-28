@@ -1,0 +1,29 @@
+name: Link diagnostics
+
+# Runs LiveLinkTests: real store links through the app's reader on a simulator,
+# printing what was found. For investigating store-specific failures.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  links:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - name: Select Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | grep -viE 'beta|rc' | sort -V | tail -1)"
+      - name: Generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Run live link tests
+        env:
+          TEST_RUNNER_WEARIQ_LIVE_LINKS: "1"
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          xcodebuild test -project WearIQ.xcodeproj -scheme WearIQ -destination "id=$UDID" \
+            -only-testing:WearIQTests/LiveLinkTests \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= 2>&1 \
+            | grep -E "^(OK|FAIL|  )|error:|Test run|passed|failed" || true

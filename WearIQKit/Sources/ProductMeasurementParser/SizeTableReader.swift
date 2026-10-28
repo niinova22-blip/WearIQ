@@ -185,25 +185,8 @@ public enum SizeTableReader {
             warnings.append(.unitAssumedCentimetres)
         }
 
-        var kind: SizeChartKind? = SizeChartParser.chartKind(fullText)
-        // Flat-lay charts give half girths: a 52 cm "chest" can only be half of a garment.
-        // One clearly halved girth means the whole table uses that convention.
-        let limits: [(GarmentDimension, Double)] = [(.chest, 70), (.waist, 55), (.hip, 65), (.thigh, 40)]
-        let isHalf = limits.contains { dim, limit in
-            sizes.compactMap { $0.values[dim]?.cm }.max().map { $0 < limit } ?? false
-        }
-        if isHalf {
-            for (dim, _) in limits where sizes.contains(where: { $0.values[dim] != nil }) {
-                for i in sizes.indices {
-                    if let v = sizes[i].values[dim] {
-                        sizes[i].values[dim] = MeasuredValue(cm: v.cm * 2, uncertaintyCm: v.uncertaintyCm * 2, source: .manual)
-                    }
-                }
-                warnings.append(.halfMeasurementsDoubled(dim))
-            }
-            kind = .garment
-        }
+        let kind = SizeChartParser.chartKind(fullText)
         if kind == nil { warnings.append(.chartKindUnknown) }
-        return ParsedSizeChart(sizes: sizes, kind: kind, unit: inch ? .inch : .cm, warnings: warnings)
+        return ParsedSizeChart(sizes: sizes, kind: kind, unit: inch ? .inch : .cm, warnings: warnings).plausibilityChecked()
     }
 }

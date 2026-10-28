@@ -18,6 +18,44 @@ public struct ParsedSizeChart: Equatable, Sendable {
         case halfMeasurementsDoubled(GarmentDimension)
         case rowValueCountMismatch(label: String)
         case unrecognisedRow(String)
+        /// A column whose values can't be that measurement (e.g. shoulder seam length
+        /// labelled "Omuz") was dropped.
+        case implausibleColumnDropped(GarmentDimension)
+    }
+}
+
+extension ParsedSizeChart {
+    /// Store charts follow different conventions; this normalises the common ones.
+    /// - Flat-lay charts give half girths: a 52 cm "chest" can only be half of a garment,
+    ///   and one clearly halved girth means the whole table uses that convention.
+    /// - Widths that no adult garment has are a different measurement under the same name.
+    public func plausibilityChecked() -> ParsedSizeChart {
+        var chart = self
+        let limits: [(GarmentDimension, Double)] = [(.chest, 70), (.waist, 55), (.hip, 65), (.thigh, 40)]
+        let isHalf = limits.contains { dim, limit in
+            chart.sizes.compactMap { $0.values[dim]?.cm }.max().map { $0 < limit } ?? false
+        }
+        if isHalf {
+            for (dim, _) in limits where chart.sizes.contains(where: { $0.values[dim] != nil }) {
+                for i in chart.sizes.indices {
+                    if let v = chart.sizes[i].values[dim] {
+                        chart.sizes[i].values[dim] = MeasuredValue(cm: v.cm * 2, uncertaintyCm: v.uncertaintyCm * 2, source: v.source)
+                    }
+                }
+                chart.warnings.append(.halfMeasurementsDoubled(dim))
+            }
+            chart.kind = .garment
+            chart.warnings.removeAll { $0 == .chartKindUnknown }
+        }
+        let minimum: [GarmentDimension: Double] = [.shoulderWidth: 25, .sleeveLength: 15, .bodyLength: 30, .inseam: 30, .outseam: 50]
+        for (dim, min) in minimum {
+            let vals = chart.sizes.compactMap { $0.values[dim]?.cm }
+            guard let maxVal = vals.max(), maxVal < min else { continue }
+            for i in chart.sizes.indices { chart.sizes[i].values[dim] = nil }
+            chart.warnings.append(.implausibleColumnDropped(dim))
+        }
+        chart.sizes.removeAll { $0.values.isEmpty }
+        return chart
     }
 }
 
@@ -88,7 +126,7 @@ public struct SizeChartParser: Sendable {
         let sizes = zip(sizeLabels, columns).compactMap { label, vals in
             vals.isEmpty ? nil : SizeEntry(label: label, values: vals)
         }
-        return ParsedSizeChart(sizes: sizes, kind: kind, unit: unit, warnings: warnings)
+        return ParsedSizeChart(sizes: sizes, kind: kind, unit: unit, warnings: warnings).plausibilityChecked()
     }
 
     /// Whether folded chart text says the values are body or garment measurements.
