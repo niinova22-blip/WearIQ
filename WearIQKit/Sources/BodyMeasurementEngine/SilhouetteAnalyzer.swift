@@ -54,7 +54,7 @@ public struct BinaryMask: Sendable {
 
 public enum SilhouetteError: Error, Equatable {
     case noPerson
-    case missingJoints([Joint])
+    case missingJoints([BodyJoint])
 }
 
 /// Finds the body levels (chest, waist, hip, thigh) on segmentation masks.
@@ -69,9 +69,9 @@ public struct SilhouetteAnalyzer: Sendable {
     public init() {}
 
     /// `joints` must be in mask pixel coordinates (y down).
-    public func analyzeFront(mask: BinaryMask, joints: [Joint: Point2D]) throws -> ScanObservation {
+    public func analyzeFront(mask: BinaryMask, joints: [BodyJoint: Point2D]) throws -> ScanObservation {
         let (top, floor) = try verticalExtent(mask)
-        let required: [Joint] = [.leftShoulder, .rightShoulder, .root]
+        let required: [BodyJoint] = [.leftShoulder, .rightShoulder, .root]
         let missing = required.filter { joints[$0] == nil }
         guard missing.isEmpty, let ls = joints[.leftShoulder], let rs = joints[.rightShoulder], let root = joints[.root] else {
             throw SilhouetteError.missingJoints(missing)

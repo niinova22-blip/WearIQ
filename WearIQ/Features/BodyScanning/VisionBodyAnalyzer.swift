@@ -17,7 +17,7 @@ enum VisionAnalysisError: LocalizedError {
 /// Thin wrapper around Apple Vision. Converts Vision's normalised, bottom-left-origin
 /// coordinates into the y-down coordinate systems the measurement engine uses.
 struct VisionBodyAnalyzer {
-    private static let jointMap: [VNHumanBodyPoseObservation.JointName: Joint] = [
+    private static let jointMap: [VNHumanBodyPoseObservation.JointName: BodyJoint] = [
         .nose: .nose, .neck: .neck,
         .leftShoulder: .leftShoulder, .rightShoulder: .rightShoulder,
         .leftElbow: .leftElbow, .rightElbow: .rightElbow,
@@ -28,13 +28,13 @@ struct VisionBodyAnalyzer {
     ]
 
     /// Fast pose-only detection for live guidance. Normalised coordinates, y down.
-    func detectJoints(in buffer: CVPixelBuffer) -> [Joint: DetectedJoint] {
+    func detectJoints(in buffer: CVPixelBuffer) -> [BodyJoint: DetectedJoint] {
         let request = VNDetectHumanBodyPoseRequest()
         let handler = VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up)
         guard (try? handler.perform([request])) != nil,
               let observation = request.results?.first,
               let points = try? observation.recognizedPoints(.all) else { return [:] }
-        var result: [Joint: DetectedJoint] = [:]
+        var result: [BodyJoint: DetectedJoint] = [:]
         for (name, joint) in Self.jointMap {
             guard let p = points[name] else { continue }
             result[joint] = DetectedJoint(Point2D(Double(p.location.x), 1 - Double(p.location.y)),
@@ -44,7 +44,7 @@ struct VisionBodyAnalyzer {
     }
 
     /// Full analysis of a captured still: segmentation mask plus joints in mask pixels.
-    func analyze(_ image: CGImage) throws -> (mask: BinaryMask, joints: [Joint: Point2D]) {
+    func analyze(_ image: CGImage) throws -> (mask: BinaryMask, joints: [BodyJoint: Point2D]) {
         let pose = VNDetectHumanBodyPoseRequest()
         let segmentation = VNGeneratePersonSegmentationRequest()
         segmentation.qualityLevel = .accurate
@@ -58,7 +58,7 @@ struct VisionBodyAnalyzer {
 
         let mask = try Self.binaryMask(from: maskBuffer)
         let points = try observation.recognizedPoints(.all)
-        var joints: [Joint: Point2D] = [:]
+        var joints: [BodyJoint: Point2D] = [:]
         for (name, joint) in Self.jointMap {
             guard let p = points[name], p.confidence >= 0.3 else { continue }
             joints[joint] = Point2D(Double(p.location.x) * Double(mask.width),

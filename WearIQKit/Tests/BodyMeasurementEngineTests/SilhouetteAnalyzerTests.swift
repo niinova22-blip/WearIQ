@@ -22,7 +22,7 @@ private func frontMask() -> BinaryMask {
     return BinaryMask(width: w, height: h, bits: bits)
 }
 
-private let frontJoints: [Joint: Point2D] = [
+private let frontJoints: [BodyJoint: Point2D] = [
     .leftShoulder: Point2D(150, 220), .rightShoulder: Point2D(250, 220),
     .root: Point2D(200, 480), .leftKnee: Point2D(180, 700), .rightKnee: Point2D(220, 700),
     .leftAnkle: Point2D(172, 880), .rightAnkle: Point2D(228, 880),
@@ -92,11 +92,11 @@ private let frontJoints: [Joint: Point2D] = [
 @Suite struct PoseGuidanceTests {
     let guidance = PoseGuidance()
 
-    private func joints(_ pairs: [Joint: (Double, Double)]) -> [Joint: DetectedJoint] {
+    private func joints(_ pairs: [BodyJoint: (Double, Double)]) -> [BodyJoint: DetectedJoint] {
         pairs.mapValues { DetectedJoint(Point2D($0.0, $0.1), confidence: 0.9) }
     }
 
-    private let goodFront: [Joint: (Double, Double)] = [
+    private let goodFront: [BodyJoint: (Double, Double)] = [
         .nose: (0.5, 0.12), .neck: (0.5, 0.18),
         .leftShoulder: (0.42, 0.2), .rightShoulder: (0.58, 0.2),
         .leftHip: (0.45, 0.5), .rightHip: (0.55, 0.5),

@@ -82,7 +82,7 @@ final class BodyScanViewModel {
         stage = .positioning(.noPerson)
     }
 
-    private func handle(_ joints: [Joint: DetectedJoint]) {
+    private func handle(_ joints: [BodyJoint: DetectedJoint]) {
         switch stage {
         case .positioning, .countdown: break
         default: return

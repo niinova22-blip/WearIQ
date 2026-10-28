@@ -37,7 +37,7 @@ public struct PoseGuidance: Sendable {
     public init() {}
 
     /// Returns `nil` when the pose is good enough to capture.
-    public func issue(for joints: [Joint: DetectedJoint], pose: ScanPose) -> PoseIssue? {
+    public func issue(for joints: [BodyJoint: DetectedJoint], pose: ScanPose) -> PoseIssue? {
         let j = joints.filter { $0.value.confidence >= minConfidence }.mapValues(\.point)
         guard !j.isEmpty else { return .noPerson }
 

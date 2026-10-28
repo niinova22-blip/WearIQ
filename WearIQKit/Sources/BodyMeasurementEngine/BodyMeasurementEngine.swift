@@ -8,7 +8,7 @@ public struct Point2D: Codable, Hashable, Sendable {
     func distance(to o: Point2D) -> Double { ((x - o.x) * (x - o.x) + (y - o.y) * (y - o.y)).squareRoot() }
 }
 
-public enum Joint: String, Codable, CaseIterable, Sendable {
+public enum BodyJoint: String, Codable, CaseIterable, Sendable {
     case nose, neck, leftShoulder, rightShoulder, leftElbow, rightElbow, leftWrist, rightWrist
     case root, leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle
 }
@@ -33,12 +33,12 @@ public struct ScanObservation: Codable, Hashable, Sendable {
     public var personHeightPx: Double
     /// Floor contact row.
     public var floorY: Double
-    public var joints: [Joint: Point2D]
+    public var joints: [BodyJoint: Point2D]
     public var levels: [BodyLevel: LevelSample]
     /// Highest row of the gap between the legs, if the mask shows it.
     public var crotchY: Double?
 
-    public init(personHeightPx: Double, floorY: Double, joints: [Joint: Point2D],
+    public init(personHeightPx: Double, floorY: Double, joints: [BodyJoint: Point2D],
                 levels: [BodyLevel: LevelSample], crotchY: Double? = nil) {
         self.personHeightPx = personHeightPx
         self.floorY = floorY
@@ -105,7 +105,7 @@ public struct BodyMeasurementEngine: Sendable {
             p[.shoulderWidth] = value(l.distance(to: r) * scale * calibration.shoulderJointToBiacromial, calibration.widthRelError)
         }
 
-        let arms = [(Joint.leftShoulder, Joint.leftElbow, Joint.leftWrist), (.rightShoulder, .rightElbow, .rightWrist)]
+        let arms = [(BodyJoint.leftShoulder, BodyJoint.leftElbow, BodyJoint.leftWrist), (.rightShoulder, .rightElbow, .rightWrist)]
             .compactMap { s, e, w -> Double? in
                 guard let s = j[s], let e = j[e], let w = j[w] else { return nil }
                 return s.distance(to: e) + e.distance(to: w)
