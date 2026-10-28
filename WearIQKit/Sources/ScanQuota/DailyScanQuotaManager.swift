@@ -119,7 +119,7 @@ public final class DailyScanQuotaManager {
     }
 
     /// FNV-1a 64-bit; stable across launches (unlike `Hasher`) and dependency-free.
-    static func digest(_ key: String) -> String {
+    public static func digest(_ key: String) -> String {
         var hash: UInt64 = 0xcbf29ce484222325
         for byte in key.utf8 {
             hash ^= UInt64(byte)

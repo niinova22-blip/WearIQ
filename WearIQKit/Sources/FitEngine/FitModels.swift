@@ -57,6 +57,11 @@ public struct FitAnalysis: Codable, Hashable, Sendable {
     /// In size chart order.
     public var sizes: [SizeFit]
 
+    public init(recommendation: SizeRecommendation, sizes: [SizeFit]) {
+        self.recommendation = recommendation
+        self.sizes = sizes
+    }
+
     /// Sizes ordered from best to worst; the alternatives list on the result screen.
     public var ranked: [SizeFit] {
         sizes.filter(\.hasCriticalData).sorted { $0.penalty < $1.penalty }
