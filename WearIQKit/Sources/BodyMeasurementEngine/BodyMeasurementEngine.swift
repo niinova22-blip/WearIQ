@@ -9,8 +9,8 @@ public struct Point2D: Codable, Hashable, Sendable {
 }
 
 public enum Joint: String, Codable, CaseIterable, Sendable {
-    case neck, leftShoulder, rightShoulder, leftElbow, rightElbow, leftWrist, rightWrist
-    case root, leftAnkle, rightAnkle
+    case nose, neck, leftShoulder, rightShoulder, leftElbow, rightElbow, leftWrist, rightWrist
+    case root, leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle
 }
 
 /// Horizontal body levels measured on the person segmentation mask.
@@ -22,6 +22,7 @@ public struct LevelSample: Codable, Hashable, Sendable {
     /// Image row (pixels, y grows downwards).
     public var y: Double
     /// Mask width at that row in pixels (front: width, side: depth).
+    /// For the thigh this is a single leg.
     public var extentPx: Double
     public init(y: Double, extentPx: Double) { self.y = y; self.extentPx = extentPx }
 }
@@ -143,9 +144,7 @@ public struct BodyMeasurementEngine: Sendable {
                 depth = width * (calibration.fallbackDepthRatio[level] ?? 0.8)
                 rel = calibration.girthRelErrorFrontOnly
             }
-            // Thigh is measured on one leg; the front mask row spans both legs.
-            let w = level == .thigh ? width / 2 : width
-            let girth = Self.ellipsePerimeter(a: w / 2, b: depth / 2) * (calibration.girthShapeFactor[level] ?? 1)
+            let girth = Self.ellipsePerimeter(a: width / 2, b: depth / 2) * (calibration.girthShapeFactor[level] ?? 1)
             let dim: BodyDimension = switch level {
             case .chest: .chest
             case .waist: .waist

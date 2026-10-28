@@ -17,7 +17,7 @@ private let front = ScanObservation(
         .chest: LevelSample(y: 550, extentPx: 330),
         .waist: LevelSample(y: 860, extentPx: 290),
         .hip: LevelSample(y: 1000, extentPx: 350),
-        .thigh: LevelSample(y: 1100, extentPx: 380),
+        .thigh: LevelSample(y: 1100, extentPx: 190),
     ],
     crotchY: 1080
 )

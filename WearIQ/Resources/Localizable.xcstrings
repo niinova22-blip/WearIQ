@@ -121,16 +121,6 @@
         }
       }
     },
-    "No measurements yet. Body scanning arrives in phase 2; you can then also enter values with a tape measure.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Henüz ölçü yok. Vücut tarama 2. aşamada geliyor; o zaman ölçüleri mezurayla da girebileceksin."
-          }
-        }
-      }
-    },
     "Coming in phase %lld": {
       "localizations": {
         "tr": {
@@ -467,6 +457,996 @@
           "stringUnit": {
             "state": "translated",
             "value": "WearIQ"
+          }
+        }
+      }
+    },
+    "No camera is available on this device.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu cihazda kullanılabilir kamera yok."
+          }
+        }
+      }
+    },
+    "The camera could not be started.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera başlatılamadı."
+          }
+        }
+      }
+    },
+    "No person was found in the photo.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafta kişi bulunamadı."
+          }
+        }
+      }
+    },
+    "The body outline could not be detected.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut hatları algılanamadı."
+          }
+        }
+      }
+    },
+    "Stand facing the phone, arms slightly away from your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefona dönük dur, kollarını vücudundan biraz uzak tut."
+          }
+        }
+      }
+    },
+    "Turn to your side.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yan dön."
+          }
+        }
+      }
+    },
+    "Great. Now turn to your side and keep your arms relaxed.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harika. Şimdi yan dön ve kollarını serbest bırak."
+          }
+        }
+      }
+    },
+    "We couldn't find you in the photo. Make sure your whole body is visible and the room is well lit.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seni fotoğrafta bulamadık. Tüm vücudunun göründüğünden ve ortamın aydınlık olduğundan emin ol."
+          }
+        }
+      }
+    },
+    "Some body points weren't visible. Wear fitted clothes and keep your whole body in frame.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bazı vücut noktaları görünmedi. Dar kıyafet giy ve tüm vücudunu kadrajda tut."
+          }
+        }
+      }
+    },
+    "Step into the frame.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kadraja gir."
+          }
+        }
+      }
+    },
+    "Your head is cut off. Step back or tilt the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başın kadrajın dışında. Geri çekil veya telefonu eğ."
+          }
+        }
+      }
+    },
+    "Your feet aren't visible. Step back.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayakların görünmüyor. Geri çekil."
+          }
+        }
+      }
+    },
+    "Step back a little.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz geri çekil."
+          }
+        }
+      }
+    },
+    "Come a little closer.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz yaklaş."
+          }
+        }
+      }
+    },
+    "Move to the centre of the frame.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kadrajın ortasına geç."
+          }
+        }
+      }
+    },
+    "Face the phone directly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefona tam karşıdan bak."
+          }
+        }
+      }
+    },
+    "Hold your arms slightly away from your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollarını vücudundan biraz uzak tut."
+          }
+        }
+      }
+    },
+    "Turn fully to your side.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamamen yan dön."
+          }
+        }
+      }
+    },
+    "Height": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boy"
+          }
+        }
+      }
+    },
+    "Shoulder width": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz genişliği"
+          }
+        }
+      }
+    },
+    "Arm length": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kol uzunluğu"
+          }
+        }
+      }
+    },
+    "Chest": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs"
+          }
+        }
+      }
+    },
+    "Waist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel"
+          }
+        }
+      }
+    },
+    "Hip": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalça"
+          }
+        }
+      }
+    },
+    "Thigh": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyluk"
+          }
+        }
+      }
+    },
+    "Torso length": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gövde uzunluğu"
+          }
+        }
+      }
+    },
+    "Inseam": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İç bacak"
+          }
+        }
+      }
+    },
+    "Outseam": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dış bacak"
+          }
+        }
+      }
+    },
+    "Barefoot, back against a wall, from floor to the top of your head.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalın ayak, sırtın duvara dönük, yerden başının tepesine kadar."
+          }
+        }
+      }
+    },
+    "Across your back, from the outer edge of one shoulder bone to the other.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sırtından, bir omuz kemiğinin dış ucundan diğerine."
+          }
+        }
+      }
+    },
+    "From the shoulder bone, over a slightly bent elbow, to the wrist bone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz kemiğinden, hafif bükülü dirsek üzerinden bilek kemiğine."
+          }
+        }
+      }
+    },
+    "Around the fullest part of your chest, under the armpits, tape level.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğsün en geniş yerinden, koltuk altlarının altından, mezura yere paralel."
+          }
+        }
+      }
+    },
+    "Around your natural waist, the narrowest part, without pulling in.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doğal bel hizandan, en ince yerinden, karnını içine çekmeden."
+          }
+        }
+      }
+    },
+    "Around the fullest part of your hips and seat, feet together.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalçanın en geniş yerinden, ayaklar bitişik."
+          }
+        }
+      }
+    },
+    "Around the fullest part of one thigh, just below the crotch.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir uyluğun en geniş yerinden, kasığın hemen altından."
+          }
+        }
+      }
+    },
+    "From the bone at the base of your neck down your back to your waist.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ensenin altındaki kemikten sırt boyunca bele kadar."
+          }
+        }
+      }
+    },
+    "From the crotch down the inside of the leg to the floor, barefoot.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalın ayak, kasıktan bacağın iç tarafı boyunca yere kadar."
+          }
+        }
+      }
+    },
+    "From your waist down the outside of the leg to the floor, barefoot.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalın ayak, belden bacağın dış tarafı boyunca yere kadar."
+          }
+        }
+      }
+    },
+    "High confidence": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yüksek güven"
+          }
+        }
+      }
+    },
+    "Medium confidence": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orta güven"
+          }
+        }
+      }
+    },
+    "Low confidence": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düşük güven"
+          }
+        }
+      }
+    },
+    "Scanned": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarandı"
+          }
+        }
+      }
+    },
+    "Measured": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüldü"
+          }
+        }
+      }
+    },
+    "Entered": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Girildi"
+          }
+        }
+      }
+    },
+    "Values marked low confidence are rough estimates from photos. For better size advice, measure them with a tape and tap to correct.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düşük güvenli değerler fotoğraftan yapılmış kaba tahminlerdir. Daha iyi beden önerisi için mezurayla ölç ve dokunarak düzelt."
+          }
+        }
+      }
+    },
+    "Photo-based values are estimates. Tap any value to replace it with your own measurement.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraftan çıkarılan değerler tahminidir. Kendi ölçünle değiştirmek için herhangi bir değere dokun."
+          }
+        }
+      }
+    },
+    "Your measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülerin"
+          }
+        }
+      }
+    },
+    "Without chest and waist we can't recommend sizes yet.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs ve bel ölçüsü olmadan henüz beden önerisi yapamayız."
+          }
+        }
+      }
+    },
+    "Save measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüleri kaydet"
+          }
+        }
+      }
+    },
+    "Couldn't save": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydedilemedi"
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekle"
+          }
+        }
+      }
+    },
+    "Value": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değer"
+          }
+        }
+      }
+    },
+    "cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cm"
+          }
+        }
+      }
+    },
+    "Remove value": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değeri kaldır"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vazgeç"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydet"
+          }
+        }
+      }
+    },
+    "Enter a number.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir sayı gir."
+          }
+        }
+      }
+    },
+    "Enter a value between %lld and %lld cm.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ile %lld cm arasında bir değer gir."
+          }
+        }
+      }
+    },
+    "Turn voice guidance off": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesli rehberi kapat"
+          }
+        }
+      }
+    },
+    "Turn voice guidance on": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesli rehberi aç"
+          }
+        }
+      }
+    },
+    "Front": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önden"
+          }
+        }
+      }
+    },
+    "Side": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yandan"
+          }
+        }
+      }
+    },
+    "Hold still…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıpırdama…"
+          }
+        }
+      }
+    },
+    "Taking photo in %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld saniye içinde fotoğraf çekilecek"
+          }
+        }
+      }
+    },
+    "Measuring on your device…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cihazında ölçülüyor…"
+          }
+        }
+      }
+    },
+    "Scan didn't work": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarama başarısız oldu"
+          }
+        }
+      }
+    },
+    "Try again": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekrar dene"
+          }
+        }
+      }
+    },
+    "Enter measurements manually": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüleri elle gir"
+          }
+        }
+      }
+    },
+    "Skip side photo (less accurate)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yan fotoğrafı atla (daha az doğru)"
+          }
+        }
+      }
+    },
+    "%lld cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cm"
+          }
+        }
+      }
+    },
+    "Your height": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boyun"
+          }
+        }
+      }
+    },
+    "Your height is the ruler for every other measurement, so please enter it accurately.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boyun diğer tüm ölçüler için cetvel görevi görür, lütfen doğru gir."
+          }
+        }
+      }
+    },
+    "How do you like clothes to fit?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafetlerin nasıl oturmasını seversin?"
+          }
+        }
+      }
+    },
+    "Fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oturuş"
+          }
+        }
+      }
+    },
+    "Snugger": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha dar"
+          }
+        }
+      }
+    },
+    "As designed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasarlandığı gibi"
+          }
+        }
+      }
+    },
+    "Looser": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha bol"
+          }
+        }
+      }
+    },
+    "About you": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hakkında"
+          }
+        }
+      }
+    },
+    "Prop the phone upright at waist height, about 2–3 m away.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonu bel hizasında dik olarak, yaklaşık 2–3 m uzağa yerleştir."
+          }
+        }
+      }
+    },
+    "Wear fitted clothes (e.g. sportswear) so your outline is visible.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut hatların görünsün diye dar kıyafet (ör. spor kıyafeti) giy."
+          }
+        }
+      }
+    },
+    "Use a bright room with a plain background.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aydınlık ve sade arka planlı bir ortam seç."
+          }
+        }
+      }
+    },
+    "Front photo: face the phone, arms slightly away from your body. Side photo: turn 90°.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ön fotoğraf: telefona dön, kolların vücudundan biraz uzakta. Yan fotoğraf: 90° dön."
+          }
+        }
+      }
+    },
+    "Voice cues guide you; the photo is taken automatically.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesli komutlar sana rehberlik eder, fotoğraf otomatik çekilir."
+          }
+        }
+      }
+    },
+    "Photos are analysed on this device and deleted right after measuring.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflar bu cihazda analiz edilir ve ölçümden hemen sonra silinir."
+          }
+        }
+      }
+    },
+    "Body scan": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tarama"
+          }
+        }
+      }
+    },
+    "Camera access is off. You can allow it in Settings or enter your measurements with a tape measure.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera erişimi kapalı. Ayarlar'dan izin verebilir veya ölçülerini mezurayla girebilirsin."
+          }
+        }
+      }
+    },
+    "Open Settings": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarları aç"
+          }
+        }
+      }
+    },
+    "Start scan": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taramayı başlat"
+          }
+        }
+      }
+    },
+    "Edit measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüleri düzenle"
+          }
+        }
+      }
+    },
+    "No body profile yet.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz vücut profili yok."
+          }
+        }
+      }
+    },
+    "Scan again": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden tara"
+          }
+        }
+      }
+    },
+    "Measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüler"
+          }
+        }
+      }
+    },
+    "Last updated %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son güncelleme: %@"
+          }
+        }
+      }
+    },
+    "%lld values are rough estimates. Correct them with a tape measure for better advice.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld değer kaba tahmin. Daha iyi öneri için mezurayla düzelt."
+          }
+        }
+      }
+    },
+    "View measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüleri gör"
+          }
+        }
+      }
+    },
+    "No measurements yet. Scan your body or enter values with a tape measure.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz ölçü yok. Vücudunu tara veya ölçüleri mezurayla gir."
+          }
+        }
+      }
+    },
+    "Set up body profile": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut profili oluştur"
+          }
+        }
+      }
+    },
+    "%@ ± %@ cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ± %@ cm"
+          }
+        }
+      }
+    },
+    "%@ cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ cm"
           }
         }
       }

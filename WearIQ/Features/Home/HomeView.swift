@@ -48,10 +48,18 @@ struct HomeView: View {
             if let profile = profiles.first?.profile {
                 Text("\(profile.values.count) measurements saved")
                     .foregroundStyle(.secondary)
+                let rough = profile.values.values.filter { $0.confidence == .low }.count
+                if rough > 0 {
+                    Label("\(rough) values are rough estimates. Correct them with a tape measure for better advice.",
+                          systemImage: "ruler")
+                        .font(.footnote)
+                        .foregroundStyle(.orange)
+                }
+                Button("View measurements") { selectTab(.profile) }
             } else {
-                Text("No measurements yet. Body scanning arrives in phase 2; you can then also enter values with a tape measure.")
+                Text("No measurements yet. Scan your body or enter values with a tape measure.")
                     .foregroundStyle(.secondary)
-                ComingInPhase(phase: 2)
+                Button("Set up body profile") { selectTab(.profile) }
             }
         }
     }

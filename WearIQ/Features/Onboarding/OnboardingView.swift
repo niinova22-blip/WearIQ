@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Phase 1 onboarding: benefits + privacy explanation. Height entry, camera permission
-/// and the front/side scan steps are added in phase 2.
+/// Benefits + privacy pages, then the profile setup flow (height, camera, scan, review).
 struct OnboardingView: View {
     @Environment(AppContainer.self) private var container
     @State private var page = 0
+    @State private var showSetup = false
 
     private struct Page {
         let symbol: String
@@ -51,12 +51,18 @@ struct OnboardingView: View {
                 if page < pages.count - 1 {
                     withAnimation { page += 1 }
                 } else {
-                    container.onboardingCompleted = true
+                    showSetup = true
                 }
             }
             .buttonStyle(.primary)
             .padding(.horizontal, Theme.Spacing.l)
             .padding(.bottom, Theme.Spacing.m)
+        }
+        .fullScreenCover(isPresented: $showSetup) {
+            ProfileSetupFlow {
+                showSetup = false
+                container.onboardingCompleted = true
+            }
         }
     }
 }
