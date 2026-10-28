@@ -8,7 +8,10 @@ import WearIQCore
 @testable import WearIQ
 
 @MainActor
-@Suite struct FitAnalysisCoordinatorTests {
+@Suite final class FitAnalysisCoordinatorTests {
+    /// A ModelContext crashes once its container is released, so the suite owns it.
+    private var container: ModelContainer?
+
     private func m(_ cm: Double) -> MeasuredValue { .manual(cm) }
 
     private func makeDraft(chest: Double? = 112, url: String = "https://shop.example.com/p/1") -> GarmentDraft {
@@ -29,6 +32,7 @@ import WearIQCore
 
     private func makeCoordinator(profile: BodyProfile?) throws -> (FitAnalysisCoordinator, ModelContext, DailyScanQuotaManager) {
         let container = PersistenceController.makeContainer(inMemory: true)
+        self.container = container
         let context = container.mainContext
         if let profile {
             context.insert(try StoredBodyProfile(profile: profile))
