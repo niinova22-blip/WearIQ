@@ -38,7 +38,9 @@ import WearIQCore
 
         #expect(joints.count >= 10)
         #expect(scanned[.shoulderWidth] != nil)
-        #expect(scanned[.chest] != nil)
+        // In this photo the arms touch the body; the torso rows are too wide and are
+        // dropped (the estimate fills chest/waist), instead of reporting a 190 cm chest.
+        #expect(scanned[.chest] == nil || (70...140).contains(scanned[.chest]!.cm))
         // Every dimension ends up with a value, all in a plausible adult range.
         for (d, range) in [(BodyDimension.chest, 70.0...140.0), (.waist, 55...130), (.hip, 75...140),
                            (.shoulderWidth, 30...55), (.inseam, 65...95), (.armLength, 45...75)] {
