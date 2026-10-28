@@ -105,15 +105,30 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.niinova.weariq.tests
 
+  WearIQUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: WearIQUITests
+    dependencies:
+      - target: WearIQ
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.niinova.weariq.uitests
+        TEST_TARGET_NAME: WearIQ
+
 schemes:
   WearIQ:
     build:
       targets:
         WearIQ: all
         WearIQTests: [test]
+        WearIQUITests: [test]
     run:
       storeKitConfiguration: WearIQ/Resources/WearIQ.storekit
     test:
       targets:
         - WearIQTests
+        - WearIQUITests
       gatherCoverageData: true

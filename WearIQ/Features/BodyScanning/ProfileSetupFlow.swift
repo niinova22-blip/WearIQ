@@ -6,10 +6,12 @@ import WearIQCore
 /// Height, weight & preferences → camera permission → front/side scan → review & correct.
 /// Used after onboarding and for re-scanning from the profile tab.
 struct ProfileSetupFlow: View {
+    /// The review step carries its profile. Keeping it in separate @State broke on device:
+    /// the destination was built from a stale body and showed an empty profile.
     enum Step: Hashable {
         case scanGuide
         case scan
-        case review
+        case review(BodyProfile)
     }
 
     let onFinished: () -> Void
@@ -19,7 +21,6 @@ struct ProfileSetupFlow: View {
     @AppStorage("bodySex") private var sexRaw: String = ""
     @AppStorage("fitPreference") private var fitPreference: FitPreference = .asDesigned
     @State private var path: [Step] = []
-    @State private var profile = BodyProfile()
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -32,12 +33,11 @@ struct ProfileSetupFlow: View {
                     ScanGuideView(onScan: { path.append(.scan) }, onManual: startManualEntry)
                 case .scan:
                     BodyScanView(body: bodyBasics) { scanned in
-                        profile = scanned
-                        path.append(.review)
+                        path.append(.review(scanned))
                     } onManualEntry: {
                         startManualEntry()
                     }
-                case .review:
+                case let .review(profile):
                     MeasurementReviewView(profile: profile, onSaved: onFinished)
                 }
             }
@@ -50,8 +50,7 @@ struct ProfileSetupFlow: View {
 
     /// Starts from height/weight estimates so the user corrects values instead of typing all of them.
     private func startManualEntry() {
-        profile = bodyBasics.estimatedProfile()
-        path.append(.review)
+        path.append(.review(bodyBasics.estimatedProfile()))
     }
 }
 
