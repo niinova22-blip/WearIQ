@@ -3610,6 +3610,16 @@
           }
         }
       }
+    },
+    "Virtual try-on is in development. It will only ever process your photo with your explicit permission.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sanal deneme geliştirme aşamasında. Fotoğrafın yalnızca açık iznin olursa işlenecek."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

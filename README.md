@@ -29,9 +29,13 @@ docs/VALIDATION.md     Ölçüm doğruluğu test protokolü
 | Aşama | Durum |
 |---|---|
 | 1. Proje, mimari, tasarım sistemi, navigasyon | ✅ |
-| 4. FIT Engine çekirdeği (öne alındı) | ✅ motor + testler. Bolluk payları henüz kalibre edilmedi |
-| 5. Günlük kota yöneticisi | ✅ motor + Keychain deposu. Paywall bağlantısı yok |
-| 2. Onboarding, kamera, vücut tarama, ölçü düzeltme | ✅ CI'da derleniyor, testler geçiyor. Gerçek cihazda henüz denenmedi |
+| 2. Onboarding, kamera, vücut tarama, ölçü düzeltme | ✅ CI'da derleniyor. Gerçek cihazda henüz denenmedi |
 | 3. Ürün linki, barkod, OCR, kıyafet taslağı | ✅ Barkoddan ürün kataloğu eşlemesi yok (ücretsiz katalog yok) |
-| 5. (kısmi) Sonuç ekranı + kota bağlantısı | ✅ Geçmiş listesi henüz yok |
-| 6–8 | ⏳ |
+| 4. FIT Engine | ✅ Bolluk payları henüz kalibre edilmedi (bkz. docs/VALIDATION.md) |
+| 5. Sonuç ekranı, geçmiş, günlük 4 tarama | ✅ |
+| 6. StoreKit 2 + AdMob | ✅ Satın alma akışı testleri yalnızca Mac'te çalışıyor. AdMob şu an Google test ID'leriyle |
+| 7. Gardırop, kombin motoru, ölçü takibi | ✅ |
+| 8. Sanal deneme | ⛔ Modül var, özellik bilinçli olarak kapalı (bulut modeli + açık rıza gerekir) |
+| 8. App Store hazırlığı | 🟡 TestFlight iş akışı ve metadata hazır. Team ID, API anahtarı ve AdMob ID'leri bekleniyor |
+
+Yayın adımları: `docs/APP_STORE.md`

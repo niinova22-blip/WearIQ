@@ -35,11 +35,6 @@ struct PaywallView: View {
                         ForEach(features, id: \.0) { symbol, text in
                             Label { Text(text) } icon: { Image(systemName: symbol).foregroundStyle(.tint) }
                         }
-                        HStack {
-                            Label("Virtual try-on", systemImage: "person.crop.rectangle")
-                                .foregroundStyle(.secondary)
-                            ComingInPhase(phase: 8)
-                        }
                     }
                     productButtons
                     if subscriptions.isPremium {

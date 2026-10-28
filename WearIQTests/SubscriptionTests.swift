@@ -37,6 +37,10 @@ import Testing
 /// Runs real StoreKit 2 purchase flows against the local WearIQ.storekit configuration.
 @MainActor
 @Suite(.serialized, .timeLimit(.minutes(1))) struct StoreKitFlowTests {
+    nonisolated static var purchaseTestsEnabled: Bool {
+        ProcessInfo.processInfo.environment["WEARIQ_STOREKIT_PURCHASE_TESTS"] == "1"
+    }
+
     private func makeSession() throws -> SKTestSession {
         let session = try SKTestSession(configurationFileNamed: "WearIQ")
         session.resetToDefaultState()
@@ -55,8 +59,13 @@ import Testing
 
     // Purchases are simulated with SKTestSession.buyProduct: product.purchase() needs a
     // UI scene to confirm in and can't complete inside a hosted unit test.
+    //
+    // These purchase tests hang on headless GitHub Actions simulators, so they only run
+    // when WEARIQ_STOREKIT_PURCHASE_TESTS=1 is set (e.g. in the Xcode scheme on a Mac).
+    // Entitlement rules themselves are covered by PremiumStatusTests on CI.
 
-    @Test func purchaseActivatesPremiumAndExpiryEndsIt() async throws {
+    @Test(.enabled(if: Self.purchaseTestsEnabled))
+    func purchaseActivatesPremiumAndExpiryEndsIt() async throws {
         let session = try makeSession()
         let service = SubscriptionService()
         var mirrored: [Bool] = []
@@ -73,7 +82,8 @@ import Testing
         #expect(mirrored.last == false)
     }
 
-    @Test func refundRevokesPremium() async throws {
+    @Test(.enabled(if: Self.purchaseTestsEnabled))
+    func refundRevokesPremium() async throws {
         let session = try makeSession()
         let service = SubscriptionService()
         let transaction = try await session.buyProduct(identifier: PremiumProduct.yearly)
@@ -85,7 +95,8 @@ import Testing
         #expect(!service.isPremium)
     }
 
-    @Test func entitlementSurvivesNewServiceInstance() async throws {
+    @Test(.enabled(if: Self.purchaseTestsEnabled))
+    func entitlementSurvivesNewServiceInstance() async throws {
         let session = try makeSession()
         _ = try await session.buyProduct(identifier: PremiumProduct.monthly)
 
