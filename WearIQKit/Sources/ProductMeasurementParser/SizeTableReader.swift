@@ -8,6 +8,12 @@ public struct SizeChartSection: Equatable, Sendable {
     /// Fit named in the title, if recognisable.
     public var fitStyle: FitStyle?
     public var chart: ParsedSizeChart
+
+    public init(title: String?, fitStyle: FitStyle?, chart: ParsedSizeChart) {
+        self.title = title
+        self.fitStyle = fitStyle
+        self.chart = chart
+    }
 }
 
 /// Reads size tables laid out with sizes in rows and measurements in columns:
