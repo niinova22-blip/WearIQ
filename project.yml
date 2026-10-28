@@ -64,6 +64,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.niinova.weariq
+        # iPhone only; XcodeGen's iOS preset would otherwise add iPad at target level,
+        # and an iPad build must support every orientation.
+        TARGETED_DEVICE_FAMILY: "1"
         OTHER_LDFLAGS: ["$(inherited)", "-ObjC"]
         PRODUCT_NAME: WearIQ
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

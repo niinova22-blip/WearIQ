@@ -1,21 +1,30 @@
 name: Release to TestFlight
 
-# Archives a signed build and uploads it to App Store Connect / TestFlight.
+# Archives the app, signs it and uploads it to App Store Connect / TestFlight.
 #
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #   APPLE_TEAM_ID            Apple Developer Team ID (Membership page)
-#   ASC_KEY_ID               App Store Connect API key ID
+#   ASC_KEY_ID               App Store Connect API key ID (Admin role: it creates certificates)
 #   ASC_ISSUER_ID            App Store Connect API issuer ID
 #   ASC_KEY_P8               Contents of the AuthKey_XXXX.p8 file
 # Repository variables (not secret, but required for Release builds with real ads):
 #   ADMOB_APP_ID             ca-app-pub-…~…
 #   ADMOB_BANNER_ID          ca-app-pub-…/…
 #   ADMOB_INTERSTITIAL_ID    ca-app-pub-…/…
+#
+# Signing is manual on purpose. The account holder's name contains a non-ASCII character,
+# and Xcode's cloud signing then produces a designated requirement that App Store
+# validation rejects (ITMS-90035). Each run creates a distribution certificate and an
+# App Store profile through the API, signs with a Team ID based requirement, and revokes
+# both at the end.
 
 on:
   workflow_dispatch:
   push:
     tags: ["v*"]
+
+env:
+  BUNDLE_ID: com.niinova.weariq
 
 jobs:
   testflight:
@@ -59,49 +68,121 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :WQBannerAdUnitID ${{ vars.ADMOB_BANNER_ID }}" WearIQ/Info.plist
           /usr/libexec/PlistBuddy -c "Set :WQInterstitialAdUnitID ${{ vars.ADMOB_INTERSTITIAL_ID }}" WearIQ/Info.plist
 
-      - name: Write API key
-        env:
-          P8: ${{ secrets.ASC_KEY_P8 }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/keys"
-          printf '%s' "$P8" > "$RUNNER_TEMP/keys/AuthKey.p8"
-
-      - name: Archive
+      - name: Archive (unsigned)
         run: |
           xcodebuild archive \
             -project WearIQ.xcodeproj -scheme WearIQ -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath "$RUNNER_TEMP/WearIQ.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey.p8" \
-            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             -quiet
 
-      - name: Upload to App Store Connect
+      - name: Create signing certificate and profile
+        env:
+          P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
-          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          SIGN_DIR="$RUNNER_TEMP/signing"
+          mkdir -p "$SIGN_DIR"
+          echo "SIGN_DIR=$SIGN_DIR" >> "$GITHUB_ENV"
+          printf '%s' "$P8" > "$SIGN_DIR/AuthKey.p8"
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet "pyjwt[crypto]==2.9.0"
+
+          # LibreSSL in /usr/bin writes PKCS#12 files that `security import` accepts.
+          /usr/bin/openssl genrsa -out "$SIGN_DIR/dist.key" 2048
+          /usr/bin/openssl req -new -key "$SIGN_DIR/dist.key" -out "$SIGN_DIR/dist.csr" -subj "/CN=WearIQ CI/C=TR"
+          ASC_KEY_PATH="$SIGN_DIR/AuthKey.p8" "$RUNNER_TEMP/venv/bin/python" scripts/asc_signing.py \
+            create "$SIGN_DIR/dist.csr" "$SIGN_DIR" "$BUNDLE_ID" "WearIQ CI ${{ github.run_id }}"
+
+          /usr/bin/openssl x509 -inform DER -in "$SIGN_DIR/dist.cer" -out "$SIGN_DIR/dist.pem"
+          P12_PASS="$(openssl rand -hex 12)"
+          /usr/bin/openssl pkcs12 -export -inkey "$SIGN_DIR/dist.key" -in "$SIGN_DIR/dist.pem" \
+            -out "$SIGN_DIR/dist.p12" -passout "pass:$P12_PASS"
+
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KC_PASS="$(openssl rand -hex 16)"
+          security create-keychain -p "$KC_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KC_PASS" "$KEYCHAIN"
+          curl -fsSL -o "$SIGN_DIR/wwdr.cer" https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+          security import "$SIGN_DIR/wwdr.cer" -k "$KEYCHAIN" -A || true
+          security import "$SIGN_DIR/dist.p12" -P "$P12_PASS" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KC_PASS" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$SIGN_DIR/dist.key" "$SIGN_DIR/dist.p12"
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | awk 'NR==1 {print $2}')"
+          if [ -z "$IDENTITY" ]; then echo "::error::No signing identity in keychain"; exit 1; fi
+          echo "SIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+      - name: Sign and package
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP="$RUNNER_TEMP/WearIQ.xcarchive/Products/Applications/WearIQ.app"
+          cp "$SIGN_DIR/app.mobileprovision" "$APP/embedded.mobileprovision"
+
+          cat > "$SIGN_DIR/entitlements.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
-            <key>method</key><string>app-store-connect</string>
-            <key>destination</key><string>upload</string>
-            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>application-identifier</key><string>$TEAM.$BUNDLE_ID</string>
+            <key>com.apple.developer.team-identifier</key><string>$TEAM</string>
+            <key>get-task-allow</key><false/>
+            <key>beta-reports-active</key><true/>
           </dict></plist>
           EOF
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/WearIQ.xcarchive" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey.p8" \
-            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}"
 
-      - name: Remove key
+          requirement() {
+            echo "=designated => anchor apple generic and identifier \"$1\" and certificate leaf[subject.OU] = \"$TEAM\" and certificate 1[field.1.2.840.113635.100.6.2.1] /* exists */"
+          }
+
+          # Inner code first, then the app itself.
+          if [ -d "$APP/Frameworks" ]; then
+            for fw in "$APP"/Frameworks/*.framework; do
+              [ -e "$fw" ] || continue
+              FW_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$fw/Info.plist")"
+              codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" --requirements "$(requirement "$FW_ID")" "$fw"
+            done
+            for lib in "$APP"/Frameworks/*.dylib; do
+              [ -e "$lib" ] || continue
+              codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" "$lib"
+            done
+          fi
+          codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" \
+            --entitlements "$SIGN_DIR/entitlements.plist" \
+            --requirements "$(requirement "$BUNDLE_ID")" "$APP"
+
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -d -r- "$APP" 2>&1 | grep designated
+
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry ../WearIQ.ipa Payload)
+
+      - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          cp "$SIGN_DIR/AuthKey.p8" ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          xcrun altool --upload-app -f "$RUNNER_TEMP/WearIQ.ipa" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: Revoke signing assets and remove keys
         if: always()
-        run: rm -rf "$RUNNER_TEMP/keys"
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          if [ -n "$SIGN_DIR" ] && [ -f "$SIGN_DIR/AuthKey.p8" ]; then
+            ASC_KEY_PATH="$SIGN_DIR/AuthKey.p8" "$RUNNER_TEMP/venv/bin/python" scripts/asc_signing.py cleanup "$SIGN_DIR" || true
+          fi
+          rm -rf "$SIGN_DIR" ~/.appstoreconnect/private_keys
+          if [ -n "$KEYCHAIN" ]; then security delete-keychain "$KEYCHAIN" || true; fi
