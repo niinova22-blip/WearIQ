@@ -17,6 +17,13 @@ struct LiveLinkTests {
         "https://www.amazon.com.tr/dp/B0HBZ8KJND",
         "https://www.zara.com/tr/tr/yun-karisimli-regular-fit-ceket-p08281765.html?v1=557405763&v2=1885841",
         "https://www.defacto.com.tr/erkek-gomlek",
+        "https://www2.hm.com/tr_tr/productpage.1358896001.html",
+        "https://www.hepsiburada.com/u-s-polo-assn-erkek-beyaz-uzun-kollu-basic-gomlek-50324708-vr013-p-HBCV0000EJ9603",
+        "https://www.lcw.com/regular-fit-erkek-gomlek-indigo-o-5509776",
+        "https://www.massimodutti.com/tr/yuksek-bel-genis-paca-jean-l05040840",
+        "https://www.bershka.com/tr/oversize-kap%C3%BC%C5%9Fonlu-k%C3%BCrk-sweatshirt-c0p240147191.html",
+        "https://www.nike.com/tr/t/miler-dri-fit-uv-korumali-uzun-kollu-kislik-erkek-kosu-ustu-oAsVnGBv/IO1233-372",
+        "https://www.amazon.com.tr/dp/B0776X8B3X",
     ]
 
     @Test(arguments: links)
@@ -40,7 +47,7 @@ struct LiveLinkTests {
     }
 
     /// What the rendered page offers as size guide controls (to tune the button matching).
-    @Test(arguments: [links[0], links[2], links[3], links[5]])
+    @Test(arguments: [links[5]] + Array(links.dropFirst(7)))
     func sizeControls(_ link: String) async {
         let page = await WebPageLoader.load(URL(string: link)!, timeout: 12) { _ in false }
         var lines = ["CONTROLS \(link)", "  opened: \(page?.sizeGuideControls ?? -1) snapshot: \(page?.snapshot != nil)"]
