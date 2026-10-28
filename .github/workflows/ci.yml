@@ -53,6 +53,16 @@ jobs:
             -default-test-execution-time-allowance 60 \
             -maximum-test-execution-time-allowance 120 \
             -quiet CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
+      - name: Test summary
+        if: always()
+        run: |
+          xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact | python3 -c "import json,sys; d=json.load(sys.stdin); print({k: d.get(k) for k in ('result','totalTestCount','passedTests','failedTests','skippedTests')})" || true
+          xcrun xcresulttool get test-results tests --path TestResults.xcresult --compact | python3 -c "
+          import json, sys
+          def walk(n, depth=0):
+              if n.get('nodeType') in ('UI test bundle', 'Test Case') and 'UITests' in json.dumps(n): print(n.get('name'), n.get('result'))
+              for c in n.get('children', []): walk(c, depth + 1)
+          for n in json.load(sys.stdin).get('testNodes', []): walk(n)" || true
       - name: Show test failures
         if: failure()
         run: |
