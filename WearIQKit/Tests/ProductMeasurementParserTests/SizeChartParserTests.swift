@@ -73,8 +73,9 @@ import WearIQCore
         let r = parser.parse(text)
         #expect(r.sizes.map(\.label) == ["38", "40", "42"])
         #expect(r.sizes[2].values[.hip]?.cm == 104)
-        #expect(r.kind == nil)
-        #expect(r.warnings.contains(.chartKindUnknown))
+        // Girths only, no garment lengths: read as a body chart, flagged as a guess.
+        #expect(r.kind == .body)
+        #expect(r.warnings.contains(.chartKindGuessed(.body)))
         #expect(r.warnings.contains(.unitAssumedCentimetres))
     }
 

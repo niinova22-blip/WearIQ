@@ -17,6 +17,14 @@ final class GarmentDraft {
     var chartKind: SizeChartKind?
     var sizes: [SizeEntry] = []
     private(set) var chartWarnings: [ParsedSizeChart.Warning] = []
+    /// Where the size chart came from, shown with the result.
+    enum ChartSource: Equatable {
+        case store      // the product page or its chart image
+        case photo      // a screenshot the user picked
+        case standard   // typical measurements for the size labels
+    }
+    private(set) var chartSource: ChartSource?
+
     /// All tables read from a chart image (e.g. slim / regular / oversize).
     private(set) var chartSections: [SizeChartSection] = []
     private(set) var selectedSection: Int?
@@ -72,7 +80,8 @@ final class GarmentDraft {
 
     /// Keeps every table; applies the one matching the product's fit, or the first one
     /// (the user can switch, see `selectSection`).
-    func apply(_ scan: SizeChartScan) {
+    func apply(_ scan: SizeChartScan, source: ChartSource = .store) {
+        chartSource = source
         chartSections = scan.sections
         let index = scan.chosen.flatMap { c in scan.sections.firstIndex(of: c) } ?? 0
         selectSection(index)
@@ -84,6 +93,18 @@ final class GarmentDraft {
         let section = chartSections[index]
         apply(section.chart)
         if let fit = section.fitStyle { fitStyle = fit }
+    }
+
+    /// No chart from the store: use typical body measurements for the store's size labels,
+    /// so the user gets advice without typing a table. Returns false if the labels are unknown.
+    @discardableResult
+    func fillStandardChart(fallbackAudience: GarmentAudience?) -> Bool {
+        guard sizes.isEmpty || chartSource == .standard,
+              let chart = StandardSizeCharts.chart(for: info.availableSizes, category: category,
+                                                   audience: info.audience ?? fallbackAudience) else { return false }
+        apply(chart)
+        chartSource = .standard
+        return true
     }
 
     func addSize(label: String) {

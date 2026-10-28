@@ -21,6 +21,11 @@ public struct ParsedSizeChart: Equatable, Sendable {
         /// A column whose values can't be that measurement (e.g. shoulder seam length
         /// labelled "Omuz") was dropped.
         case implausibleColumnDropped(GarmentDimension)
+        /// The store had no chart; typical measurements for the size labels were used.
+        case standardChartUsed
+        /// The chart didn't say whether it lists body or garment measurements; decided
+        /// from which measurements it has.
+        case chartKindGuessed(SizeChartKind)
     }
 }
 
@@ -55,6 +60,15 @@ extension ParsedSizeChart {
             chart.warnings.append(.implausibleColumnDropped(dim))
         }
         chart.sizes.removeAll { $0.values.isEmpty }
+        // Garment lengths (sleeve, garment length, shoulder seam to seam) only appear in
+        // charts that measure the garment; charts with girths only describe bodies.
+        if chart.kind == nil, !chart.sizes.isEmpty {
+            let lengths: [GarmentDimension] = [.sleeveLength, .bodyLength, .shoulderWidth]
+            let kind: SizeChartKind = chart.sizes.contains { s in lengths.contains { s.values[$0] != nil } } ? .garment : .body
+            chart.kind = kind
+            chart.warnings.removeAll { $0 == .chartKindUnknown }
+            chart.warnings.append(.chartKindGuessed(kind))
+        }
         return chart
     }
 }

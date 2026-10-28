@@ -3810,6 +3810,66 @@
           }
         }
       }
+    },
+    "Based on the store's size chart.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mağazanın beden tablosuna göre."
+          }
+        }
+      }
+    },
+    "Based on the size chart from your photo.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraftaki beden tablosuna göre."
+          }
+        }
+      }
+    },
+    "The store publishes no size chart, so this uses typical measurements for these sizes. Brands vary, so treat it as a guide.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mağaza beden tablosu yayımlamıyor; bu bedenlerin standart ölçüleri kullanıldı. Markalar arasında fark olabilir, yol gösterici olarak değerlendir."
+          }
+        }
+      }
+    },
+    "Size chart found": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu bulundu"
+          }
+        }
+      }
+    },
+    "Show and edit the size chart": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosunu göster ve düzenle"
+          }
+        }
+      }
+    },
+    "Sizes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedenler"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

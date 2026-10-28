@@ -11,6 +11,8 @@ struct FitResultView: View {
     let analysis: FitAnalysis
     var category: GarmentCategory?
     var fitStyle: FitStyle?
+    /// What the size chart was based on (store, photo, standard sizes).
+    var chartNote: String?
     /// False for "insufficient data" results, which are shown but neither saved nor charged.
     let isSaved: Bool
 
@@ -27,7 +29,8 @@ struct FitResultView: View {
     }
 
     init(productName: String?, brand: String?, imageURL: URL?, pageURL: URL?, analysis: FitAnalysis, isSaved: Bool,
-         category: GarmentCategory? = nil, fitStyle: FitStyle? = nil) {
+         category: GarmentCategory? = nil, fitStyle: FitStyle? = nil, chartNote: String? = nil) {
+        self.chartNote = chartNote
         self.isSaved = isSaved
         self.category = category
         self.fitStyle = fitStyle
@@ -97,6 +100,11 @@ struct FitResultView: View {
             Text(FitExplanation.text(for: analysis))
                 .font(.body)
                 .fixedSize(horizontal: false, vertical: true)
+            if let chartNote {
+                Label(chartNote, systemImage: "info.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

@@ -23,6 +23,7 @@ public struct ProductInfo: Equatable, Sendable {
     public var category: GarmentCategory?
     public var fitStyle: FitStyle?
     public var stretch: FabricStretch?
+    public var audience: GarmentAudience?
 
     public init() {}
 
@@ -64,6 +65,7 @@ public struct ProductPageParser: Sendable {
         info.category = GarmentClassifier.category(from: text)
         info.fitStyle = GarmentClassifier.fitStyle(from: text)
         info.stretch = info.material.flatMap(GarmentClassifier.stretch(fromComposition:))
+        info.audience = GarmentClassifier.audience(from: text + " " + (pageURL?.path ?? "") + " " + (og["og:description"] ?? ""))
         return info
     }
 

@@ -7,7 +7,10 @@ import WearIQCore
 struct GarmentDraftView: View {
     @Environment(AppContainer.self) private var container
     @Bindable var draft: GarmentDraft
+    var autoAnalyze = false
     @AppStorage("fitPreference") private var preference: FitPreference = .asDesigned
+    @State private var didAutoAnalyze = false
+    @State private var showTable = false
 
     @State private var photoItem: PhotosPickerItem?
     @State private var readingPhoto = false
@@ -26,11 +29,21 @@ struct GarmentDraftView: View {
     var body: some View {
         Form {
             productSection
-            garmentSection
-            chartSection
-            if draft.category != nil { sizeSections }
-            addSizeSection
-            issuesSection
+            if draft.chartSource != nil && draft.spec != nil && !showTable {
+                // The chart was found automatically: show what was found, keep the table one tap away.
+                chartSummarySection
+            } else {
+                garmentSection
+                chartSection
+                if draft.category != nil { sizeSections }
+                addSizeSection
+                issuesSection
+            }
+        }
+        .task {
+            guard autoAnalyze, !didAutoAnalyze, draft.spec != nil else { return }
+            didAutoAnalyze = true
+            analyze()
         }
         .navigationTitle("Garment details")
         .navigationBarTitleDisplayMode(.inline)
@@ -42,7 +55,7 @@ struct GarmentDraftView: View {
         .navigationDestination(item: $result) { route in
             FitResultView(productName: draft.info.name, brand: draft.info.brand, imageURL: draft.info.imageURL,
                           pageURL: draft.info.pageURL, analysis: route.analysis, isSaved: route.saved,
-                          category: draft.category, fitStyle: draft.fitStyle)
+                          category: draft.category, fitStyle: draft.fitStyle, chartNote: chartNote)
                 // Ads only ever appear after a result, never before a scan.
                 .onDisappear { container.ads.showInterstitialIfDue(isPremium: container.isPremium) }
         }
@@ -62,6 +75,32 @@ struct GarmentDraftView: View {
     }
 
     // MARK: Sections
+
+    /// Shown with the result so the user knows what the advice is based on.
+    private var chartNote: String? {
+        switch draft.chartSource {
+        case .store: String(localized: "Based on the store's size chart.")
+        case .photo: String(localized: "Based on the size chart from your photo.")
+        case .standard: String(localized: "The store publishes no size chart, so this uses typical measurements for these sizes. Brands vary, so treat it as a guide.")
+        case nil: nil
+        }
+    }
+
+    private var chartSummarySection: some View {
+        Section {
+            if let category = draft.category { LabeledContent("Category", value: category.title) }
+            LabeledContent("Fit", value: draft.fitStyle.title)
+            LabeledContent("Sizes", value: draft.sizes.map(\.label).joined(separator: ", "))
+            if let note = chartNote {
+                Label(note, systemImage: draft.chartSource == .standard ? "info.circle" : "checkmark.seal")
+                    .font(.footnote)
+                    .foregroundStyle(draft.chartSource == .standard ? .orange : .secondary)
+            }
+            Button("Show and edit the size chart") { showTable = true }
+        } header: {
+            Text("Size chart found")
+        }
+    }
 
     private var productSection: some View {
         Section("Product") {
@@ -323,6 +362,8 @@ extension ParsedSizeChart.Warning {
         case let .halfMeasurementsDoubled(dim): String(localized: "\(dim.title) was given as a half (flat) measurement and has been doubled.")
         case let .rowValueCountMismatch(label): String(localized: "Couldn't read the row \"\(label)\". Please enter it manually.")
         case let .unrecognisedRow(label): String(localized: "Ignored the row \"\(label)\".")
+        case .standardChartUsed: nil // explained by the chart note
+        case .chartKindGuessed: nil  // the picker above shows the choice
         case let .implausibleColumnDropped(dim): String(localized: "The chart's \"\(dim.title.lowercased())\" values can't be that measurement, so they were left out.")
         }
     }

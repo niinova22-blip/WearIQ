@@ -1,6 +1,7 @@
 import PhotosUI
 import ProductMeasurementParser
 import SwiftUI
+import WearIQCore
 
 /// Entry point for identifying a garment: product link, barcode, size chart photo
 /// or manual entry. Every route ends in a `GarmentDraft` the user can complete.
@@ -23,6 +24,7 @@ struct ScanEntryView: View {
     struct DraftRoute: Hashable, Identifiable {
         let id = UUID()
         let draft: GarmentDraft
+        var autoAnalyze = false
         static func == (a: Self, b: Self) -> Bool { a.id == b.id }
         func hash(into h: inout Hasher) { h.combine(id) }
     }
@@ -40,7 +42,7 @@ struct ScanEntryView: View {
         }
         .background(Theme.screenBackground)
         .navigationTitle("Scan a garment")
-        .navigationDestination(item: $route) { GarmentDraftView(draft: $0.draft) }
+        .navigationDestination(item: $route) { GarmentDraftView(draft: $0.draft, autoAnalyze: $0.autoAnalyze) }
         .fullScreenCover(isPresented: $showBarcode) { barcodeSheet }
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
@@ -156,8 +158,18 @@ struct ScanEntryView: View {
 
     // MARK: Actions
 
-    private func open(_ draft: GarmentDraft) {
-        route = DraftRoute(draft: draft)
+    /// With `autoAnalyze` the fit analysis runs as soon as the chart is complete, so a
+    /// pasted link goes straight to the result; the draft stays one tap back for edits.
+    private func open(_ draft: GarmentDraft, autoAnalyze: Bool = false) {
+        route = DraftRoute(draft: draft, autoAnalyze: autoAnalyze)
+    }
+
+    private var profileAudience: GarmentAudience? {
+        switch BodySex(rawValue: UserDefaults.standard.string(forKey: "bodySex") ?? "") {
+        case .male: .men
+        case .female: .women
+        case nil: nil
+        }
     }
 
     private func loadLink() async {
@@ -174,11 +186,11 @@ struct ScanEntryView: View {
             let draft = GarmentDraft(info: lookup.info)
             if let chart = lookup.chart {
                 draft.apply(chart)
-            } else {
-                // No readable chart: start the table with the store's sizes so only numbers are missing.
+            } else if !draft.fillStandardChart(fallbackAudience: profileAudience) {
+                // Unknown size labels: start the table with them so only numbers are missing.
                 lookup.info.availableSizes.forEach { draft.addSize(label: $0) }
             }
-            open(draft)
+            open(draft, autoAnalyze: true)
             linkText = ""
         } catch {
             failedLinkURL = url
@@ -211,7 +223,7 @@ struct ScanEntryView: View {
                 throw OCRError.unreadableImage
             }
             let draft = GarmentDraft()
-            draft.apply(try await OCRService().readSections(from: image, fit: nil))
+            draft.apply(try await OCRService().readSections(from: image, fit: nil), source: .photo)
             open(draft)
         } catch {
             photoError = error.localizedDescription
