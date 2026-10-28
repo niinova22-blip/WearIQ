@@ -1,0 +1,68 @@
+name: App Store screenshots
+
+# Builds the Debug app for a 6.9" iPhone simulator and captures each main screen in
+# Turkish and English using demo mode (WearIQ/App/DemoMode.swift). The PNGs are uploaded
+# as the "screenshots" artifact; scripts/asc_metadata.py can push them to App Store Connect.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  capture:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Select Xcode
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_*.app | grep -viE 'beta|rc' | sort -V | tail -1)"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Boot a Pro Max simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, re, sys
+          devs = json.load(sys.stdin)['devices']
+          ios = sorted((k for k in devs if 'iOS' in k), key=lambda k: [int(n) for n in re.findall(r'\d+', k)])
+          print(next(d['udid'] for k in reversed(ios) for d in devs[k] if d['name'].endswith('Pro Max')))")
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID"
+          xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 \
+            --cellularMode active --cellularBars 4 --wifiBars 3 --dataNetwork wifi
+
+      - name: Build
+        run: |
+          xcodebuild build -project WearIQ.xcodeproj -scheme WearIQ -configuration Debug \
+            -destination "id=$UDID" -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= -quiet
+          xcrun simctl install "$UDID" "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/WearIQ.app"
+
+      - name: Capture
+        run: |
+          for lang in tr en; do
+            locale=$([ "$lang" = tr ] && echo tr_TR || echo en_US)
+            mkdir -p "shots/$lang"
+            n=1
+            for screen in home result profile wardrobe style; do
+              xcrun simctl launch "$UDID" com.niinova.weariq \
+                -WQDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$locale" > /dev/null
+              sleep 6
+              xcrun simctl io "$UDID" screenshot "shots/$lang/0${n}_${screen}.png"
+              xcrun simctl terminate "$UDID" com.niinova.weariq || true
+              n=$((n + 1))
+            done
+          done
+          sips -g pixelWidth -g pixelHeight shots/tr/01_home.png
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: screenshots
+          path: shots

@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 struct RootView: View {
@@ -21,7 +22,12 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            NavigationStack { HomeView(selectTab: { selection = $0 }) }
+            NavigationStack {
+                HomeView(selectTab: { selection = $0 })
+                #if DEBUG
+                    .navigationDestination(isPresented: .constant(DemoMode.opensResult)) { DemoResultView() }
+                #endif
+            }
                 .tabItem { Label("Home", systemImage: "house") }
                 .tag(AppTab.home)
             NavigationStack { ScanEntryView() }
@@ -37,8 +43,22 @@ struct MainTabView: View {
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
                 .tag(AppTab.profile)
         }
+        #if DEBUG
+        .onAppear { if DemoMode.isActive { selection = DemoMode.initialTab } }
+        #endif
     }
 }
+
+#if DEBUG
+/// Opens the newest saved analysis, for the screenshot of a fit result.
+private struct DemoResultView: View {
+    @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
+
+    var body: some View {
+        if let saved = analyses.first { FitResultView(saved: saved) }
+    }
+}
+#endif
 
 #Preview {
     MainTabView().environment(AppContainer.preview())

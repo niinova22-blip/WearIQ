@@ -35,7 +35,10 @@ final class AppContainer {
     }
 
     static func live() -> AppContainer {
-        AppContainer(modelContainer: PersistenceController.makeContainer(inMemory: false),
+        #if DEBUG
+        if DemoMode.isActive { return demo() }
+        #endif
+        return AppContainer(modelContainer: PersistenceController.makeContainer(inMemory: false),
                      quotaStore: KeychainQuotaStore(),
                      fitEngine: FitEngine())
     }
@@ -45,6 +48,18 @@ final class AppContainer {
                      quotaStore: KeychainQuotaStore(service: "preview.\(UUID().uuidString)"),
                      fitEngine: FitEngine())
     }
+
+    #if DEBUG
+    /// Sample data for App Store screenshots; Premium so the wardrobe and style tabs show content.
+    private static func demo() -> AppContainer {
+        let app = preview()
+        try? DemoMode.seed(app.modelContainer.mainContext, engine: app.fitEngine)
+        app.onboardingCompleted = true
+        app.isPremium = true
+        app.subscriptions.onPremiumChange = nil
+        return app
+    }
+    #endif
 
     /// Removes every piece of personal data: body profile, history and wardrobe.
     /// The scan quota is deliberately kept (it holds only hashed product keys), otherwise
