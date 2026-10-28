@@ -1,0 +1,476 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Home": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ana Sayfa"
+          }
+        }
+      }
+    },
+    "Scan": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet Tara"
+          }
+        }
+      }
+    },
+    "Wardrobe": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gardırop"
+          }
+        }
+      }
+    },
+    "Style": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil Asistanı"
+          }
+        }
+      }
+    },
+    "Profile": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil"
+          }
+        }
+      }
+    },
+    "Scan a garment": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet tara"
+          }
+        }
+      }
+    },
+    "Premium: unlimited scans": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium: sınırsız tarama"
+          }
+        }
+      }
+    },
+    "Scans left today": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün kalan tarama"
+          }
+        }
+      }
+    },
+    "%lld / %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld / %lld"
+          }
+        }
+      }
+    },
+    "Free scans renew every day.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ücretsiz taramalar her gün yenilenir."
+          }
+        }
+      }
+    },
+    "Body profile": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut profili"
+          }
+        }
+      }
+    },
+    "%lld measurements saved": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ölçü kayıtlı"
+          }
+        }
+      }
+    },
+    "No measurements yet. Body scanning arrives in phase 2; you can then also enter values with a tape measure.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz ölçü yok. Vücut tarama 2. aşamada geliyor; o zaman ölçüleri mezurayla da girebileceksin."
+          }
+        }
+      }
+    },
+    "Coming in phase %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld. aşamada geliyor"
+          }
+        }
+      }
+    },
+    "Not available yet, planned for phase %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz kullanılamıyor, %lld. aşamada planlandı"
+          }
+        }
+      }
+    },
+    "Paste a product link": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün bağlantısı yapıştır"
+          }
+        }
+      }
+    },
+    "Reads the product name, sizes and size chart where the store publishes them.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mağaza yayımlıyorsa ürün adını, bedenleri ve beden tablosunu okur."
+          }
+        }
+      }
+    },
+    "Scan a barcode": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barkod tara"
+          }
+        }
+      }
+    },
+    "Identifies the product from its EAN/UPC code. A barcode alone has no measurements.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürünü EAN/UPC kodundan tanır. Barkod tek başına ölçü içermez."
+          }
+        }
+      }
+    },
+    "Read a size chart photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu fotoğrafı oku"
+          }
+        }
+      }
+    },
+    "Extracts measurements from a size chart screenshot or garment label on your device.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu ekran görüntüsünden veya etiketten ölçüleri cihazında çıkarır."
+          }
+        }
+      }
+    },
+    "Digital wardrobe": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dijital gardırop"
+          }
+        }
+      }
+    },
+    "Keep your clothes with category, colour, size, fit, season and photo, and filter them anytime.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafetlerini kategori, renk, beden, kalıp, mevsim ve fotoğrafla sakla, istediğin zaman filtrele."
+          }
+        }
+      }
+    },
+    "Style assistant": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil asistanı"
+          }
+        }
+      }
+    },
+    "Outfit suggestions from your own wardrobe for daily, work, formal, sport and evening occasions.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kendi gardırobundan günlük, iş, resmî, spor ve akşam için kombin önerileri."
+          }
+        }
+      }
+    },
+    "Premium": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium"
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gizlilik"
+          }
+        }
+      }
+    },
+    "Photos are processed on this device and are not uploaded.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflar bu cihazda işlenir ve yüklenmez."
+          }
+        }
+      }
+    },
+    "Your measurements are never shared with advertisers.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülerin hiçbir zaman reklamverenlerle paylaşılmaz."
+          }
+        }
+      }
+    },
+    "Delete all my data": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm verilerimi sil"
+          }
+        }
+      }
+    },
+    "Removes your body profile, saved analyses and wardrobe from this device.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut profilini, kayıtlı analizleri ve gardırobu bu cihazdan siler."
+          }
+        }
+      }
+    },
+    "Delete all your data?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm verilerin silinsin mi?"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sil"
+          }
+        }
+      }
+    },
+    "This can't be undone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu işlem geri alınamaz."
+          }
+        }
+      }
+    },
+    "Couldn't delete data": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veriler silinemedi"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamam"
+          }
+        }
+      }
+    },
+    "Scan once": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir kez tara"
+          }
+        }
+      }
+    },
+    "Create your body profile one time. Every garment is checked against it afterwards.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut profilini bir kez oluştur. Sonrasında her kıyafet bu profile göre değerlendirilir."
+          }
+        }
+      }
+    },
+    "Know how it fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nasıl oturacağını bil"
+          }
+        }
+      }
+    },
+    "See how shoulders, chest, waist, sleeves and length will sit, size by size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz, göğüs, bel, kol ve boyun her bedende nasıl duracağını gör."
+          }
+        }
+      }
+    },
+    "Pick the right size": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doğru bedeni seç"
+          }
+        }
+      }
+    },
+    "Get a size recommendation with an honest confidence level, not a guess.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tahmin değil, dürüst bir güven seviyesiyle beden önerisi al."
+          }
+        }
+      }
+    },
+    "Private by design": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gizlilik odaklı"
+          }
+        }
+      }
+    },
+    "Your photos are analysed on this device and deleted after measuring. No account required.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafların bu cihazda analiz edilir ve ölçümden sonra silinir. Hesap gerekmez."
+          }
+        }
+      }
+    },
+    "Get started": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başla"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devam"
+          }
+        }
+      }
+    },
+    "WearIQ": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

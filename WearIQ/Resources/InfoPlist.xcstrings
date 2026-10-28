@@ -1,0 +1,50 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSCameraUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ, vücut ölçülerini taramak ve barkod ya da beden etiketi okumak için kamerayı kullanır. Fotoğraflar cihazında işlenir, yüklenmez."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ, seçtiğin beden tablosu ekran görüntülerini ve kıyafet fotoğraflarını okur. Cihazında işlenir."
+          }
+        }
+      }
+    },
+    "NSUserTrackingUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İzin verirsen sana daha ilgili reklamlar gösterebiliriz. Vücut ölçülerin asla reklamverenlerle paylaşılmaz."
+          }
+        }
+      }
+    },
+    "CFBundleDisplayName": {
+      "extractionState": "manual",
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
