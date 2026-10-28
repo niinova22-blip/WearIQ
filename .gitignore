@@ -21,3 +21,4 @@ Secrets.xcconfig
 .env
 
 .DS_Store
+WearIQKit/Info.plist
