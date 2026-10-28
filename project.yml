@@ -27,6 +27,8 @@ targets:
     platform: iOS
     sources:
       - path: WearIQ
+        excludes:
+          - "Resources/WearIQ.storekit"
     dependencies:
       - package: WearIQKit
         product: WearIQCore
@@ -59,6 +61,8 @@ targets:
     platform: iOS
     sources:
       - path: WearIQTests
+      - path: WearIQ/Resources/WearIQ.storekit
+        buildPhase: resources
     dependencies:
       - target: WearIQ
       - package: WearIQKit
@@ -80,6 +84,8 @@ schemes:
       targets:
         WearIQ: all
         WearIQTests: [test]
+    run:
+      storeKitConfiguration: WearIQ/Resources/WearIQ.storekit
     test:
       targets:
         - WearIQTests

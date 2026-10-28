@@ -13,8 +13,9 @@ final class AppContainer {
     let quota: DailyScanQuotaManager
     let fitEngine: any FitAnalyzing
 
-    /// Becomes real in Phase 6 (StoreKit 2 entitlement check).
-    var isPremium = false
+    let subscriptions = SubscriptionService()
+    /// Mirrors the StoreKit entitlement; drives quota, ads and premium features.
+    private(set) var isPremium = false
 
     var onboardingCompleted = UserDefaults.standard.bool(forKey: AppContainer.onboardingKey) {
         didSet { UserDefaults.standard.set(onboardingCompleted, forKey: Self.onboardingKey) }
@@ -25,6 +26,7 @@ final class AppContainer {
         self.modelContainer = modelContainer
         self.quota = DailyScanQuotaManager(store: quotaStore)
         self.fitEngine = fitEngine
+        subscriptions.onPremiumChange = { [weak self] premium in self?.isPremium = premium }
     }
 
     func analysisCoordinator() -> FitAnalysisCoordinator {

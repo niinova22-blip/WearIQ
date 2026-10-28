@@ -23,6 +23,8 @@ struct StyleAssistantView: View {
 }
 
 struct PremiumFeaturePlaceholder: View {
+    @Environment(AppContainer.self) private var container
+    @State private var showPaywall = false
     let title: LocalizedStringKey
     let detail: LocalizedStringKey
     let symbol: String
@@ -34,17 +36,24 @@ struct PremiumFeaturePlaceholder: View {
         } description: {
             Text(detail)
         } actions: {
-            HStack {
-                Label("Premium", systemImage: "crown.fill")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.orange)
+            VStack(spacing: Theme.Spacing.s) {
+                if !container.isPremium {
+                    Button {
+                        showPaywall = true
+                    } label: {
+                        Label("Unlock with Premium", systemImage: "crown.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
                 ComingInPhase(phase: phase)
             }
         }
         .background(Theme.screenBackground)
+        .sheet(isPresented: $showPaywall) { PaywallView() }
     }
 }
 
 #Preview {
     NavigationStack { WardrobeView() }
+        .environment(AppContainer.preview())
 }

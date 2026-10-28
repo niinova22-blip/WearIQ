@@ -9,6 +9,7 @@ struct WearIQApp: App {
         WindowGroup {
             RootView()
                 .environment(container)
+                .task { container.subscriptions.start() }
         }
         .modelContainer(container.modelContainer)
     }

@@ -4,6 +4,8 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppContainer.self) private var container
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
+    @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
+    @State private var remaining = 0
     let selectTab: (AppTab) -> Void
 
     var body: some View {
@@ -13,11 +15,15 @@ struct HomeView: View {
                 profileCard
                 Button("Scan a garment") { selectTab(.scan) }
                     .buttonStyle(.primary)
+                if !analyses.isEmpty { recentCard }
             }
             .padding(Theme.Spacing.m)
         }
         .background(Theme.screenBackground)
         .navigationTitle("WearIQ")
+        // The quota store isn't observable; refresh whenever the screen shows or a new analysis lands.
+        .onAppear { remaining = container.quota.remaining() }
+        .onChange(of: analyses.count) { remaining = container.quota.remaining() }
     }
 
     private var quotaCard: some View {
@@ -26,11 +32,10 @@ struct HomeView: View {
                 Label("Premium: unlimited scans", systemImage: "crown.fill")
                     .font(.headline)
             } else {
-                let left = container.quota.remaining()
                 Text("Scans left today")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Text("\(left) / \(container.quota.dailyLimit)")
+                Text("\(remaining) / \(container.quota.dailyLimit)")
                     .font(.system(.largeTitle, design: .rounded, weight: .bold))
                     .contentTransition(.numericText())
                 Text("Free scans renew every day.")
@@ -60,6 +65,24 @@ struct HomeView: View {
                 Text("No measurements yet. Scan your body or enter values with a tape measure.")
                     .foregroundStyle(.secondary)
                 Button("Set up body profile") { selectTab(.profile) }
+            }
+        }
+    }
+
+    private var recentCard: some View {
+        Card {
+            HStack {
+                Text("Recent analyses").font(.headline)
+                Spacer()
+                NavigationLink("See all") { ScanHistoryView() }
+            }
+            ForEach(analyses.prefix(3)) { saved in
+                NavigationLink {
+                    FitResultView(saved: saved)
+                } label: {
+                    ScanHistoryRow(saved: saved)
+                }
+                .foregroundStyle(.primary)
             }
         }
     }

@@ -9,6 +9,7 @@ struct ProfileView: View {
     @State private var deleteError: String?
     @State private var showRescan = false
     @State private var editing: BodyProfile?
+    @State private var showPaywall = false
 
     var body: some View {
         List {
@@ -32,6 +33,15 @@ struct ProfileView: View {
                     Text("Last updated \(date.formatted(date: .abbreviated, time: .omitted))")
                 }
             }
+            Section("Subscription") {
+                if container.isPremium {
+                    Label("Premium is active", systemImage: "crown.fill")
+                    Link("Manage subscription", destination: URL(string: "https://apps.apple.com/account/subscriptions")!)
+                } else {
+                    Button("Get Premium") { showPaywall = true }
+                }
+                Button("Restore purchases") { Task { await container.subscriptions.restore() } }
+            }
             Section("Privacy") {
                 Label("Photos are processed on this device and are not uploaded.", systemImage: "lock.shield")
                 Label("Your measurements are never shared with advertisers.", systemImage: "hand.raised")
@@ -46,6 +56,7 @@ struct ProfileView: View {
         .navigationDestination(item: $editing) { profile in
             MeasurementReviewView(profile: profile) { editing = nil }
         }
+        .sheet(isPresented: $showPaywall) { PaywallView() }
         .fullScreenCover(isPresented: $showRescan) {
             ProfileSetupFlow { showRescan = false }
         }

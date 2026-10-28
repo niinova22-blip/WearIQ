@@ -43,7 +43,9 @@ struct GarmentDraftView: View {
             FitResultView(productName: draft.info.name, brand: draft.info.brand, imageURL: draft.info.imageURL,
                           pageURL: draft.info.pageURL, analysis: route.analysis, isSaved: route.saved)
         }
-        .sheet(isPresented: $showQuotaLimit) { QuotaLimitView() }
+        .sheet(isPresented: $showQuotaLimit) {
+            PaywallView(reason: "You've used today's free scans. They renew tomorrow, or go unlimited with Premium.")
+        }
         .alert("Body profile needed", isPresented: $showNeedsProfile) {
             Button("OK", role: .cancel) {}
         } message: {
