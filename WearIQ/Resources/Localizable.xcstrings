@@ -4641,62 +4641,242 @@
         }
       }
     },
-    "A little slower, please.": {
+    "Great. Now we'll measure you from eight sides. Keep your arms slightly away from your body.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Biraz daha yavaş lütfen."
+            "value": "Harika. Şimdi seni sekiz yönden ölçeceğiz. Kollarını gövdenden biraz uzak tut."
           }
         }
       }
     },
-    "Almost there. Turn once more, slowly.": {
+    "Good.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Az kaldı. Yavaşça bir tur daha dön."
+            "value": "Tamam."
           }
         }
       }
     },
-    "Chest done.": {
+    "Step back into the frame.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Göğüs tamam."
+            "value": "Kadraja geri gel."
           }
         }
       }
     },
-    "Waist done.": {
+    "Turn a little more.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bel tamam."
+            "value": "Biraz daha dön."
           }
         }
       }
     },
-    "Hips done.": {
+    "Stop and hold still for a moment.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kalça tamam."
+            "value": "Dur ve bir an kıpırdama."
           }
         }
       }
     },
-    "Thigh done.": {
+    "Done. You can turn back to the phone.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uyluk tamam."
+            "value": "Bitti. Telefona geri dönebilirsin."
+          }
+        }
+      }
+    },
+    "Positions measured: chest %lld of 8, waist %lld of 8, hips %lld of 8.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülen konumlar: göğüs %lld/8, bel %lld/8, kalça %lld/8."
+          }
+        }
+      }
+    },
+    "Your chest and waist couldn't be measured. Hold still at each position with your arms slightly away from your body, in a bright room.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs ve bel ölçülemedi. Aydınlık bir odada, kolların gövdenden biraz uzakta, her konumda bir an kıpırdamadan dur."
+          }
+        }
+      }
+    },
+    "Right side": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağ yan"
+          }
+        }
+      }
+    },
+    "Back": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sırt"
+          }
+        }
+      }
+    },
+    "Left side": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sol yan"
+          }
+        }
+      }
+    },
+    "Halfway": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çapraz"
+          }
+        }
+      }
+    },
+    "Face the phone and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefona dönük dur ve kıpırdama."
+          }
+        }
+      }
+    },
+    "Turn a little to your right, halfway to your side, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına doğru biraz dön, yarı yan olacak şekilde, ve dur."
+          }
+        }
+      }
+    },
+    "Keep turning until your right side faces the phone, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağ yanın telefona bakana kadar dön ve dur."
+          }
+        }
+      }
+    },
+    "Turn a little more, halfway to your back, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz daha dön, sırtın yarı dönük olsun, ve dur."
+          }
+        }
+      }
+    },
+    "Keep turning until your back faces the phone, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sırtın telefona dönük olana kadar dön ve dur."
+          }
+        }
+      }
+    },
+    "Turn a little more, halfway to your other side, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz daha dön, diğer yanına yarı dönük olsun, ve dur."
+          }
+        }
+      }
+    },
+    "Keep turning until your left side faces the phone, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sol yanın telefona bakana kadar dön ve dur."
+          }
+        }
+      }
+    },
+    "Last one: turn a little more, halfway to the front, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son adım: biraz daha dön, önüne yarı dönük olsun, ve dur."
+          }
+        }
+      }
+    },
+    "Step %lld of %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adım %lld/%lld"
+          }
+        }
+      }
+    },
+    "Turn and stop": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dön ve dur"
+          }
+        }
+      }
+    },
+    "Step %lld of %lld: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adım %lld/%lld: %@"
+          }
+        }
+      }
+    },
+    "Then turn on the spot in 8 small steps, stopping briefly at each one. The voice tells you where to face; this measures your chest, waist and hips.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonra olduğun yerde 8 küçük adımda dön, her adımda kısa bir an dur. Ses sana nereye dönmen gerektiğini söyler; böylece göğüs, bel ve kalçan ölçülür."
           }
         }
       }

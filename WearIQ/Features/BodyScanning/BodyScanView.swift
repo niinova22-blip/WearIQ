@@ -49,7 +49,7 @@ struct BodyScanView: View {
             if stage == .finished, let profile = model.result { onFinished(profile) }
         }
         .sensoryFeedback(.success, trigger: model.pose)
-        .sensoryFeedback(.impact(weight: .light), trigger: model.turn.sectors)
+        .sensoryFeedback(.impact(weight: .medium), trigger: model.turn.captured.count)
         .sensoryFeedback(.success, trigger: model.turn.measured.count)
     }
 
@@ -85,29 +85,41 @@ struct BodyScanView: View {
                 .contentTransition(.numericText())
                 .shadow(color: .black.opacity(0.8), radius: 12)
                 .accessibilityLabel(Text("Taking photo in \(n)"))
-        case let .turning(progress):
+        case .turning:
+            let station = min(model.turn.station, StationScan.stationCount - 1)
             VStack(spacing: Theme.Spacing.m) {
-                Text(model.turn.hint ?? String(localized: "Turn slowly"))
-                    .font(.system(size: 34, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .contentTransition(.opacity)
+                HStack(spacing: Theme.Spacing.l) {
+                    StationDial(station: station, captured: model.turn.captured, holding: model.turn.holding)
+                        .frame(width: 130, height: 130)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Step \(station + 1) of \(StationScan.stationCount)")
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .monospacedDigit()
+                        Text(StationGuide.title(station))
+                            .font(.system(size: 38, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
+                        Label(model.turn.holding ? String(localized: "Hold still…") : String(localized: "Turn and stop"),
+                              systemImage: model.turn.holding ? "pause.circle.fill" : "arrow.turn.up.right")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(model.turn.holding ? .green : .yellow)
+                            .contentTransition(.opacity)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 HStack(spacing: Theme.Spacing.s) {
                     ForEach([BodyLevel.chest, .waist, .hip], id: \.self) { level in
                         regionChip(level, done: model.turn.measured.contains(level))
                     }
                 }
-                ProgressView(value: progress)
-                    .tint(.green)
-                    .animation(.easeOut(duration: 0.3), value: progress)
             }
             .padding(Theme.Spacing.l)
-            .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .animation(.easeInOut(duration: 0.25), value: model.turn.hint)
+            .background(.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .animation(.easeInOut(duration: 0.25), value: model.turn)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text("Turning, \(Int(progress * 100)) percent"))
+            .accessibilityLabel(Text("Step \(station + 1) of \(StationScan.stationCount): \(StationGuide.instruction(station))"))
         case .analyzing:
             VStack(spacing: Theme.Spacing.m) {
                 ProgressView().tint(.white).controlSize(.large)
@@ -242,36 +254,83 @@ private struct TurnGuideOverlay: View {
         .animation(.spring(duration: 0.4), value: done)
     }
 
-    /// An ellipse on the floor around the feet, split into sectors starting nearest the camera.
+    /// An ellipse on the floor around the feet, one sector per stop, starting nearest
+    /// the camera: captured stops are green, the current one is highlighted.
     private func floorRing(_ reading: FrameReading, in rect: CGRect) -> some View {
         let center = point(reading.centerX, reading.floor, in: rect)
         let width = Double(rect.width)
         let hipWidth: Double = reading.levels[.hip].map { ($0.right - $0.left) * width } ?? width * 0.2
         let rx: Double = Swift.max(hipWidth * 1.6, width * 0.24)
         return ZStack {
-            ForEach(0..<TurnTracker.sectorCount, id: \.self) { i in
-                sector(i, center: center, rx: rx, ry: rx * 0.28, done: i < state.sectors)
+            ForEach(0..<StationScan.stationCount, id: \.self) { i in
+                sector(i, center: center, rx: rx, ry: rx * 0.28)
             }
         }
     }
 
-    private func sector(_ i: Int, center: CGPoint, rx: Double, ry: Double, done: Bool) -> some View {
-        let count = Double(TurnTracker.sectorCount)
-        let gap = 0.06
-        let a0 = Double.pi / 2 + (Double(i) + gap) / count * 2 * Double.pi
-        let a1 = Double.pi / 2 + (Double(i + 1) - gap) / count * 2 * Double.pi
+    private func sector(_ i: Int, center: CGPoint, rx: Double, ry: Double) -> some View {
+        let done = state.captured.contains(i)
+        let current = i == state.station
+        let count = Double(StationScan.stationCount)
+        let gap = 0.07
+        // Centred on its direction: stop 0 is the point of the ring nearest the camera.
+        let a0 = Double.pi / 2 + (Double(i) - 0.5 + gap) / count * 2 * Double.pi
+        let a1 = Double.pi / 2 + (Double(i) + 0.5 - gap) / count * 2 * Double.pi
         let path = Path { p in
-            let steps = 10
+            let steps = 12
             for s in 0...steps {
                 let a = a0 + (a1 - a0) * Double(s) / Double(steps)
                 let pt = CGPoint(x: Double(center.x) + rx * cos(a), y: Double(center.y) + ry * sin(a))
                 if s == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
             }
         }
-        let color: Color = done ? .green : .white.opacity(0.35)
+        let color: Color = done ? .green : current ? (state.holding ? .green : .yellow) : .white.opacity(0.3)
         return path
-            .stroke(color, style: StrokeStyle(lineWidth: done ? 9 : 6, lineCap: .round))
-            .shadow(color: done ? Color.green.opacity(0.8) : Color.clear, radius: 6)
+            .stroke(color, style: StrokeStyle(lineWidth: done || current ? 10 : 6, lineCap: .round))
+            .shadow(color: done || current ? color.opacity(0.8) : Color.clear, radius: 6)
             .animation(.spring(duration: 0.35), value: done)
+            .animation(.easeInOut(duration: 0.2), value: current)
+    }
+}
+
+/// Top view of the turn: the user in the middle, the phone below, eight stops around.
+/// The arrow shows which way the user's chest should point at the current stop.
+private struct StationDial: View {
+    let station: Int
+    let captured: Set<Int>
+    let holding: Bool
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = min(proxy.size.width, proxy.size.height)
+            let radius = size / 2 - 8
+            ZStack {
+                ForEach(0..<StationScan.stationCount, id: \.self) { i in
+                    let count = Double(StationScan.stationCount)
+                    Circle()
+                        .trim(from: (Double(i) - 0.5 + 0.08) / count, to: (Double(i) + 0.5 - 0.08) / count)
+                        .stroke(color(i), style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                        // trim starts at 3 o'clock; stop 0 sits at 6 o'clock, towards the phone.
+                        .rotationEffect(.degrees(90))
+                        .frame(width: radius * 2, height: radius * 2)
+                }
+                Image(systemName: "arrow.down")
+                    .font(.system(size: size * 0.26, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .rotationEffect(.degrees(Double(station) * 45))
+                    .animation(.spring(duration: 0.5), value: station)
+                Image(systemName: "iphone")
+                    .font(.system(size: size * 0.13, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .offset(y: size / 2 + 6)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+    }
+
+    private func color(_ i: Int) -> Color {
+        if captured.contains(i) { return .green }
+        if i == station { return holding ? .green.opacity(0.7) : .yellow }
+        return .white.opacity(0.25)
     }
 }

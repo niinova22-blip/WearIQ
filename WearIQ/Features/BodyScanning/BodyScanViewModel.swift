@@ -4,16 +4,17 @@ import BodyScanVision
 import Observation
 import WearIQCore
 
-/// Front photo → guided 360° turn → on-device analysis.
+/// Front photo → guided turn in eight stops → on-device analysis.
 ///
 /// The user props the phone up and steps back, so capture is hands-free: once the
 /// pose has been good for a moment a countdown starts, and spoken cues tell the user
-/// what to fix. The front photo gives lengths and shoulder width; the turn gives real
-/// girths (see `RotationScanAnalyzer`). During the turn, Vision's 3D body pose tells how
-/// far the user has turned: the floor ring fills sector by sector and each body region
-/// turns green once it has been seen from every direction, so the turn ends when the
-/// data is complete rather than after a fixed time. Height/weight statistics are only
-/// used to catch failed detections, never as values. Images and masks live only in memory.
+/// what to fix. The front photo gives lengths and shoulder width. Girths come from a
+/// turn in eight stops 45° apart (see `StationScan`): each stop has one plain spoken
+/// instruction, and as soon as the user holds still there its sector of the floor ring
+/// turns green and the next instruction follows. Nothing depends on estimating the
+/// body's angle, which proved unreliable with the front camera. Height/weight statistics
+/// are only used to catch failed detections, never as values. Images and masks live
+/// only in memory.
 @MainActor
 @Observable
 final class BodyScanViewModel {
@@ -31,11 +32,14 @@ final class BodyScanViewModel {
 
     /// What the turn overlay draws.
     struct TurnState: Equatable {
-        var sectors = 0
+        /// The stop the user is asked to stand at, 0–7.
+        var station = 0
+        var captured: Set<Int> = []
         var measured: Set<BodyLevel> = []
         /// Latest outline of the person, normalised image coordinates.
         var reading: FrameReading?
-        var hint: String?
+        /// The user is holding still at a new stop; it is about to be captured.
+        var holding = false
     }
 
     private(set) var pose: ScanPose = .front
@@ -59,12 +63,14 @@ final class BodyScanViewModel {
     private var goodSince: Date?
     private var countdownTask: Task<Void, Never>?
     private var front: Task<FrontAnalysis, Error>?
-    private var lastJoints: [BodyJoint: DetectedJoint] = [:]
-    private let turnFrames = FrameStore()
-    private var tracker = TurnTracker()
+    private var scan = StationScan()
+    private var stillness = StillnessDetector()
     private var turnStart = Date()
-    /// Frames in which the body's angle could be read; without them the turn is timed.
-    private var angledFrames = 0
+    private var stationStart = Date()
+    /// The user moved since the last stop was captured.
+    private var movedSinceCapture = false
+    /// The user is standing still, but in the same place as the last stop.
+    private var stillButUnchanged = false
     private var lastHintAt = Date.distantPast
 
     /// Pose problems are spoken once they have lasted this long, so flickering
@@ -76,9 +82,10 @@ final class BodyScanViewModel {
 
     /// How long the pose must be held before the countdown starts.
     private let holdDuration: TimeInterval = 1.0
-    /// A turn without angle readings (very old devices) is simply timed.
-    private let timedTurnDuration: TimeInterval = 18
-    private let maxTurnDuration: TimeInterval = 40
+    /// A still pose that looks like the last stop is accepted after this long, for
+    /// bodies whose width barely changes between neighbouring stops.
+    private let stationTimeout: TimeInterval = 9
+    private let maxTurnDuration: TimeInterval = 150
     private let defaultFractions: [BodyLevel: Double] = [.chest: 0.27, .waist: 0.39, .hip: 0.5]
 
     init(basics: BodyBasics) {
@@ -107,8 +114,8 @@ final class BodyScanViewModel {
         countdownTask?.cancel()
         front?.cancel()
         front = nil
-        turnFrames.reset()
-        tracker = TurnTracker()
+        scan = StationScan()
+        stillness.reset()
         turn = TurnState()
         result = nil
         partialResult = nil
@@ -142,7 +149,6 @@ final class BodyScanViewModel {
             return
         }
         pendingIssue = nil
-        lastJoints = joints
         guard case .positioning = stage else { return }
         let now = Date()
         if goodSince == nil { goodSince = now }
@@ -179,7 +185,7 @@ final class BodyScanViewModel {
                 try? await Task.sleep(for: .seconds(1))
             }
             guard let self, !Task.isCancelled else { return }
-            if self.turnNext { await self.recordTurn() } else { self.capture() }
+            self.capture()
         }
     }
 
@@ -191,136 +197,134 @@ final class BodyScanViewModel {
         audio.play(.go)
         goodSince = nil
         turnNext = true
-        stage = .positioning(nil)
-        // Analysed while the user gets ready to turn; the turn's overlay needs its body levels.
-        front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
-        audio.say(String(localized: "Great. Keep your arms slightly away from your body. After the countdown, turn slowly all the way around."),
+        camera.onFrame = nil
+        stage = .turning(0)
+        let front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
+        self.front = front
+        audio.say(String(localized: "Great. Now we'll measure you from eight sides. Keep your arms slightly away from your body."),
                   priority: .high)
+        countdownTask = Task { [weak self] in
+            do {
+                let result = try await front.value
+                // Let the sentence above finish before the first stop.
+                try? await Task.sleep(for: .seconds(2.5))
+                guard !Task.isCancelled else { return }
+                self?.startStations(result)
+            } catch {
+                self?.fail(Self.message(for: error))
+            }
+        }
     }
 
     // MARK: Turn
 
-    /// Records the turn: every frame becomes a person mask plus the body's angle, which
-    /// drive the live overlay; widths are averaged per angle afterwards.
-    private func recordTurn() async {
-        let frontResult: FrontAnalysis
-        do {
-            guard let front else { return retry() }
-            frontResult = try await front.value
-        } catch {
-            fail(Self.message(for: error))
-            return
-        }
-        turnFrames.reset()
-        tracker = TurnTracker()
+    private func startStations(_ front: FrontAnalysis) {
+        scan = StationScan()
+        stillness.reset()
         turn = TurnState()
-        angledFrames = 0
         turnStart = Date()
-        lastHintAt = Date()
+        stationStart = Date()
+        movedSinceCapture = true
 
         let vision = vision
-        let store = turnFrames
         let start = turnStart
         let heightCm = basics.heightCm
-        let fractions = frontResult.fractions.isEmpty ? defaultFractions : frontResult.fractions
-        let shoulderReference = VisionBodyAnalyzer.shoulderRatio(lastJoints)
+        let fractions = front.fractions.isEmpty ? defaultFractions : front.fractions
         let analyzer = RotationScanAnalyzer()
-        // 3D pose, segmentation and the overlay take most of a frame's time on older phones.
-        camera.frameRate = 6
+        camera.frameRate = 8
         camera.onFrame = { [weak self] buffer in
             let time = Date().timeIntervalSince(start)
-            guard let frame = vision.turnFrame(buffer, time: time, shoulderReference: shoulderReference) else { return }
-            store.append(frame)
-            let reading = analyzer.reading(frame, heightCm: heightCm, levelFractions: fractions)
-            Task { @MainActor in self?.handleTurn(axisAngle: frame.axisAngle, reading: reading, time: time) }
+            let reading = vision.turnFrame(buffer, time: time)
+                .flatMap { analyzer.reading($0, heightCm: heightCm, levelFractions: fractions) }
+            Task { @MainActor in self?.handleStation(reading, time: time) }
         }
         stage = .turning(0)
-        audio.say(String(localized: "Now turn slowly all the way around."), priority: .high)
+        say(StationGuide.instruction(0))
 
         countdownTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(250))
+                try? await Task.sleep(for: .milliseconds(500))
                 guard let self, case .turning = self.stage else { return }
-                self.checkTurn()
+                self.coach()
             }
         }
     }
 
-    private func handleTurn(axisAngle: Double?, reading: FrameReading?, time: Double) {
-        guard case .turning = stage else { return }
-        if axisAngle != nil { angledFrames += 1 }
-        let sectorsBefore = tracker.completedSectors
-        let measuredBefore = turn.measured
-        tracker.add(axisAngle: axisAngle, measured: Set(reading.map { Array($0.levels.keys) } ?? []), time: time)
-
-        var state = turn
-        state.reading = reading
-        state.sectors = isTimed ? timedSectors : tracker.completedSectors
-        state.measured = isTimed ? [] : Set(tracker.levels.filter { tracker.coverage($0) >= 1 })
-        if state.sectors > sectorsBefore, !isTimed {
-            for n in sectorsBefore..<state.sectors { audio.play(.sector(n)) }
-        }
-        for level in tracker.levels where state.measured.contains(level) && !measuredBefore.contains(level) {
-            audio.play(.region)
-            audio.say(level.doneAnnouncement)
-        }
-        turn = state
-        stage = .turning(Double(state.sectors) / Double(TurnTracker.sectorCount))
-    }
-
-    private var elapsed: TimeInterval { Date().timeIntervalSince(turnStart) }
-
-    /// After a few seconds without a single angle reading, the turn is timed instead.
-    private var isTimed: Bool { elapsed > 5 && angledFrames < 3 }
-
-    private var timedSectors: Int {
-        min(TurnTracker.sectorCount, Int(elapsed / timedTurnDuration * Double(TurnTracker.sectorCount)))
-    }
-
-    /// Runs a few times a second: ends the turn when complete, and coaches when it stalls.
-    private func checkTurn() {
-        let now = elapsed
-        if isTimed {
-            let sectors = timedSectors
-            if sectors > turn.sectors {
-                audio.play(.sector(sectors - 1))
-                turn.sectors = sectors
-                stage = .turning(Double(sectors) / Double(TurnTracker.sectorCount))
-            }
-            if now >= timedTurnDuration { finishTurn() }
+    private func handleStation(_ reading: FrameReading?, time: Double) {
+        guard case .turning = stage, turn.station < StationScan.stationCount else { return }
+        turn.reading = reading
+        guard let reading else {
+            stillness.reset()
+            turn.holding = false
             return
         }
-        if tracker.isComplete || now >= maxTurnDuration {
-            finishTurn()
+        stillness.add(reading, time: time)
+        // Time to hear the instruction and start moving.
+        guard Date().timeIntervalSince(stationStart) > 1.2 else { return }
+        guard let widths = stillness.stillWidths(at: time) else {
+            movedSinceCapture = true
+            stillButUnchanged = false
+            turn.holding = false
             return
         }
-        guard Date().timeIntervalSince(lastHintAt) > 4.5, !audio.isSpeaking else { return }
-        var hint: String?
-        if tracker.speed > 80 {
-            hint = String(localized: "A little slower, please.")
-        } else if tracker.idle(at: now) > 3 {
-            hint = tracker.quarters >= 4
-                ? String(localized: "Almost there. Turn once more, slowly.")
-                : String(localized: "Keep turning slowly.")
+        let station = turn.station
+        let changed = station == 0 || scan.differs(widths, from: station - 1)
+        let waitedLongEnough = movedSinceCapture && Date().timeIntervalSince(stationStart) > stationTimeout
+        stillButUnchanged = !changed
+        turn.holding = changed
+        if changed || waitedLongEnough { record(widths) }
+    }
+
+    private func record(_ widths: [BodyLevel: Double]) {
+        let station = turn.station
+        scan.record(widths, at: station)
+        turn.captured.insert(station)
+        let measured = Set(scan.levels.filter { scan.isMeasured($0) })
+        if !measured.subtracting(turn.measured).isEmpty { audio.play(.region) }
+        turn.measured = measured
+        turn.holding = false
+        audio.play(.sector(station))
+        stillness.reset()
+        movedSinceCapture = false
+        stillButUnchanged = false
+
+        let next = station + 1
+        turn.station = next
+        stage = .turning(Double(next) / Double(StationScan.stationCount))
+        guard next < StationScan.stationCount else { return finishTurn() }
+        stationStart = Date()
+        say(String(localized: "Good.") + " " + StationGuide.instruction(next))
+    }
+
+    /// Runs twice a second: nudges the user when a stop is taking long.
+    private func coach() {
+        if Date().timeIntervalSince(turnStart) > maxTurnDuration { return finishTurn() }
+        guard Date().timeIntervalSince(lastHintAt) > 6, !audio.isSpeaking else { return }
+        if turn.reading == nil {
+            say(String(localized: "Step back into the frame."))
+        } else if stillButUnchanged {
+            say(String(localized: "Turn a little more.") + " " + StationGuide.instruction(turn.station))
+        } else {
+            say(String(localized: "Stop and hold still for a moment."))
         }
-        turn.hint = hint
-        if let hint {
-            lastHintAt = Date()
-            audio.say(hint)
-        }
+    }
+
+    private func say(_ text: String) {
+        lastHintAt = Date()
+        audio.say(text, priority: .high)
     }
 
     private func finishTurn() {
         camera.onFrame = nil
         countdownTask?.cancel()
         audio.play(.success)
-        audio.say(String(localized: "You can stop now."), priority: .high)
+        audio.say(String(localized: "Done. You can turn back to the phone."), priority: .high)
         analyze()
     }
 
     private func analyze() {
         guard let front else { return retry() }
-        let frames = turnFrames.drain()
+        let scan = scan
         let basics = basics
         stage = .analyzing
         camera.onFrame = nil
@@ -330,7 +334,7 @@ final class BodyScanViewModel {
             do {
                 let frontResult = try await front.value
                 outcome = await Task.detached(priority: .userInitiated) {
-                    Result { try Self.measure(front: frontResult, frames: frames, basics: basics) }
+                    Result { try Self.measure(front: frontResult, scan: scan, basics: basics) }
                 }.value
             } catch {
                 outcome = .failure(error)
@@ -345,7 +349,8 @@ final class BodyScanViewModel {
                 let missing = [BodyDimension.chest, .waist].filter { profile[$0] == nil }
                 guard missing.isEmpty else {
                     partialResult = profile
-                    fail(String(localized: "Your chest and waist couldn't be measured from the turn. Turn a little slower with your arms away from your body, in a bright room."),
+                    let detail = String(localized: "Positions measured: chest \(scan.count(.chest)) of 8, waist \(scan.count(.waist)) of 8, hips \(scan.count(.hip)) of 8.")
+                    fail(String(localized: "Your chest and waist couldn't be measured. Hold still at each position with your arms slightly away from your body, in a bright room.") + "\n\n" + detail,
                          spoken: String(localized: "Let's try the turn again."))
                     return
                 }
@@ -360,14 +365,12 @@ final class BodyScanViewModel {
         }
     }
 
-    private nonisolated static func measure(front: FrontAnalysis, frames: [RotationFrame], basics: BodyBasics) throws -> BodyProfile {
+    private nonisolated static func measure(front: FrontAnalysis, scan: StationScan, basics: BodyBasics) throws -> BodyProfile {
         // Lengths and shoulder width from the front photo; its girths would rely on an
         // assumed body depth, so they are replaced by the turn's.
         var profile = try BodyMeasurementEngine().measure(heightCm: basics.heightCm, front: front.observation, side: nil)
         for d in [BodyDimension.chest, .waist, .hip] { profile[d] = nil }
-        let girths = (try? RotationScanAnalyzer().girths(frames: frames, heightCm: basics.heightCm,
-                                                          levelFractions: front.fractions)) ?? [:]
-        for (level, value) in girths {
+        for (level, value) in scan.girths() {
             switch level {
             case .chest: profile[.chest] = value
             case .waist: profile[.waist] = value
@@ -442,23 +445,30 @@ extension BodyLevel {
         case .thigh: String(localized: "Thigh")
         }
     }
-
-    var doneAnnouncement: String {
-        switch self {
-        case .chest: String(localized: "Chest done.")
-        case .waist: String(localized: "Waist done.")
-        case .hip: String(localized: "Hips done.")
-        case .thigh: String(localized: "Thigh done.")
-        }
-    }
 }
 
-/// Turn frames arrive on the camera queue and are read on the main actor.
-private final class FrameStore: @unchecked Sendable {
-    private let lock = NSLock()
-    private var frames: [RotationFrame] = []
+/// The eight stops of the guided turn, 45° apart, turning to the user's right.
+enum StationGuide {
+    static func title(_ station: Int) -> String {
+        switch station {
+        case 0: String(localized: "Front")
+        case 2: String(localized: "Right side")
+        case 4: String(localized: "Back")
+        case 6: String(localized: "Left side")
+        default: String(localized: "Halfway")
+        }
+    }
 
-    func append(_ frame: RotationFrame) { lock.withLock { frames.append(frame) } }
-    func reset() { lock.withLock { frames.removeAll() } }
-    func drain() -> [RotationFrame] { lock.withLock { defer { frames.removeAll() }; return frames } }
+    static func instruction(_ station: Int) -> String {
+        switch station {
+        case 0: String(localized: "Face the phone and hold still.")
+        case 1: String(localized: "Turn a little to your right, halfway to your side, and hold still.")
+        case 2: String(localized: "Keep turning until your right side faces the phone, and hold still.")
+        case 3: String(localized: "Turn a little more, halfway to your back, and hold still.")
+        case 4: String(localized: "Keep turning until your back faces the phone, and hold still.")
+        case 5: String(localized: "Turn a little more, halfway to your other side, and hold still.")
+        case 6: String(localized: "Keep turning until your left side faces the phone, and hold still.")
+        default: String(localized: "Last one: turn a little more, halfway to the front, and hold still.")
+        }
+    }
 }
