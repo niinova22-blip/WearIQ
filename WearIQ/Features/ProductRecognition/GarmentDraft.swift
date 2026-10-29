@@ -75,7 +75,7 @@ final class GarmentDraft {
     }
 
     func apply(_ chart: ParsedSizeChart) {
-        sizes = chart.sizes
+        sizes = SizeOrder.sorted(chart.sizes)
         chartWarnings = chart.warnings
         if let kind = chart.kind { chartKind = kind }
     }

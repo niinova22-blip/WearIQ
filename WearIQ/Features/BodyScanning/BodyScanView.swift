@@ -181,11 +181,15 @@ struct BodyScanView: View {
         case .turnFurther:
             Label("Turn further", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
         case .turnBack:
-            Label("Turned too far", systemImage: "arrow.counterclockwise").foregroundStyle(.orange)
+            Label("Turn back counter-clockwise", systemImage: "arrow.counterclockwise").foregroundStyle(.orange)
         case .openArms:
             Label("Open your arms", systemImage: "figure.arms.open").foregroundStyle(.orange)
         case .stepBack:
             Label("Step back", systemImage: "arrow.down.to.line").foregroundStyle(.orange)
+        case .comeCloser:
+            Label("Come closer", systemImage: "arrow.up.to.line").foregroundStyle(.orange)
+        case .moveToCentre:
+            Label("Move to the middle", systemImage: "arrow.left.and.right").foregroundStyle(.orange)
         case nil:
             Label("Turn and stop", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
         }
@@ -287,6 +291,8 @@ private struct TurnGuideOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             let rect = cameraImageRect(in: proxy.size)
+            // Where and how to stand at this stop, drawn first so the live skeleton sits on top.
+            TargetFigure(station: min(state.station, StationScan.stationCount - 1), matched: state.fit == .ok, rect: rect)
             if let reading = state.reading {
                 ZStack {
                     floorRing(reading, in: rect)
@@ -422,5 +428,65 @@ private struct StationDial: View {
         if captured.contains(i) { return .green }
         if i == station { return holding ? .green.opacity(0.7) : .yellow }
         return .white.opacity(0.25)
+    }
+}
+
+/// A see-through figure showing the pose for the current stop: standing in the middle of
+/// the picture at a good distance, arms straight out, turned clockwise by 45° per stop.
+/// The nose marks where the face points (hidden when the back faces the phone). It turns
+/// green while the user holds the stop.
+private struct TargetFigure: View {
+    let station: Int
+    let matched: Bool
+    let rect: CGRect
+
+    /// Points of a standing body in stature units: x across, y up from the floor, z towards
+    /// the phone when facing it.
+    private struct P { var x, y, z: Double }
+
+    var body: some View {
+        let angle = Double(station) * 45 * .pi / 180
+        let stature = 0.56 * rect.height
+        let floor = rect.minY + 0.93 * rect.height
+        let center = rect.midX
+        // The preview is mirrored, so a clockwise turn shows the face moving to screen right.
+        func project(_ p: P) -> CGPoint {
+            CGPoint(x: center + (p.x * cos(angle) + p.z * sin(angle)) * stature, y: floor - p.y * stature)
+        }
+        let color: Color = matched ? .green : .white
+        let limbs: [(P, P)] = [
+            (P(x: -0.5, y: 0.81, z: 0), P(x: 0.5, y: 0.81, z: 0)),        // arms straight out
+            (P(x: 0, y: 0.86, z: 0), P(x: 0, y: 0.52, z: 0)),             // spine
+            (P(x: -0.09, y: 0.52, z: 0), P(x: -0.08, y: 0.04, z: 0)),     // legs
+            (P(x: 0.09, y: 0.52, z: 0), P(x: 0.08, y: 0.04, z: 0)),
+        ]
+        let torsoWidth = (0.22 * abs(cos(angle)) + 0.13 * abs(sin(angle))) * stature
+        let head = project(P(x: 0, y: 0.935, z: 0))
+        let nose = project(P(x: 0, y: 0.93, z: 0.075))
+        return ZStack {
+            Path { path in
+                for (a, b) in limbs {
+                    path.move(to: project(a))
+                    path.addLine(to: project(b))
+                }
+            }
+            .stroke(color.opacity(0.35), style: StrokeStyle(lineWidth: 0.05 * stature, lineCap: .round))
+            RoundedRectangle(cornerRadius: torsoWidth / 3)
+                .fill(color.opacity(0.22))
+                .frame(width: torsoWidth, height: 0.32 * stature)
+                .position(x: center, y: floor - 0.66 * stature)
+            Circle()
+                .fill(color.opacity(0.3))
+                .frame(width: 0.13 * stature, height: 0.13 * stature)
+                .position(head)
+            if cos(angle) > -0.3 {
+                Circle()
+                    .fill(color.opacity(0.7))
+                    .frame(width: 0.035 * stature, height: 0.035 * stature)
+                    .position(nose)
+            }
+        }
+        .animation(.easeInOut(duration: 0.5), value: station)
+        .animation(.easeInOut(duration: 0.2), value: matched)
     }
 }

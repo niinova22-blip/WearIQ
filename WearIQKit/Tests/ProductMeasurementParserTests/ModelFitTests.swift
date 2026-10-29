@@ -95,6 +95,24 @@ import WearIQCore
         #expect(chart.warnings.contains(.anchoredToModel(size: "M")))
     }
 
+    /// LC Waikiki: "Uzunluk: 188 cm Göğüs: 99 cm Bel: 76 cm Basen: 96 cm. Manken M beden ürün giyiyor."
+    @Test func trouserLengthFromTheModelsHeight() throws {
+        let anchor = ModelFit(size: "M", heightCm: 188, chestCm: 99, waistCm: 76, hipCm: 96)
+        let chart = try #require(StandardSizeCharts.chart(for: ["XS", "XL", "S", "M", "L"], category: .pants,
+                                                          audience: .men, anchor: anchor))
+        #expect(chart.sizes.map(\.label) == ["XS", "S", "M", "L", "XL"])
+        for size in chart.sizes {
+            #expect(abs(try #require(size.values[.inseam]).cm - 90.4) < 0.1)
+        }
+    }
+
+    @Test func sizesSortInWearingOrder() {
+        let labels = ["XL", "S", "3XL", "M", "XS", "L", "XXL"].map { SizeEntry(label: $0, values: [:]) }
+        #expect(SizeOrder.sorted(labels).map(\.label) == ["XS", "S", "M", "L", "XL", "XXL", "3XL"])
+        let numbers = ["34", "W30", "32/34", "28"].map { SizeEntry(label: $0, values: [:]) }
+        #expect(SizeOrder.sorted(numbers).map(\.label) == ["28", "W30", "32/34", "34"])
+    }
+
     @Test func pageParserFindsModelFit() {
         let html = #"<h1>Polo Yaka Basic Kazak</h1><div class="model">Modelin Ölçüleri <b>M Beden</b> - 1,90cm - 100/84/101</div><script>var x = "model bel 10";</script>"#
         let info = ProductPageParser().parse(html: html, pageURL: nil)

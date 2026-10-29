@@ -34,8 +34,12 @@ public enum StandardSizeCharts {
     public static func chart(for labels: [String], category: GarmentCategory?, audience: GarmentAudience?,
                              anchor: ModelFit? = nil) -> ParsedSizeChart? {
         guard var chart = chart(for: labels, category: category, audience: audience) else { return nil }
-        guard let anchor, anchor.isAnchor, let worn = anchor.size,
+        guard let anchor, let worn = anchor.size,
               let reference = chart.sizes.first(where: { $0.label.uppercased() == worn }) else { return chart }
+        if let height = anchor.heightCm, (140...210).contains(height) {
+            addLengths(to: &chart, modelHeight: height, category: category)
+        }
+        guard anchor.isAnchor else { return chart }
         var shifted = false
         for (dim, value) in [(GarmentDimension.chest, anchor.chestCm), (.waist, anchor.waistCm), (.hip, anchor.hipCm)] {
             guard let value, let standard = reference.values[dim]?.cm else { continue }
@@ -52,6 +56,28 @@ public enum StandardSizeCharts {
         return chart
     }
 
+    /// The garment was made to look right on the model, so its lengths suit a body of the
+    /// model's height; sizes of one style usually share the length. From ANSUR II stature
+    /// fractions: crotch height 0.481 (inseam), cervicale − navel 0.262 (top length),
+    /// acromion − wrist 0.3375 (sleeve). Stated as the body each size fits (body chart).
+    static func addLengths(to chart: inout ParsedSizeChart, modelHeight h: Double, category: GarmentCategory?) {
+        var lengths: [GarmentDimension: Double] = [:]
+        switch category {
+        case .pants?: lengths[.inseam] = 0.481 * h
+        case .tshirt?: lengths[.bodyLength] = 0.262 * h
+        case .shirt?, .jacket?:
+            lengths[.bodyLength] = 0.262 * h
+            lengths[.sleeveLength] = 0.3375 * h
+        case nil: break
+        }
+        for i in chart.sizes.indices {
+            for (dim, cm) in lengths where chart.sizes[i].values[dim] == nil {
+                // Where the hem falls on the model is a judgement call; ±3.5 cm.
+                chart.sizes[i].values[dim] = MeasuredValue(cm: cm, uncertaintyCm: 3.5, source: .manual)
+            }
+        }
+    }
+
     public static func chart(for labels: [String], category: GarmentCategory?, audience: GarmentAudience?) -> ParsedSizeChart? {
         let audience = audience ?? .men
         let sizes = labels.compactMap { label -> SizeEntry? in
@@ -66,7 +92,7 @@ public enum StandardSizeCharts {
             return SizeEntry(label: label, values: values)
         }
         guard !sizes.isEmpty else { return nil }
-        return ParsedSizeChart(sizes: sizes, kind: .body, unit: .cm, warnings: [.standardChartUsed])
+        return ParsedSizeChart(sizes: SizeOrder.sorted(sizes), kind: .body, unit: .cm, warnings: [.standardChartUsed])
     }
 
     private static func ranges(for rawLabel: String, category: GarmentCategory?, audience: GarmentAudience) -> Ranges? {

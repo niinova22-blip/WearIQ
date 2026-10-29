@@ -109,6 +109,10 @@ public enum StopFit: Equatable, Sendable {
     case openArms
     /// Head or feet outside the picture: the height, which sets the scale, can't be seen.
     case stepBack
+    /// Too small in the picture to measure well.
+    case comeCloser
+    /// Too far to one side.
+    case moveToCentre
 }
 
 public enum StopGuide {
@@ -120,6 +124,9 @@ public enum StopGuide {
     ///   - spanRatio: arm span relative to the front stop's.
     ///   - shoulderRatio: shoulder separation relative to the front stop's, when the
     ///     shoulders are detected. Lets dropped arms be told apart from a side view.
+    /// Below this fraction of the picture's height the outline is too coarse to measure.
+    public static let minimumBodySpan = 0.42
+
     /// Whether the whole body, head to feet, is inside the picture.
     public static func fullyVisible(_ reading: FrameReading) -> Bool {
         reading.top > 0.01 && reading.floor < 0.99

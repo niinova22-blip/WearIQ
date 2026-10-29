@@ -4761,16 +4761,6 @@
         }
       }
     },
-    "A little too far. Turn back slightly.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Biraz fazla döndün. Hafifçe geri dön."
-          }
-        }
-      }
-    },
     "Open your arms fully, straight out at shoulder height.": {
       "localizations": {
         "tr": {
@@ -4921,16 +4911,6 @@
         }
       }
     },
-    "Turned too far": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fazla döndün"
-          }
-        }
-      }
-    },
     "Open your arms": {
       "localizations": {
         "tr": {
@@ -5061,22 +5041,102 @@
         }
       }
     },
-    "For the most accurate result, scan in your underwear or fitted clothes; the photos never leave your phone. Stand facing the phone, arms slightly away from your body.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En doğru sonuç için iç çamaşırıyla ya da dar kıyafetle tara; fotoğraflar telefonundan hiç çıkmaz. Telefona dönük dur, kollarını gövdenden biraz uzak tut."
-          }
-        }
-      }
-    },
     "Scan check: skeleton/outline scale %@": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
             "value": "Tarama kontrolü: iskelet/silüet ölçeği %@"
+          }
+        }
+      }
+    },
+    "A little too far. Turn back slightly, counter-clockwise.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz fazla döndün. Saat yönünün tersine hafifçe geri dön."
+          }
+        }
+      }
+    },
+    "Come a little closer to the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefona biraz yaklaş."
+          }
+        }
+      }
+    },
+    "Move to the middle of the picture.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Görüntünün ortasına geç."
+          }
+        }
+      }
+    },
+    "Come closer": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yaklaş"
+          }
+        }
+      }
+    },
+    "Move to the middle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ortaya geç"
+          }
+        }
+      }
+    },
+    "Turn back counter-clockwise": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünün tersine dön"
+          }
+        }
+      }
+    },
+    "%@ fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ tam oturur"
+          }
+        }
+      }
+    },
+    "The legs will be long (%@); roll or hem them.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paçalar uzun gelir (%@); kıvırabilir ya da kısalttırabilirsin."
+          }
+        }
+      }
+    },
+    "The legs will be a little long; roll or hem them.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paçalar biraz uzun gelir; kıvırabilir ya da kısalttırabilirsin."
           }
         }
       }

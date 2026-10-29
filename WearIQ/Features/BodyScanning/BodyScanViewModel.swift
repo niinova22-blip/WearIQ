@@ -107,8 +107,7 @@ final class BodyScanViewModel {
         watchPose()
         do {
             try await camera.start(position: .front)
-            audio.say(String(localized: "For the most accurate result, scan in your underwear or fitted clothes; the photos never leave your phone. Stand facing the phone, arms slightly away from your body."),
-                      priority: .high)
+            audio.say(String(localized: "Stand facing the phone, arms slightly away from your body."), priority: .high)
         } catch {
             stage = .failed(error.localizedDescription)
         }
@@ -286,6 +285,10 @@ final class BodyScanViewModel {
         let fit: StopFit
         if !StopGuide.fullyVisible(reading) {
             fit = .stepBack
+        } else if reading.floor - reading.top < StopGuide.minimumBodySpan {
+            fit = .comeCloser
+        } else if abs(reading.centerX - 0.5) > 0.18 {
+            fit = .moveToCentre
         } else if station == 0 {
             fit = span >= StopGuide.openArmSpan ? .ok : .openArms
         } else {
@@ -337,7 +340,9 @@ final class BodyScanViewModel {
         switch fit {
         case .ok: return
         case .turnFurther: say(String(localized: "Turn a little further clockwise."))
-        case .turnBack: say(String(localized: "A little too far. Turn back slightly."))
+        case .turnBack: say(String(localized: "A little too far. Turn back slightly, counter-clockwise."))
+        case .comeCloser: say(String(localized: "Come a little closer to the phone."))
+        case .moveToCentre: say(String(localized: "Move to the middle of the picture."))
         case .openArms: say(String(localized: "Open your arms fully, straight out at shoulder height."))
         case .stepBack: say(String(localized: "Step back until you're fully visible, head to feet."))
         }

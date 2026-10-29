@@ -72,7 +72,10 @@ public struct FitEngine: FitAnalyzing {
 
         var offset: ClosedRange<Double>?
         if outside != 0 {
-            let m = abs(outside)
+            // A body chart's length is the body the size suits, so the useful number is the
+            // whole difference ("about 6 cm longer than your leg"), not the part beyond the
+            // tolerance.
+            let m = spec.chartKind == .body && rule.kind == .length ? abs(ease) : abs(outside)
             offset = max(0, m - sigma)...(m + sigma)
         }
 

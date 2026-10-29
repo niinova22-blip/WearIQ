@@ -66,6 +66,17 @@ extension SizeRecommendation {
 
 /// Plain-language summary built only from the engine's results.
 enum FitExplanation {
+    /// "waist fits, hips fit, leg length about 5–8 cm long." for one size.
+    static func regionSentence(_ size: SizeFit) -> String {
+        let parts = size.regions.filter { $0.verdict != .insufficientData }.map { r -> String in
+            let name = r.region.title.lowercased()
+            guard r.severity != .good else { return String(localized: "\(name) fits") }
+            let amount = r.offsetText.map { " (\($0))" } ?? ""
+            return "\(name) \(r.verdict.title.lowercased())\(amount)"
+        }
+        return parts.joined(separator: ", ") + "."
+    }
+
     static func text(for analysis: FitAnalysis) -> String {
         var sentences: [String] = []
         switch analysis.recommendation {
@@ -74,19 +85,18 @@ enum FitExplanation {
             return String(localized: "We need the \(names) measurement for both you and the garment to recommend a size.")
         case let .between(smaller, larger):
             sentences.append(String(localized: "\(smaller) and \(larger) fit about equally well. Pick \(smaller) for a closer fit or \(larger) for more room."))
+            // Say how each of the two will fit, region by region.
+            for label in [smaller, larger] {
+                if let size = analysis.sizes.first(where: { $0.label == label }) {
+                    sentences.append("\(label): " + regionSentence(size))
+                }
+            }
         case .size:
             break
         }
 
         if let best = analysis.recommendedSize {
-            let good = best.regions.filter { $0.severity == .good }.map { $0.region.title.lowercased() }
-            if !good.isEmpty {
-                sentences.append(String(localized: "\(best.label) suits your \(good.joined(separator: ", ")) best."))
-            }
-            for r in best.regions where r.severity == .minor || r.severity == .major {
-                let amount = r.offsetText.map { " (\($0))" } ?? ""
-                sentences.append(String(localized: "\(r.region.title): \(r.verdict.title.lowercased())\(amount)."))
-            }
+            sentences.append("\(best.label): " + regionSentence(best))
             // Explain why the neighbouring smaller size lost, if it did on a key region.
             if let index = analysis.sizes.firstIndex(where: { $0.label == best.label }), index > 0 {
                 let smaller = analysis.sizes[index - 1]
@@ -140,6 +150,10 @@ extension FitExplanation {
         case (.short?, .short?): parts.append(String(localized: "Sleeves and length will be short."))
         case (.short?, _): parts.append(String(localized: "Sleeves will be a little short."))
         case (_, .short?): parts.append(String(localized: "It will be a little short in length."))
+        case (_, .long?) where verdict(.inseam) == .long:
+            let amount = size.regions.first { $0.region == .inseam }?.offsetText
+            parts.append(amount.map { String(localized: "The legs will be long (\($0)); roll or hem them.") }
+                ?? String(localized: "The legs will be a little long; roll or hem them."))
         case (.long?, _), (_, .long?):
             if girth != .loose { parts.append(String(localized: "A bit long; you may want to roll the sleeves or tuck it in.")) }
         default: break
