@@ -32,6 +32,8 @@ final class MeasurementReviewModel {
     /// Replaces a value with a tape-measure value (high confidence).
     func setManual(_ d: BodyDimension, cm: Double) throws {
         if let range = Self.validRange[d], !range.contains(cm) { throw EditError.outOfRange(range) }
+        // A tape value over a scanned one teaches later scans this person's offset.
+        if let old = profile[d], old.source == .scan { TapeCalibration.record(d, scanned: old.cm, tape: cm) }
         profile[d] = .manual(cm)
     }
 

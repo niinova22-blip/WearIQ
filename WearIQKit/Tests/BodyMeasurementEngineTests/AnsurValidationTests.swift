@@ -211,12 +211,17 @@ import WearIQCore
         var noise = Noise(state: 11)
         var errors: [BodyDimension: Errors] = [:]
         var rejected: [BodyDimension: Int] = [:]
+        var waistWithoutAge = Errors()
         var count = 0
         for line in lines {
             let c = line.split(separator: ",")
-            guard c.count == 5, let h = Double(c[1]), let w = Double(c[2]), let waist = Double(c[3]), let hip = Double(c[4]) else { continue }
+            guard c.count >= 6, let h = Double(c[1]), let w = Double(c[2]), let waist = Double(c[3]), let hip = Double(c[4]),
+                  let age = Double(c[5]) else { continue }
             let sex: BodySex = c[0] == "male" ? .male : .female
-            let prior = AnthropometricPrior().estimate(heightCm: h, weightKg: w, sex: sex)
+            let prior = AnthropometricPrior().estimate(heightCm: h, weightKg: w, sex: sex, ageYears: age)
+            if let noAge = AnthropometricPrior().estimate(heightCm: h, weightKg: w, sex: sex)[.waist] {
+                waistWithoutAge.relative.append(noAge.cm / waist - 1)
+            }
             count += 1
             var scan = BodyProfile()
             for (d, truth) in [(BodyDimension.waist, waist), (.hip, hip)] {
@@ -226,12 +231,14 @@ import WearIQCore
             for d in MeasurementFusion.fuse(scan: scan, prior: prior).rejected { rejected[d, default: 0] += 1 }
         }
         print("NHANES civilians, n=\(count):")
+        print(String(format: "  waist without age: bias %+.2f%%  mean |error| %.2f%%", waistWithoutAge.mean * 100, waistWithoutAge.meanAbsolute * 100))
         for d in [BodyDimension.waist, .hip] {
             let e = try #require(errors[d])
             let rate = Double(rejected[d] ?? 0) / Double(count)
             print(String(format: "  %@ estimate: bias %+.2f%%  mean |error| %.2f%%;  correct readings rejected %.2f%%",
                          d.rawValue, e.mean * 100, e.meanAbsolute * 100, rate * 100))
             #expect(abs(e.mean) < 0.02, "\(d)")
+            if d == .waist { #expect(e.meanAbsolute < waistWithoutAge.meanAbsolute, "age helps the waist") }
             #expect(rate < 0.02, "\(d) rejects \(rate)")
         }
     }

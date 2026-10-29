@@ -5370,6 +5370,56 @@
           }
         }
       }
+    },
+    "Age": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yaş"
+          }
+        }
+      }
+    },
+    "Not set": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seçilmedi"
+          }
+        }
+      }
+    },
+    "Have a tape measure? Measure your waist (or any value) and tap it to enter yours. Later scans adjust to you. Optional.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezuran var mı? Belini (ya da herhangi bir ölçüyü) ölç ve değere dokunup kendi ölçünü gir. Sonraki taramalar sana göre ayarlanır. İsteğe bağlı."
+          }
+        }
+      }
+    },
+    "Adjusted to your tape measurements: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezura ölçülerine göre ayarlanıyor: %@"
+          }
+        }
+      }
+    },
+    "Weight and age": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kilo ve yaş"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

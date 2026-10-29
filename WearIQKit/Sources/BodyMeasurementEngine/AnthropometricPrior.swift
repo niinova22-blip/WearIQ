@@ -67,23 +67,39 @@ public struct AnthropometricPrior: Sendable {
         ],
     ]
 
+    /// Waist with age: (age − 35) years added as a term, same data. The waist widens with
+    /// age at the same height and weight (about 2 mm a year); knowing the age cuts the
+    /// civilian waist error by a fifth (men 4.6 → 3.6 cm mean absolute error). Hips don't
+    /// depend on it.
+    static let waistWithAge: [BodySex?: (model: Model, perYear: Double)] = [
+        .male: (Model(a: 38.0864, b: -0.0508, c: 0.3713, d: 1.2444, sd: 4.31), 0.2142),
+        .female: (Model(a: 39.5669, b: -0.0371, c: 0.3809, d: 1.0945, sd: 5.48), 0.1642),
+        nil: (Model(a: 65.1645, b: -0.1996, c: 0.5290, d: 0.7261, sd: 4.86), 0.1917),
+    ]
+
     /// Valid input range of the survey data; outside it the models extrapolate.
     public static let heightRange: ClosedRange<Double> = 140...200
     public static let weightRange: ClosedRange<Double> = 36...145
 
     /// Estimates for every dimension except height. Empty if the inputs are implausible.
-    public func estimate(heightCm: Double, weightKg: Double, sex: BodySex?) -> [BodyDimension: MeasuredValue] {
+    /// The age (adults, 18–90) sharpens the waist.
+    public func estimate(heightCm: Double, weightKg: Double, sex: BodySex?, ageYears: Double? = nil) -> [BodyDimension: MeasuredValue] {
         guard (120...230).contains(heightCm), (30...250).contains(weightKg),
               let models = Self.models[sex] else { return [:] }
         let bmi = weightKg / ((heightCm / 100) * (heightCm / 100))
         // Outside the survey range the linear fit is less trustworthy.
         let extrapolating = !Self.heightRange.contains(heightCm) || !Self.weightRange.contains(weightKg)
         let extrapolation = extrapolating ? 1.5 : 1
-        return Dictionary(uniqueKeysWithValues: models.map { dim, m in
+        var values = Dictionary(uniqueKeysWithValues: models.map { dim, m in
             let factor = (Self.civilianFitted.contains(dim) ? 1 : populationShiftFactor) * extrapolation
             return (dim, MeasuredValue(cm: m.a + m.b * heightCm + m.c * weightKg + m.d * bmi,
                                        uncertaintyCm: m.sd * factor, source: .estimated))
         })
+        if let age = ageYears, (18...90).contains(age), let (m, perYear) = Self.waistWithAge[sex] {
+            values[.waist] = MeasuredValue(cm: m.a + m.b * heightCm + m.c * weightKg + m.d * bmi + perYear * (age - 35),
+                                           uncertaintyCm: m.sd * extrapolation, source: .estimated)
+        }
+        return values
     }
 }
 

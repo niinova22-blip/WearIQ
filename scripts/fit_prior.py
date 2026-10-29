@@ -6,7 +6,7 @@ ANSUR II (US Army 2012) is a fit, mostly young military population; NHANES 2017�
 the top of the hip bone, which sits at the same height (ANSUR: 0.601 vs 0.604 of
 stature). Hips: both at the buttocks' fullest point.
 
-Model per sex: value = a + b·height + c·weight + d·BMI. Prints the coefficients and the
+Model per sex: value = a + b·height + c·weight + d·BMI + e·(age − 35). Prints the coefficients and the
 error of each model on each dataset, so the choice is visible.
 
 Usage: fit_prior.py <ANSUR data dir> <NHANES cache dir>
@@ -35,7 +35,7 @@ for file, sex in (("ANSUR_II_MALE_Public.csv", "male"), ("ANSUR_II_FEMALE_Public
     a = pd.read_csv(os.path.join(ansur_dir, file), encoding="latin1")
     a.columns = [c.lower() for c in a.columns]
     frames.append(pd.DataFrame({
-        "source": "ANSUR", "sex": sex, "height": a.stature / 10, "weight": a.weightkg / 10,
+        "source": "ANSUR", "sex": sex, "height": a.stature / 10, "weight": a.weightkg / 10, "age": a.age,
         "waist": a.waistcircumference / 10, "hip": a.buttockcircumference / 10,
     }))
 bmx = pd.read_sas(os.path.join(cache, "P_BMX.xpt"))
@@ -44,7 +44,7 @@ n = bmx.merge(demo[["SEQN", "RIAGENDR", "RIDAGEYR", "RIDEXPRG"]], on="SEQN")
 n = n[(n.RIDAGEYR >= 18) & (n.RIDAGEYR <= 65) & (n.RIDEXPRG != 1)]  # adults, not pregnant
 frames.append(pd.DataFrame({
     "source": "NHANES", "sex": np.where(n.RIAGENDR == 1, "male", "female"),
-    "height": n.BMXHT, "weight": n.BMXWT, "waist": n.BMXWAIST, "hip": n.BMXHIP,
+    "height": n.BMXHT, "weight": n.BMXWT, "waist": n.BMXWAIST, "hip": n.BMXHIP, "age": n.RIDAGEYR,
 }))
 data = pd.concat(frames).dropna()
 data = data[(data.height.between(140, 205)) & (data.weight.between(36, 160))]
@@ -52,17 +52,23 @@ data["bmi"] = data.weight / (data.height / 100) ** 2
 print("rows:", data.groupby(["source", "sex"]).size().to_dict())
 
 
-def design(d):
-    return np.column_stack([np.ones(len(d)), d.height, d.weight, d.bmi])
+AGE_REF = 35  # the age term is (age − 35), so without an age the model is the same at 35
 
 
-def fit(d, y):
-    coef, *_ = np.linalg.lstsq(design(d), d[y], rcond=None)
+def design(d, with_age=True):
+    cols = [np.ones(len(d)), d.height, d.weight, d.bmi]
+    if with_age:
+        cols.append(d.age - AGE_REF)
+    return np.column_stack(cols)
+
+
+def fit(d, y, with_age=True):
+    coef, *_ = np.linalg.lstsq(design(d, with_age), d[y], rcond=None)
     return coef
 
 
-def report(coef, d, y):
-    r = d[y] - design(d) @ coef
+def report(coef, d, y, with_age=True):
+    r = d[y] - design(d, with_age) @ coef
     return f"bias {r.mean():+.2f}  sd {r.std():.2f}  mae {r.abs().mean():.2f}"
 
 
@@ -71,16 +77,17 @@ for y in ("waist", "hip"):
         d = data if sex is None else data[data.sex == sex]
         ansur = d[d.source == "ANSUR"]
         nhanes = d[d.source == "NHANES"]
-        only_ansur = fit(ansur, y)
+        no_age = fit(d, y, with_age=False)
         both = fit(d, y)
         print(f"\n{y} / {sex or 'pooled'}")
-        print("  ANSUR-only model   on ANSUR:", report(only_ansur, ansur, y), " on NHANES:", report(only_ansur, nhanes, y))
-        print("  combined model     on ANSUR:", report(both, ansur, y), " on NHANES:", report(both, nhanes, y))
+        print("  without age  on ANSUR:", report(no_age, ansur, y, False), " on NHANES:", report(no_age, nhanes, y, False))
+        print("  with age     on ANSUR:", report(both, ansur, y), " on NHANES:", report(both, nhanes, y))
         sd = (d[y] - design(d) @ both).std()
-        print(f"  Model(a: {both[0]:.4f}, b: {both[1]:.4f}, c: {both[2]:.4f}, d: {both[3]:.4f}, sd: {sd:.2f})")
+        sd0 = (d[y] - design(d, False) @ no_age).std()
+        print(f"  Model(a: {both[0]:.4f}, b: {both[1]:.4f}, c: {both[2]:.4f}, d: {both[3]:.4f}, e: {both[4]:.4f}, sd: {sd:.2f}, sdWithoutAge: {sd0:.2f})")
 
 # A compact extract for the Swift validation tests (NHANES is public domain).
 out = os.path.join(ansur_dir, "NHANES_2017_2020_adults.csv")
-nh = data[data.source == "NHANES"][["sex", "height", "weight", "waist", "hip"]].round(1)
+nh = data[data.source == "NHANES"][["sex", "height", "weight", "waist", "hip", "age"]].round(1)
 nh.to_csv(out, index=False)
 print("wrote", out, len(nh))

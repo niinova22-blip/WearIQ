@@ -458,7 +458,8 @@ final class BodyScanViewModel {
             camera.stop()
 
             switch outcome {
-            case let .success(profile):
+            case var .success(profile):
+                TapeCalibration.apply(to: &profile)
                 let girths = scan.girths()
                 let missing = [BodyLevel.chest, .waist].filter { girths[$0] == nil }
                 guard missing.isEmpty else {

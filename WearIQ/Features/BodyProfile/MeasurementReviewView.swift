@@ -25,6 +25,18 @@ struct MeasurementReviewView: View {
                         .font(.subheadline)
                 }
             }
+            if !model.scanned.isEmpty {
+                Section {
+                    Label("Have a tape measure? Measure your waist (or any value) and tap it to enter yours. Later scans adjust to you. Optional.",
+                          systemImage: "ruler")
+                        .font(.subheadline)
+                    if !TapeCalibration.active.isEmpty {
+                        Text("Adjusted to your tape measurements: \(TapeCalibration.active.map(\.title).joined(separator: ", "))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
             if !model.lowConfidence.isEmpty {
                 Section {
                     Label("Values marked low confidence are rough estimates from photos. For better size advice, measure them with a tape and tap to correct.",

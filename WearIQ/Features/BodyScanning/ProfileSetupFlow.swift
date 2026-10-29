@@ -20,12 +20,15 @@ struct ProfileSetupFlow: View {
     @AppStorage("heightCm") private var heightCm: Double = 175
     @AppStorage("weightKg") private var weightKg: Double = 75
     @AppStorage("bodySex") private var sexRaw: String = ""
+    /// 0 until the user picks an age.
+    @AppStorage("ageYears") private var ageYears: Double = 0
     @AppStorage("fitPreference") private var fitPreference: FitPreference = .asDesigned
     @State private var path: [Step] = []
 
     var body: some View {
         NavigationStack(path: $path) {
-            HeightPreferencesView(heightCm: $heightCm, weightKg: $weightKg, sexRaw: $sexRaw, preference: $fitPreference) {
+            HeightPreferencesView(heightCm: $heightCm, weightKg: $weightKg, sexRaw: $sexRaw, ageYears: $ageYears,
+                                  preference: $fitPreference) {
                 path.append(.scanGuide)
             }
             .navigationDestination(for: Step.self) { step in
@@ -46,7 +49,8 @@ struct ProfileSetupFlow: View {
     }
 
     private var bodyBasics: BodyBasics {
-        BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw))
+        BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw),
+                   ageYears: ageYears > 0 ? ageYears : nil)
     }
 
     /// Starts from height/weight estimates so the user corrects values instead of typing all of them.
@@ -60,10 +64,12 @@ struct BodyBasics: Equatable, Sendable {
     var heightCm: Double
     var weightKg: Double
     var sex: BodySex?
+    /// Sharpens the waist estimate; optional.
+    var ageYears: Double?
 
-    /// Best estimate without photos: height/weight statistics.
+    /// Best estimate without photos: height/weight (and age) statistics.
     func prior() -> [BodyDimension: MeasuredValue] {
-        AnthropometricPrior().estimate(heightCm: heightCm, weightKg: weightKg, sex: sex)
+        AnthropometricPrior().estimate(heightCm: heightCm, weightKg: weightKg, sex: sex, ageYears: ageYears)
     }
 
     /// Height as typed, everything else estimated.
@@ -78,6 +84,7 @@ struct HeightPreferencesView: View {
     @Binding var heightCm: Double
     @Binding var weightKg: Double
     @Binding var sexRaw: String
+    @Binding var ageYears: Double
     @Binding var preference: FitPreference
     let onContinue: () -> Void
 
@@ -114,8 +121,12 @@ struct HeightPreferencesView: View {
                     ForEach(35...200, id: \.self) { Text("\($0) kg").tag($0) }
                 }
                 .pickerStyle(.wheel)
+                Picker("Age", selection: Binding(get: { Int(ageYears) }, set: { ageYears = Double($0) })) {
+                    Text("Not set").tag(0)
+                    ForEach(18...90, id: \.self) { Text("\($0)").tag($0) }
+                }
             } header: {
-                Text("Your weight")
+                Text("Weight and age")
             } footer: {
                 Text("Used to estimate values the photos can't show clearly. Stays on this device.")
             }
