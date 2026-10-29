@@ -4980,6 +4980,46 @@
           }
         }
       }
+    },
+    "Gender": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cinsiyet"
+          }
+        }
+      }
+    },
+    "Needed to use the right body proportions and size charts.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doğru vücut oranları ve beden tablolarını kullanmak için gerekli."
+          }
+        }
+      }
+    },
+    "Choose your gender to continue": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devam etmek için cinsiyetini seç"
+          }
+        }
+      }
+    },
+    "Estimated · the scan read %lld cm, which doesn't fit your height and weight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tahmini · taramada %lld cm okundu, boyun ve kilonla uyuşmuyor"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

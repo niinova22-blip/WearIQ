@@ -4,7 +4,7 @@ import ProductMeasurementParser
 import SwiftUI
 import WearIQCore
 
-/// Height, weight & preferences → camera permission → front/side scan → review & correct.
+/// Gender, height, weight & fit preference → camera permission → scan → review & correct.
 /// Used after onboarding and for re-scanning from the profile tab.
 struct ProfileSetupFlow: View {
     /// The review step carries its profile. Keeping it in separate @State broke on device:
@@ -20,15 +20,12 @@ struct ProfileSetupFlow: View {
     @AppStorage("heightCm") private var heightCm: Double = 175
     @AppStorage("weightKg") private var weightKg: Double = 75
     @AppStorage("bodySex") private var sexRaw: String = ""
-    @AppStorage("usualTopSize") private var usualTopSize: String = ""
-    @AppStorage("usualWaistSize") private var usualWaistSize: String = ""
     @AppStorage("fitPreference") private var fitPreference: FitPreference = .asDesigned
     @State private var path: [Step] = []
 
     var body: some View {
         NavigationStack(path: $path) {
-            HeightPreferencesView(heightCm: $heightCm, weightKg: $weightKg, sexRaw: $sexRaw,
-                                  usualTopSize: $usualTopSize, usualWaistSize: $usualWaistSize, preference: $fitPreference) {
+            HeightPreferencesView(heightCm: $heightCm, weightKg: $weightKg, sexRaw: $sexRaw, preference: $fitPreference) {
                 path.append(.scanGuide)
             }
             .navigationDestination(for: Step.self) { step in
@@ -49,8 +46,7 @@ struct ProfileSetupFlow: View {
     }
 
     private var bodyBasics: BodyBasics {
-        BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw),
-                   usualTopSize: usualTopSize, usualWaistSize: usualWaistSize)
+        BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw))
     }
 
     /// Starts from height/weight estimates so the user corrects values instead of typing all of them.
@@ -64,35 +60,10 @@ struct BodyBasics: Equatable, Sendable {
     var heightCm: Double
     var weightKg: Double
     var sex: BodySex?
-    /// The sizes the user usually buys ("M", waist "32"); empty if not given.
-    var usualTopSize: String = ""
-    var usualWaistSize: String = ""
 
-    /// Best estimate without photos: height/weight statistics, sharpened by the sizes the
-    /// user usually wears (a size label pins chest, waist and hip to a few centimetres).
+    /// Best estimate without photos: height/weight statistics.
     func prior() -> [BodyDimension: MeasuredValue] {
-        var values = AnthropometricPrior().estimate(heightCm: heightCm, weightKg: weightKg, sex: sex)
-        let audience: GarmentAudience? = sex.map { $0 == .female ? .women : .men }
-        var fromSizes: [BodyDimension: MeasuredValue] = [:]
-        if !usualTopSize.isEmpty, let size = StandardSizeCharts.chart(for: [usualTopSize], category: .shirt, audience: audience)?.sizes.first {
-            fromSizes[.chest] = size.values[.chest]
-            fromSizes[.waist] = size.values[.waist]
-            fromSizes[.hip] = size.values[.hip]
-        }
-        if !usualWaistSize.isEmpty, let size = StandardSizeCharts.chart(for: [usualWaistSize], category: .pants, audience: audience)?.sizes.first {
-            // A trouser size describes the waist better than a top size does.
-            fromSizes[.waist] = size.values[.waist]
-            fromSizes[.hip] = size.values[.hip] ?? fromSizes[.hip]
-        }
-        for (dim, s) in fromSizes {
-            // Size charts give ranges; brands differ, so count it as a ±4 cm reading.
-            let reading = MeasuredValue(cm: s.cm, uncertaintyCm: 4, source: .estimated)
-            guard let p = values[dim] else { values[dim] = reading; continue }
-            let vp = p.uncertaintyCm * p.uncertaintyCm, vs = reading.uncertaintyCm * reading.uncertaintyCm
-            values[dim] = MeasuredValue(cm: (p.cm / vp + reading.cm / vs) / (1 / vp + 1 / vs),
-                                        uncertaintyCm: (1 / (1 / vp + 1 / vs)).squareRoot(), source: .estimated)
-        }
-        return values
+        AnthropometricPrior().estimate(heightCm: heightCm, weightKg: weightKg, sex: sex)
     }
 
     /// Height as typed, everything else estimated.
@@ -107,13 +78,27 @@ struct HeightPreferencesView: View {
     @Binding var heightCm: Double
     @Binding var weightKg: Double
     @Binding var sexRaw: String
-    @Binding var usualTopSize: String
-    @Binding var usualWaistSize: String
     @Binding var preference: FitPreference
     let onContinue: () -> Void
 
     var body: some View {
         Form {
+            // Body proportions and size charts differ between men and women, so this
+            // comes first and has to be answered.
+            Section {
+                Picker("Gender", selection: $sexRaw) {
+                    Text("Male").tag(BodySex.male.rawValue)
+                    Text("Female").tag(BodySex.female.rawValue)
+                }
+                .pickerStyle(.segmented)
+                .controlSize(.large)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+            } header: {
+                Text("Gender")
+            } footer: {
+                Text("Needed to use the right body proportions and size charts.")
+            }
             Section {
                 Picker("Height", selection: Binding(get: { Int(heightCm) }, set: { heightCm = Double($0) })) {
                     ForEach(120...230, id: \.self) { Text("\($0) cm").tag($0) }
@@ -129,29 +114,10 @@ struct HeightPreferencesView: View {
                     ForEach(35...200, id: \.self) { Text("\($0) kg").tag($0) }
                 }
                 .pickerStyle(.wheel)
-                Picker("Body type", selection: $sexRaw) {
-                    Text("Male").tag(BodySex.male.rawValue)
-                    Text("Female").tag(BodySex.female.rawValue)
-                    Text("Prefer not to say").tag("")
-                }
             } header: {
                 Text("Your weight")
             } footer: {
                 Text("Used to estimate values the photos can't show clearly. Stays on this device.")
-            }
-            Section {
-                Picker("Tops", selection: $usualTopSize) {
-                    Text("Not sure").tag("")
-                    ForEach(["XS", "S", "M", "L", "XL", "XXL", "3XL"], id: \.self) { Text($0).tag($0) }
-                }
-                Picker("Trousers (waist)", selection: $usualWaistSize) {
-                    Text("Not sure").tag("")
-                    ForEach(["26", "28", "29", "30", "31", "32", "33", "34", "36", "38", "40"], id: \.self) { Text($0).tag($0) }
-                }
-            } header: {
-                Text("Sizes you usually wear")
-            } footer: {
-                Text("Makes chest, waist and hip estimates much closer.")
             }
             Section("How do you like clothes to fit?") {
                 Picker("Fit", selection: $preference) {
@@ -164,8 +130,9 @@ struct HeightPreferencesView: View {
         }
         .navigationTitle("About you")
         .safeAreaInset(edge: .bottom) {
-            Button("Continue", action: onContinue)
+            Button(BodySex(rawValue: sexRaw) == nil ? LocalizedStringKey("Choose your gender to continue") : "Continue", action: onContinue)
                 .buttonStyle(.primary)
+                .disabled(BodySex(rawValue: sexRaw) == nil)
                 .padding(Theme.Spacing.m)
         }
     }

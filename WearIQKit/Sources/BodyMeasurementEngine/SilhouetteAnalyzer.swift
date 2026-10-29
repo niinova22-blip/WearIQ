@@ -88,6 +88,8 @@ public struct SilhouetteAnalyzer: Sendable {
     public var minRowPixels = 3
     /// The chest level sits this far down the torso, from the shoulder line to the hip joints.
     public static let chestTorsoFraction = 0.30
+    /// The navel, where the waist is measured.
+    public static let waistTorsoFraction = 0.74
 
     public init() {}
 
@@ -112,9 +114,17 @@ public struct SilhouetteAnalyzer: Sendable {
         let chestY = Int((shoulderY + Self.chestTorsoFraction * torso).rounded())
         levels[.chest] = LevelSample(y: Double(chestY), extentPx: Double(centerWidth(chestY)))
 
-        // Narrowest torso row between lower chest and the hip joints.
-        let waistRange = Int(shoulderY + 0.45 * torso)...Int(root.y - 0.05 * torso)
-        if let waistY = waistRange.filter({ centerWidth($0) > 0 }).min(by: { centerWidth($0) < centerWidth($1) }) {
+        // The waist is measured at the navel (ANSUR's omphalion), about 74% of the way
+        // from the shoulder line to the hip joints. A loose top hides the body's narrowing,
+        // and searching the whole lower torso for the narrowest row then lands just below
+        // the chest; so look only around the navel and, among equally narrow rows, take
+        // the one nearest it.
+        let navelY = shoulderY + Self.waistTorsoFraction * torso
+        let waistRows = Int(shoulderY + 0.6 * torso)...Int(shoulderY + 0.85 * torso)
+        let widths = waistRows.map { ($0, centerWidth($0)) }.filter { $0.1 > 0 }
+        if let narrowest = widths.map(\.1).min(),
+           let waistY = widths.filter({ Double($0.1) <= Double(narrowest) * 1.01 + 1 })
+               .min(by: { abs(Double($0.0) - navelY) < abs(Double($1.0) - navelY) })?.0 {
             levels[.waist] = LevelSample(y: Double(waistY), extentPx: Double(centerWidth(waistY)))
         }
 

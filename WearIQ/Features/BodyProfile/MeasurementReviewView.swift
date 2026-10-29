@@ -77,7 +77,11 @@ struct MeasurementReviewView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(d.title)
-                if let v = model.value(d) {
+                if let v = model.value(d), v.source == .estimated, let seen = model.profile.rejectedScans?[d] {
+                    Text("Estimated · the scan read \(Int(seen.rounded())) cm, which doesn't fit your height and weight")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                } else if let v = model.value(d) {
                     Text(v.source == .scan ? v.confidence.title : v.source.title)
                         .font(.caption)
                         .foregroundStyle((v.confidence == .low && v.source == .scan) || v.source == .estimated ? .orange : .secondary)

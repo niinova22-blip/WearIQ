@@ -16,7 +16,9 @@ final class ProfileSetupUITests: XCTestCase {
         for _ in 0..<3 { app.buttons["Continue"].tap() }
         app.buttons["Get started"].tap()
 
-        // About you: defaults (175 cm, 75 kg) are fine.
+        // About you: gender is required; defaults (175 cm, 75 kg) are fine.
+        XCTAssertTrue(app.buttons["Male"].waitForExistence(timeout: 5))
+        app.buttons["Male"].tap()
         XCTAssertTrue(app.buttons["Continue"].waitForExistence(timeout: 5))
         app.buttons["Continue"].tap()
 

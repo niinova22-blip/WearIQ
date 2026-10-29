@@ -68,6 +68,9 @@ public struct BodyProfile: Codable, Hashable, Sendable {
     public var createdAt: Date
     public var weightKg: Double?
     public var sex: BodySex?
+    /// Scan readings so far from what height and weight allow that an estimate was used
+    /// instead, kept so the review can show what the scan saw.
+    public var rejectedScans: [BodyDimension: Double]?
 
     public init(values: [BodyDimension: MeasuredValue] = [:], createdAt: Date = Date(),
                 weightKg: Double? = nil, sex: BodySex? = nil) {

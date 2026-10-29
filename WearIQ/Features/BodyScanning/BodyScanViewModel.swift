@@ -412,12 +412,11 @@ final class BodyScanViewModel {
 
             switch outcome {
             case let .success(profile):
-                let missing = [BodyDimension.chest, .waist].filter { profile[$0] == nil }
+                let girths = scan.girths()
+                let missing = [BodyLevel.chest, .waist].filter { girths[$0] == nil }
                 guard missing.isEmpty else {
                     partialResult = profile
-                    let names = missing.map { $0 == .chest ? BodyLevel.chest.title : BodyLevel.waist.title }
-                        .joined(separator: ", ")
-                    let girths = scan.girths()
+                    let names = missing.map(\.title).joined(separator: ", ")
                     let calculated = [BodyLevel.chest, .waist, .hip].map { level in
                         "\(level.title) " + (girths[level].map { "\(Int($0.cm.rounded())) cm" } ?? "–")
                     }.joined(separator: ", ")
@@ -453,9 +452,17 @@ final class BodyScanViewModel {
         }
         profile.weightKg = basics.weightKg
         profile.sex = basics.sex
-        // Height/weight statistics only flag impossible readings; they never become values.
-        let rejected = MeasurementFusion.fuse(scan: profile, prior: basics.prior()).rejected
-        for d in rejected { profile[d] = nil }
+        // A reading far from anything this height and weight allows is a failed detection:
+        // the height/weight estimate takes its place, and the reading is kept for the review.
+        // Values the photos couldn't show at all are estimated the same way.
+        let prior = basics.prior()
+        var rejectedScans: [BodyDimension: Double] = [:]
+        for d in MeasurementFusion.fuse(scan: profile, prior: prior).rejected {
+            rejectedScans[d] = profile[d]?.cm
+            profile[d] = prior[d]
+        }
+        for (d, estimate) in prior where profile[d] == nil { profile[d] = estimate }
+        profile.rejectedScans = rejectedScans.isEmpty ? nil : rejectedScans
         return profile
     }
 

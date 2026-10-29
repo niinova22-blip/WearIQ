@@ -37,7 +37,7 @@ private let frontJoints: [BodyJoint: Point2D] = [
         #expect(o.floorY == 900)
         #expect(o.levels[.chest]?.extentPx == 100)     // arms excluded
         #expect(o.levels[.waist]?.extentPx == 80)
-        #expect(o.levels[.waist]?.y == 380)
+        #expect((380..<420).contains(Int(o.levels[.waist]?.y ?? 0)))
         #expect(o.levels[.hip]?.extentPx == 104)
         #expect(o.crotchY == 510)
         #expect(o.levels[.thigh]?.extentPx == 45)      // one leg

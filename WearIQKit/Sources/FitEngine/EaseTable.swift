@@ -70,10 +70,13 @@ enum EaseTable {
             .init(region: .chest, kind: .girth, garment: .chest, body: .chest,
                   weight: 1.0, critical: true, ease: chestEase, bodyChartTolerance: 2.5),
             .init(region: .waist, kind: .girth, garment: .waist, body: .waist,
-                  weight: 0.5, critical: false, ease: waistEase, bodyChartTolerance: 2.5),
+                  weight: f == .relaxed || f == .oversized ? 0.15 : 0.5, critical: false, ease: waistEase,
+                  bodyChartTolerance: 2.5),
             .init(region: .bodyLength, kind: .length, garment: .bodyLength, body: .torsoLength,
                   weight: 0.3, critical: false, ease: lengthEase, bodyChartTolerance: 3),
         ]
+        // A T-shirt hangs straight from the chest; its waist doesn't decide the size.
+        if c == .tshirt { rules.removeAll { $0.region == .waist } }
         // T-shirt sleeves are short by design; arm length is irrelevant there.
         if c != .tshirt {
             rules.insert(.init(region: .sleeve, kind: .length, garment: .sleeveLength, body: .armLength,
