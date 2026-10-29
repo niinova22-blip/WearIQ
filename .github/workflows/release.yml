@@ -15,8 +15,11 @@ name: Release to TestFlight
 # Signing is manual on purpose. The account holder's name contains a non-ASCII character,
 # and Xcode's cloud signing then produces a designated requirement that App Store
 # validation rejects (ITMS-90035). Each run creates a distribution certificate and an
-# App Store profile through the API, signs with a Team ID based requirement, and revokes
-# both at the end.
+# App Store profile through the API and signs with a Team ID based requirement.
+#
+# The certificate must stay valid until Apple has processed the upload (minutes later),
+# otherwise processing fails with ITMS-90034. So a run does not revoke its own
+# certificate: it stores the IDs as an artifact, and the next run revokes them first.
 
 on:
   workflow_dispatch:
@@ -30,6 +33,10 @@ on:
 
 env:
   BUNDLE_ID: com.niinova.weariq
+
+permissions:
+  contents: read
+  actions: read
 
 jobs:
   testflight:
@@ -89,6 +96,26 @@ jobs:
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             -quiet
 
+      - name: Revoke the previous run's signing assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet "pyjwt[crypto]==2.9.0"
+          OLD="$RUNNER_TEMP/old-signing"
+          printf '%s' "$P8" > "$RUNNER_TEMP/AuthKey-old.p8"
+          # Earlier runs that left their certificate for Apple's processing.
+          for id in $(gh run list --workflow release.yml --status completed -L 10 --json databaseId -q '.[].databaseId'); do
+            rm -rf "$OLD" && mkdir -p "$OLD"
+            if gh run download "$id" -n signing-ids -D "$OLD" 2>/dev/null; then
+              ASC_KEY_PATH="$RUNNER_TEMP/AuthKey-old.p8" "$RUNNER_TEMP/venv/bin/python" scripts/asc_signing.py cleanup "$OLD" || true
+            fi
+          done
+          rm -f "$RUNNER_TEMP/AuthKey-old.p8"
+
       - name: Create signing certificate and profile
         env:
           P8: ${{ secrets.ASC_KEY_P8 }}
@@ -99,8 +126,6 @@ jobs:
           mkdir -p "$SIGN_DIR"
           echo "SIGN_DIR=$SIGN_DIR" >> "$GITHUB_ENV"
           printf '%s' "$P8" > "$SIGN_DIR/AuthKey.p8"
-          python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet "pyjwt[crypto]==2.9.0"
 
           # LibreSSL in /usr/bin writes PKCS#12 files that `security import` accepts.
           /usr/bin/openssl genrsa -out "$SIGN_DIR/dist.key" 2048
@@ -176,6 +201,7 @@ jobs:
           (cd "$RUNNER_TEMP/ipa" && zip -qry ../WearIQ.ipa Payload)
 
       - name: Upload to TestFlight
+        id: upload
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -185,13 +211,28 @@ jobs:
           xcrun altool --upload-app -f "$RUNNER_TEMP/WearIQ.ipa" -t ios \
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
 
-      - name: Revoke signing assets and remove keys
+      # Uploaded build: keep the certificate until Apple has processed it; the next run
+      # revokes it. Anything else (failed build or upload): revoke right away.
+      - name: Keep signing IDs for the next run
+        if: steps.upload.outcome == 'success'
+        run: |
+          mkdir -p "$RUNNER_TEMP/signing-ids"
+          cp "$SIGN_DIR/cert_id" "$SIGN_DIR/profile_id" "$RUNNER_TEMP/signing-ids/"
+      - uses: actions/upload-artifact@v5
+        if: steps.upload.outcome == 'success'
+        with:
+          name: signing-ids
+          path: ${{ runner.temp }}/signing-ids
+          retention-days: 30
+
+      - name: Revoke unused signing assets and remove keys
         if: always()
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          UPLOADED: ${{ steps.upload.outcome == 'success' }}
         run: |
-          if [ -n "$SIGN_DIR" ] && [ -f "$SIGN_DIR/AuthKey.p8" ]; then
+          if [ "$UPLOADED" != "true" ] && [ -n "$SIGN_DIR" ] && [ -f "$SIGN_DIR/AuthKey.p8" ]; then
             ASC_KEY_PATH="$SIGN_DIR/AuthKey.p8" "$RUNNER_TEMP/venv/bin/python" scripts/asc_signing.py cleanup "$SIGN_DIR" || true
           fi
           rm -rf "$SIGN_DIR" ~/.appstoreconnect/private_keys
