@@ -202,6 +202,40 @@ import WearIQCore
         #expect(errors.p95 < 0.04)
     }
 
+    /// The waist and hip estimates on US civilians (NHANES 2017–March 2020, 6,456 adults),
+    /// and how often the plausibility check would reject a correct civilian reading.
+    @Test func estimatesHoldForCivilians() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("Data/NHANES_2017_2020_adults.csv")
+        let lines = try String(contentsOf: url, encoding: .utf8).split(whereSeparator: \.isNewline).dropFirst()
+        var noise = Noise(state: 11)
+        var errors: [BodyDimension: Errors] = [:]
+        var rejected: [BodyDimension: Int] = [:]
+        var count = 0
+        for line in lines {
+            let c = line.split(separator: ",")
+            guard c.count == 5, let h = Double(c[1]), let w = Double(c[2]), let waist = Double(c[3]), let hip = Double(c[4]) else { continue }
+            let sex: BodySex = c[0] == "male" ? .male : .female
+            let prior = AnthropometricPrior().estimate(heightCm: h, weightKg: w, sex: sex)
+            count += 1
+            var scan = BodyProfile()
+            for (d, truth) in [(BodyDimension.waist, waist), (.hip, hip)] {
+                errors[d, default: Errors()].relative.append(try #require(prior[d]).cm / truth - 1)
+                scan[d] = MeasuredValue(cm: truth * (1 + 0.03 * noise.gaussian()), uncertaintyCm: 0.03 * truth, source: .scan)
+            }
+            for d in MeasurementFusion.fuse(scan: scan, prior: prior).rejected { rejected[d, default: 0] += 1 }
+        }
+        print("NHANES civilians, n=\(count):")
+        for d in [BodyDimension.waist, .hip] {
+            let e = try #require(errors[d])
+            let rate = Double(rejected[d] ?? 0) / Double(count)
+            print(String(format: "  %@ estimate: bias %+.2f%%  mean |error| %.2f%%;  correct readings rejected %.2f%%",
+                         d.rawValue, e.mean * 100, e.meanAbsolute * 100, rate * 100))
+            #expect(abs(e.mean) < 0.02, "\(d)")
+            #expect(rate < 0.02, "\(d) rejects \(rate)")
+        }
+    }
+
     /// How often the height/weight check would throw away a correct reading. A scan
     /// reading with 3% error should almost never be rejected for a real body.
     @Test func plausibilityCheckRarelyRejectsRealBodies() {

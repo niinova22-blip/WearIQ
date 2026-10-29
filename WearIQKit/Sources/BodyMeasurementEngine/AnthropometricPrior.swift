@@ -12,8 +12,11 @@ import WearIQCore
 /// outseam = waist (omphalion) height.
 ///
 /// The survey population is military and fitter than average, so the in-sample residual
-/// SD is inflated by `populationShiftFactor`. These are statistical estimates for a typical
-/// body of that height and weight, never a measurement of this person.
+/// SD is inflated by `populationShiftFactor`. Waist and hips, where civilians differ most,
+/// are fitted on ANSUR II together with NHANES 2017–March 2020 (CDC, US civilian adults
+/// 18–65, 6,456 people; scripts/fit_prior.py) and use their pooled residual SD as is.
+/// These are statistical estimates for a typical body of that height and weight, never a
+/// measurement of this person.
 public struct AnthropometricPrior: Sendable {
     struct Model {
         let a, b, c, d: Double
@@ -22,14 +25,16 @@ public struct AnthropometricPrior: Sendable {
     }
 
     public var populationShiftFactor = 1.3
+    /// Fitted on military and civilian data together; their SD needs no inflation.
+    static let civilianFitted: Set<BodyDimension> = [.waist, .hip]
 
     public init() {}
 
     static let models: [BodySex?: [BodyDimension: Model]] = [
         .male: [
             .chest: Model(a: 17.7891, b: 0.1955, c: 0.1214, d: 1.5662, sd: 3.19),
-            .waist: Model(a: 10.0937, b: 0.0877, c: 0.2559, d: 1.6856, sd: 4.37),
-            .hip: Model(a: 10.2651, b: 0.2597, c: 0.1219, d: 1.2875, sd: 2.60),
+            .waist: Model(a: 47.9172, b: -0.1249, c: 0.4106, d: 1.2382, sd: 5.11),
+            .hip: Model(a: -11.5334, b: 0.3761, c: -0.0005, d: 1.7201, sd: 3.03),
             .thigh: Model(a: 22.9405, b: 0.0234, c: 0.1989, d: 0.6665, sd: 2.25),
             .shoulderWidth: Model(a: 5.0259, b: 0.1791, c: -0.0317, d: 0.2815, sd: 1.44),
             .armLength: Model(a: -2.6693, b: 0.3542, c: 0.0097, d: -0.0016, sd: 1.76),
@@ -39,8 +44,8 @@ public struct AnthropometricPrior: Sendable {
         ],
         .female: [
             .chest: Model(a: 8.2582, b: 0.2266, c: 0.0607, d: 1.7814, sd: 4.23),
-            .waist: Model(a: 0.2703, b: 0.1475, c: 0.1653, d: 1.9848, sd: 4.81),
-            .hip: Model(a: -7.9135, b: 0.3885, c: 0.0065, d: 1.8172, sd: 2.90),
+            .waist: Model(a: 36.9597, b: -0.0337, c: 0.3304, d: 1.3134, sd: 5.90),
+            .hip: Model(a: -19.8668, b: 0.4558, c: -0.0464, d: 1.9780, sd: 3.83),
             .thigh: Model(a: 3.5895, b: 0.1413, c: 0.112, d: 1.0756, sd: 2.26),
             .shoulderWidth: Model(a: -4.5441, b: 0.2369, c: -0.0942, d: 0.3482, sd: 1.47),
             .armLength: Model(a: -6.2039, b: 0.3645, c: 0.01, d: 0.0561, sd: 1.73),
@@ -51,8 +56,8 @@ public struct AnthropometricPrior: Sendable {
         // Sex not given: pooled fit, wider residuals.
         nil: [
             .chest: Model(a: -27.3589, b: 0.4423, c: -0.0413, d: 2.1148, sd: 3.72),
-            .waist: Model(a: 21.3681, b: 0.0258, c: 0.269, d: 1.6397, sd: 4.54),
-            .hip: Model(a: 86.2695, b: -0.154, c: 0.2683, d: 0.7696, sd: 4.06),
+            .waist: Model(a: 68.1282, b: -0.2327, c: 0.5285, d: 0.8297, sd: 5.47),
+            .hip: Model(a: 15.3713, b: 0.2266, c: -0.1440, d: 2.2039, sd: 4.61),
             .thigh: Model(a: 50.5416, b: -0.1247, c: 0.2059, d: 0.6173, sd: 2.79),
             .shoulderWidth: Model(a: -19.4397, b: 0.3137, c: -0.0782, d: 0.4382, sd: 1.74),
             .armLength: Model(a: -15.9064, b: 0.4273, c: -0.0566, d: 0.2155, sd: 1.75),
@@ -73,11 +78,12 @@ public struct AnthropometricPrior: Sendable {
         let bmi = weightKg / ((heightCm / 100) * (heightCm / 100))
         // Outside the survey range the linear fit is less trustworthy.
         let extrapolating = !Self.heightRange.contains(heightCm) || !Self.weightRange.contains(weightKg)
-        let factor = populationShiftFactor * (extrapolating ? 1.5 : 1)
-        return models.mapValues { m in
-            MeasuredValue(cm: m.a + m.b * heightCm + m.c * weightKg + m.d * bmi,
-                          uncertaintyCm: m.sd * factor, source: .estimated)
-        }
+        let extrapolation = extrapolating ? 1.5 : 1
+        return Dictionary(uniqueKeysWithValues: models.map { dim, m in
+            let factor = (Self.civilianFitted.contains(dim) ? 1 : populationShiftFactor) * extrapolation
+            return (dim, MeasuredValue(cm: m.a + m.b * heightCm + m.c * weightKg + m.d * bmi,
+                                       uncertaintyCm: m.sd * factor, source: .estimated))
+        })
     }
 }
 
