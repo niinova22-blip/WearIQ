@@ -49,6 +49,30 @@ import WearIQCore
         #expect(abs(hip - perimeter(.hip)) / perimeter(.hip) < 0.01)
     }
 
+    @Test func armsAgainstTheChestAreIgnored() throws {
+        var scan = StationScan()
+        for i in 0..<8 {
+            var w = widths(at: Double(i) * 45)
+            // Arms hanging against the chest add two arm widths seen from the front and back.
+            if i % 4 == 0 { w[.chest]! += 18 }
+            #expect(StationScan.armsAgainstChest(w, at: i) == (i % 4 == 0), "stop \(i)")
+            scan.record(w, at: i)
+        }
+        let chest = try #require(scan.girths()[.chest]).cm
+        #expect(abs(chest - perimeter(.chest)) / perimeter(.chest) < 0.02, "\(chest) vs \(perimeter(.chest))")
+    }
+
+    @Test func frontAndBackRebuiltFromNeighbours() throws {
+        var scan = StationScan()
+        for i in 0..<8 {
+            var w = widths(at: Double(i) * 45)
+            if i == 0 || i == 4 { w[.chest] = nil }
+            scan.record(w, at: i)
+        }
+        let chest = try #require(scan.girths()[.chest]).cm
+        #expect(abs(chest - perimeter(.chest)) / perimeter(.chest) < 0.01)
+    }
+
     @Test func tooFewStopsGiveNothing() {
         var scan = StationScan()
         for i in 0..<5 { scan.record(widths(at: Double(i) * 45), at: i) }

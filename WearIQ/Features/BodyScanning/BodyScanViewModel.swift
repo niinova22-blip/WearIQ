@@ -71,6 +71,8 @@ final class BodyScanViewModel {
     private var movedSinceCapture = false
     /// The user is standing still, but in the same place as the last stop.
     private var stillButUnchanged = false
+    /// Times the user was asked to move their arms away at the current stop.
+    private var armNudges = 0
     private var lastHintAt = Date.distantPast
 
     /// Pose problems are spoken once they have lasted this long, so flickering
@@ -201,7 +203,7 @@ final class BodyScanViewModel {
         stage = .turning(0)
         let front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
         self.front = front
-        audio.say(String(localized: "Great. Now we'll measure you from eight sides. Keep your arms slightly away from your body."),
+        audio.say(String(localized: "Great. Now we'll measure you from eight sides. Hold your arms out to the sides, about a hand's width from your body, and keep them there while you turn."),
                   priority: .high)
         countdownTask = Task { [weak self] in
             do {
@@ -229,7 +231,7 @@ final class BodyScanViewModel {
         let vision = vision
         let start = turnStart
         let heightCm = basics.heightCm
-        let fractions = front.fractions.isEmpty ? defaultFractions : front.fractions
+        let fractions = front.fractions.merging(defaultFractions) { measured, _ in measured }
         let analyzer = RotationScanAnalyzer()
         camera.frameRate = 8
         camera.onFrame = { [weak self] buffer in
@@ -271,6 +273,16 @@ final class BodyScanViewModel {
         let changed = station == 0 || scan.differs(widths, from: station - 1)
         let waitedLongEnough = movedSinceCapture && Date().timeIntervalSince(stationStart) > stationTimeout
         stillButUnchanged = !changed
+        // The chest can't be measured through arms resting against it; ask once or twice,
+        // then take the stop anyway (its chest width is rebuilt from the neighbours).
+        if changed, StationScan.armsAgainstChest(widths, at: station), armNudges < 2 {
+            turn.holding = false
+            if Date().timeIntervalSince(lastHintAt) > 4 {
+                armNudges += 1
+                say(String(localized: "Hold your arms a little further out from your body."))
+            }
+            return
+        }
         turn.holding = changed
         if changed || waitedLongEnough { record(widths) }
     }
@@ -287,6 +299,7 @@ final class BodyScanViewModel {
         stillness.reset()
         movedSinceCapture = false
         stillButUnchanged = false
+        armNudges = 0
 
         let next = station + 1
         turn.station = next
@@ -349,8 +362,10 @@ final class BodyScanViewModel {
                 let missing = [BodyDimension.chest, .waist].filter { profile[$0] == nil }
                 guard missing.isEmpty else {
                     partialResult = profile
+                    let names = missing.map { $0 == .chest ? BodyLevel.chest.title : BodyLevel.waist.title }
+                        .joined(separator: ", ")
                     let detail = String(localized: "Positions measured: chest \(scan.count(.chest)) of 8, waist \(scan.count(.waist)) of 8, hips \(scan.count(.hip)) of 8.")
-                    fail(String(localized: "Your chest and waist couldn't be measured. Hold still at each position with your arms slightly away from your body, in a bright room.") + "\n\n" + detail,
+                    fail(String(localized: "Couldn't measure: \(names). Hold still at each position with your arms slightly away from your body, in a bright room.") + "\n\n" + detail,
                          spoken: String(localized: "Let's try the turn again."))
                     return
                 }
@@ -416,7 +431,16 @@ private struct FrontAnalysis: Sendable {
         let front = try SilhouetteAnalyzer().analyzeFront(mask: f.mask, joints: f.joints)
         let top = front.floorY - front.personHeightPx
         observation = front
-        fractions = front.levels.mapValues { ($0.y - top) / front.personHeightPx }
+        var fractions = front.levels.mapValues { ($0.y - top) / front.personHeightPx }
+        // Arms against the chest make its front width unusable, and the level is dropped;
+        // the turn still needs to know where the chest is.
+        if fractions[.chest] == nil, let ls = front.joints[.leftShoulder], let rs = front.joints[.rightShoulder],
+           let root = front.joints[.root] {
+            let shoulderY = (ls.y + rs.y) / 2
+            let chestY = shoulderY + SilhouetteAnalyzer.chestTorsoFraction * (root.y - shoulderY)
+            fractions[.chest] = (chestY - top) / front.personHeightPx
+        }
+        self.fractions = fractions
     }
 }
 

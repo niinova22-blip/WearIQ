@@ -45,19 +45,51 @@ public struct StationScan: Sendable {
     public func girths() -> [BodyLevel: MeasuredValue] {
         var result: [BodyLevel: MeasuredValue] = [:]
         for level in levels where isMeasured(level) {
-            var values = widths.map { $0[level] }
+            var values = (0..<Self.stationCount).map { usableWidth(level, at: $0) }
+            let n = Self.stationCount
             // A silhouette is the same width seen from opposite sides, so a missed stop
             // takes the width of the one across from it.
             for i in values.indices where values[i] == nil {
-                values[i] = values[(i + Self.stationCount / 2) % Self.stationCount]
+                values[i] = values[(i + n / 2) % n]
+            }
+            // Still missing (both opposite stops): for an elliptical cross-section
+            // w(θ)² = w(θ+45°)² + w(θ−45°)² − w(θ+90°)².
+            for i in values.indices where values[i] == nil {
+                if let next = values[(i + 1) % n], let previous = values[(i + n - 1) % n],
+                   let perpendicular = values[(i + 2) % n] {
+                    let square = next * next + previous * previous - perpendicular * perpendicular
+                    values[i] = square > 0 ? square.squareRoot() : nil
+                }
+            }
+            for i in values.indices where values[i] == nil {
+                values[i] = values[(i + n / 2) % n]
             }
             let filled = values.compactMap { $0 }
-            guard filled.count == Self.stationCount, let lo = filled.min(), let hi = filled.max(),
+            guard filled.count == n, let lo = filled.min(), let hi = filled.max(),
                   lo < 0.92 * hi else { continue }  // equal widths all round: the user didn't turn
             let girth = Double.pi * filled.reduce(0, +) / Double(filled.count)
             result[level] = MeasuredValue(cm: girth, uncertaintyCm: 0.03 * girth, source: .scan)
         }
         return result
+    }
+
+    /// Width at a stop, without readings widened by the arms.
+    private func usableWidth(_ level: BodyLevel, at station: Int) -> Double? {
+        guard let width = widths[station][level] else { return nil }
+        if level == .chest, Self.armsAgainstChest(widths[station], at: station) { return nil }
+        return width
+    }
+
+    /// Seen from the front, back or diagonally, arms hanging against the chest make it
+    /// far wider than the waist below it, which no torso is. Side-on, the arms stay
+    /// within the outline.
+    public static func armsAgainstChest(_ levelWidths: [BodyLevel: Double], at station: Int) -> Bool {
+        guard let chest = levelWidths[.chest], let waist = levelWidths[.waist], waist > 0 else { return false }
+        switch station % 4 {
+        case 0: return chest > 1.35 * waist
+        case 2: return false
+        default: return chest > 1.3 * waist
+        }
     }
 }
 

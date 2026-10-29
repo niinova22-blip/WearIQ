@@ -65,6 +65,8 @@ public enum SilhouetteError: Error, Equatable {
 public struct SilhouetteAnalyzer: Sendable {
     /// Minimum pixels in a row to count as body (filters segmentation noise).
     public var minRowPixels = 3
+    /// The chest level sits this far down the torso, from the shoulder line to the hip joints.
+    public static let chestTorsoFraction = 0.30
 
     public init() {}
 
@@ -86,7 +88,7 @@ public struct SilhouetteAnalyzer: Sendable {
 
         var levels: [BodyLevel: LevelSample] = [:]
 
-        let chestY = Int((shoulderY + 0.30 * torso).rounded())
+        let chestY = Int((shoulderY + Self.chestTorsoFraction * torso).rounded())
         levels[.chest] = LevelSample(y: Double(chestY), extentPx: Double(centerWidth(chestY)))
 
         // Narrowest torso row between lower chest and the hip joints.

@@ -4641,16 +4641,6 @@
         }
       }
     },
-    "Great. Now we'll measure you from eight sides. Keep your arms slightly away from your body.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Harika. Şimdi seni sekiz yönden ölçeceğiz. Kollarını gövdenden biraz uzak tut."
-          }
-        }
-      }
-    },
     "Good.": {
       "localizations": {
         "tr": {
@@ -4707,16 +4697,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ölçülen konumlar: göğüs %lld/8, bel %lld/8, kalça %lld/8."
-          }
-        }
-      }
-    },
-    "Your chest and waist couldn't be measured. Hold still at each position with your arms slightly away from your body, in a bright room.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Göğüs ve bel ölçülemedi. Aydınlık bir odada, kolların gövdenden biraz uzakta, her konumda bir an kıpırdamadan dur."
           }
         }
       }
@@ -4877,6 +4857,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sonra olduğun yerde 8 küçük adımda dön, her adımda kısa bir an dur. Ses sana nereye dönmen gerektiğini söyler; böylece göğüs, bel ve kalçan ölçülür."
+          }
+        }
+      }
+    },
+    "Couldn't measure: %@. Hold still at each position with your arms slightly away from your body, in a bright room.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülemedi: %@. Aydınlık bir odada, kolların gövdenden biraz uzakta, her konumda bir an kıpırdamadan dur."
+          }
+        }
+      }
+    },
+    "Hold your arms a little further out from your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollarını gövdenden biraz daha uzağa aç."
+          }
+        }
+      }
+    },
+    "Great. Now we'll measure you from eight sides. Hold your arms out to the sides, about a hand's width from your body, and keep them there while you turn.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harika. Şimdi seni sekiz yönden ölçeceğiz. Kollarını yanlara, gövdenden bir karış uzağa aç ve dönerken hep böyle tut."
+          }
+        }
+      }
+    },
+    "Arms out to the sides the whole time": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar hep yanlara açık"
           }
         }
       }

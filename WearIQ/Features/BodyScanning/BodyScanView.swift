@@ -114,6 +114,10 @@ struct BodyScanView: View {
                         regionChip(level, done: model.turn.measured.contains(level))
                     }
                 }
+                // The one posture that lets chest, waist and hips all be measured.
+                Label("Arms out to the sides the whole time", systemImage: "figure.arms.open")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.85))
             }
             .padding(Theme.Spacing.l)
             .background(.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
@@ -274,8 +278,9 @@ private struct TurnGuideOverlay: View {
         let count = Double(StationScan.stationCount)
         let gap = 0.07
         // Centred on its direction: stop 0 is the point of the ring nearest the camera.
-        let a0 = Double.pi / 2 + (Double(i) - 0.5 + gap) / count * 2 * Double.pi
-        let a1 = Double.pi / 2 + (Double(i) + 0.5 - gap) / count * 2 * Double.pi
+        // The preview is mirrored, so a turn to the user's right moves towards screen right.
+        let a0 = Double.pi / 2 - (Double(i) - 0.5 + gap) / count * 2 * Double.pi
+        let a1 = Double.pi / 2 - (Double(i) + 0.5 - gap) / count * 2 * Double.pi
         let path = Path { p in
             let steps = 12
             for s in 0...steps {
@@ -293,8 +298,9 @@ private struct TurnGuideOverlay: View {
     }
 }
 
-/// Top view of the turn: the user in the middle, the phone below, eight stops around.
-/// The arrow shows which way the user's chest should point at the current stop.
+/// Top view of the turn as the user sees it: the phone ahead (top), the user in the
+/// middle, eight stops around; turning right goes clockwise. The arrow shows which way
+/// the user's chest should point at the current stop.
 private struct StationDial: View {
     let station: Int
     let captured: Set<Int>
@@ -310,11 +316,11 @@ private struct StationDial: View {
                     Circle()
                         .trim(from: (Double(i) - 0.5 + 0.08) / count, to: (Double(i) + 0.5 - 0.08) / count)
                         .stroke(color(i), style: StrokeStyle(lineWidth: 9, lineCap: .round))
-                        // trim starts at 3 o'clock; stop 0 sits at 6 o'clock, towards the phone.
-                        .rotationEffect(.degrees(90))
+                        // trim starts at 3 o'clock; stop 0 sits at 12 o'clock, towards the phone.
+                        .rotationEffect(.degrees(-90))
                         .frame(width: radius * 2, height: radius * 2)
                 }
-                Image(systemName: "arrow.down")
+                Image(systemName: "arrow.up")
                     .font(.system(size: size * 0.26, weight: .heavy))
                     .foregroundStyle(.white)
                     .rotationEffect(.degrees(Double(station) * 45))
@@ -322,7 +328,7 @@ private struct StationDial: View {
                 Image(systemName: "iphone")
                     .font(.system(size: size * 0.13, weight: .bold))
                     .foregroundStyle(.white.opacity(0.8))
-                    .offset(y: size / 2 + 6)
+                    .offset(y: -(size / 2 + 6))
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
