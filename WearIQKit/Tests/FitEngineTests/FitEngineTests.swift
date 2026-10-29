@@ -158,3 +158,24 @@ private let regularShirt = shirt([
         #expect(a.recommendedSize?.label == "M")
     }
 }
+
+/// Trousers are sized by the waist: hips a few cm smaller than the size's are room.
+@Suite struct TrouserHipRoomTests {
+    @Test func hipRoomDoesNotBeatTheWaist() {
+        // 173 cm man from the device scan: waist 83.5, hips 89.
+        var body = BodyProfile()
+        body[.waist] = MeasuredValue(cm: 83.5, uncertaintyCm: 3, source: .scan)
+        body[.hip] = MeasuredValue(cm: 89, uncertaintyCm: 3, source: .scan)
+        func size(_ label: String, waist: Double, hip: Double) -> SizeEntry {
+            SizeEntry(label: label, values: [.waist: MeasuredValue(cm: waist, uncertaintyCm: 3, source: .manual),
+                                             .hip: MeasuredValue(cm: hip, uncertaintyCm: 3, source: .manual)])
+        }
+        let spec = GarmentSpec(category: .pants, chartKind: .body,
+                               sizes: [size("30", waist: 76.2, hip: 93), size("32", waist: 81.3, hip: 98), size("34", waist: 86.4, hip: 103)])
+        let analysis = FitEngine().analyze(body: body, garment: spec)
+        let s32 = analysis.sizes.first { $0.label == "32" }!
+        let hip = s32.regions.first { $0.region == .hip }!
+        #expect(hip.severity != .major)
+        #expect(analysis.recommendedSize?.label == "32" || analysis.recommendation == .between(smaller: "32", larger: "34"))
+    }
+}

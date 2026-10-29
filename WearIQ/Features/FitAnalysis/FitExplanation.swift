@@ -42,6 +42,12 @@ extension RegionFit {
         return lo == hi ? String(localized: "about \(hi) cm") : String(localized: "about \(lo)–\(hi) cm")
     }
 
+    /// Room in the hips or thighs of trousers is comfort, not a fault: said as "roomy".
+    var verdictTitle: String {
+        if verdict == .slightlyLoose, region == .hip || region == .thigh { return String(localized: "Roomy") }
+        return verdict.title
+    }
+
     var detailText: String {
         switch verdict {
         case .insufficientData:
@@ -49,7 +55,7 @@ extension RegionFit {
                 ? String(localized: "Your profile lacks this measurement")
                 : String(localized: "The size chart lacks this measurement")
         default:
-            [verdict.title, offsetText].compactMap { $0 }.joined(separator: " · ")
+            [verdictTitle, offsetText].compactMap { $0 }.joined(separator: " · ")
         }
     }
 }
@@ -72,7 +78,7 @@ enum FitExplanation {
             let name = r.region.title.lowercased()
             guard r.severity != .good else { return String(localized: "\(name) fits") }
             let amount = r.offsetText.map { " (\($0))" } ?? ""
-            return "\(name) \(r.verdict.title.lowercased())\(amount)"
+            return "\(name) \(r.verdictTitle.lowercased())\(amount)"
         }
         return parts.joined(separator: ", ") + "."
     }

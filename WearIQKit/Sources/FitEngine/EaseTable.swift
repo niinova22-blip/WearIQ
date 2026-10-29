@@ -6,6 +6,14 @@ import WearIQCore
 /// These values are starting heuristics from standard pattern-making ease allowances.
 /// They MUST be tuned against the validation dataset (see docs/VALIDATION.md) before
 /// any accuracy claims are made.
+///
+/// Industry conventions they follow: EN 13402 / ISO 8559-2 designate sizes by body
+/// dimensions, with chest girth primary for tops and waist girth primary for trousers
+/// (height and inside leg secondary), so the waist is the critical trouser region and
+/// hips and thighs only need room. Made-to-measure trouser seat ease is about 6.5 cm on
+/// a 100 cm seat (UK defence specification, DTIC ADA135821); regular trouser hip ease
+/// below brackets that. Fit names ("slim", "regular") aren't standardised between brands,
+/// which is why garment-measurement charts are compared directly.
 struct RegionRule {
     enum Kind { case girth, width, length }
 
@@ -19,6 +27,9 @@ struct RegionRule {
     let ease: ClosedRange<Double>
     /// Tolerance (±) when the chart lists body measurements instead of garment ones.
     let bodyChartTolerance: Double
+    /// Extra room allowed on the loose side of a body chart. Trousers are sized by the
+    /// waist; hips and thighs smaller than the size's are just room, not a misfit.
+    var bodyChartLooseAllowance: Double = 0
 
     /// Beyond this many cm outside the range a mismatch is "major" rather than "minor".
     var majorThreshold: Double {
@@ -88,7 +99,7 @@ enum EaseTable {
     private static func pantsRules(_ f: FitStyle) -> [RegionRule] {
         let hipEase: ClosedRange<Double> = switch f {
         case .slim: 2...6
-        case .regular: 4...10
+        case .regular: 4...11
         case .relaxed: 8...16
         case .oversized: 14...30
         }
@@ -102,9 +113,9 @@ enum EaseTable {
             .init(region: .waist, kind: .girth, garment: .waist, body: .waist,
                   weight: 1.0, critical: true, ease: 0...3, bodyChartTolerance: 2),
             .init(region: .hip, kind: .girth, garment: .hip, body: .hip,
-                  weight: 0.9, critical: false, ease: hipEase, bodyChartTolerance: 2.5),
+                  weight: 0.9, critical: false, ease: hipEase, bodyChartTolerance: 2.5, bodyChartLooseAllowance: 8),
             .init(region: .thigh, kind: .girth, garment: .thigh, body: .thigh,
-                  weight: 0.6, critical: false, ease: thighEase, bodyChartTolerance: 2.5),
+                  weight: 0.6, critical: false, ease: thighEase, bodyChartTolerance: 2.5, bodyChartLooseAllowance: 8),
             .init(region: .inseam, kind: .length, garment: .inseam, body: .inseam,
                   weight: 0.5, critical: false, ease: -3...1, bodyChartTolerance: 2),
             .init(region: .outseam, kind: .length, garment: .outseam, body: .outseam,

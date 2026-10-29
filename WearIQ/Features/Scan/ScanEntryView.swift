@@ -19,9 +19,6 @@ struct ScanEntryView: View {
     @State private var route: DraftRoute?
     @State private var showQuickCheck = false
     @State private var quickCheckBarcode: String?
-    @State private var basketText = ""
-    @State private var basketError: String?
-    @State private var bulkRoute: BulkCheckRoute?
 
     @Environment(AppContainer.self) private var container
     private let productService: ProductDataServicing = ProductDataService()
@@ -39,7 +36,6 @@ struct ScanEntryView: View {
         ScrollView {
             VStack(spacing: Theme.Spacing.m) {
                 linkCard
-                basketCard
                 HStack(spacing: Theme.Spacing.m) {
                     barcodeTile
                     photoTile
@@ -57,7 +53,6 @@ struct ScanEntryView: View {
         .background(Theme.screenBackground)
         .navigationTitle("Scan a garment")
         .navigationDestination(item: $route) { GarmentDraftView(draft: $0.draft, autoAnalyze: $0.autoAnalyze) }
-        .navigationDestination(item: $bulkRoute) { BulkCheckView(route: $0) }
         .fullScreenCover(isPresented: $showBarcode) { barcodeSheet }
         .sheet(isPresented: $showQuickCheck) {
             QuickCheckSheet(barcode: quickCheckBarcode) { draft in
@@ -113,43 +108,6 @@ struct ScanEntryView: View {
                 }
                 .font(.subheadline)
                 .disabled(failedLinkURL == nil)
-            }
-        }
-    }
-
-    /// A basket, wishlist or collection link, or several product links, checked together.
-    private var basketCard: some View {
-        Card {
-            Label("Check a whole basket", systemImage: "cart").font(.headline)
-            Text("Paste your basket, wishlist or collection link, or several product links. Every product gets a size.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            HStack {
-                TextField("https://…", text: $basketText, axis: .vertical)
-                    .lineLimit(1...4)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textFieldStyle(.roundedBorder)
-                PasteButton(payloadType: String.self) { strings in
-                    if let s = strings.first { basketText = s }
-                }
-                .labelStyle(.iconOnly)
-            }
-            Button("Check all") {
-                basketError = nil
-                if let route = BulkCheckRoute.from(basketText) {
-                    bulkRoute = route
-                    basketText = ""
-                } else {
-                    basketError = ProductDataError.invalidURL.localizedDescription
-                }
-            }
-            .buttonStyle(.primary)
-            .disabled(basketText.isEmpty)
-            if let basketError {
-                Label(basketError, systemImage: "exclamationmark.triangle")
-                    .font(.subheadline).foregroundStyle(.orange)
             }
         }
     }

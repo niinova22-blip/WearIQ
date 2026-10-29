@@ -59,12 +59,4 @@ import WearIQCore
         TapeCalibration.record(.chest, scanned: 95, tape: 40)
         #expect(TapeCalibration.factor(.chest) == 1)
     }
-
-    @Test func returnRiskReasons() {
-        let between = FitAnalysis(recommendation: .between(smaller: "M", larger: "L"), sizes: [])
-        #expect(!BulkRisk.reasons(between, standardChart: false).isEmpty)
-        let sure = FitAnalysis(recommendation: .size(label: "M", confidence: .high), sizes: [])
-        #expect(BulkRisk.reasons(sure, standardChart: false).isEmpty)
-        #expect(BulkRisk.reasons(sure, standardChart: true).count == 1)
-    }
 }

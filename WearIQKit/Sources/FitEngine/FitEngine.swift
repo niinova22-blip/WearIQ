@@ -58,7 +58,7 @@ public struct FitEngine: FitAnalyzing {
             // The chart states which body a size fits; a range in the chart widens tolerance.
             let tol = rule.bodyChartTolerance + g.uncertaintyCm
             let shift = preferenceShift(preference, width: 2 * tol, kind: rule.kind)
-            range = (-tol + shift)...(tol + shift)
+            range = (-tol + shift)...(tol + rule.bodyChartLooseAllowance + shift)
             sigma = b.uncertaintyCm
         }
 

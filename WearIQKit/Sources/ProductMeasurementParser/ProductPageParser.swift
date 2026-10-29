@@ -59,6 +59,10 @@ public struct ProductPageParser: Sendable {
             break
         }
 
+        // Amazon has neither JSON-LD nor OpenGraph product data; read its page first so the
+        // generic heading fallback doesn't take a layout heading for the name.
+        if AmazonPage.isAmazon(html, url: pageURL) { AmazonPage.apply(html, to: &info) }
+
         let og = Self.metaTags(in: html)
         if info.name == nil { info.name = og["og:title"] ?? Self.firstHeading(in: html) }
         if info.brand == nil { info.brand = og["product:brand"] ?? og["og:brand"] }
@@ -70,7 +74,9 @@ public struct ProductPageParser: Sendable {
         info.modelFit = ModelFitParser.parse(Self.visibleText(html))
 
         let text = [info.name, info.categoryText].compactMap { $0 }.joined(separator: " ")
-        info.category = GarmentClassifier.category(from: text)
+        // The brand isn't the garment: "Tommy Jeans … Shirt" is a shirt.
+        let withoutBrand = info.brand.map { text.replacingOccurrences(of: $0, with: " ", options: .caseInsensitive) } ?? text
+        info.category = GarmentClassifier.category(from: withoutBrand)
         info.fitStyle = GarmentClassifier.fitStyle(from: text)
         info.stretch = info.material.flatMap(GarmentClassifier.stretch(fromComposition:))
         info.audience = GarmentClassifier.audience(from: text + " " + (pageURL?.path ?? "") + " " + (og["og:description"] ?? ""))
@@ -273,6 +279,8 @@ public struct ProductPageParser: Sendable {
               let m = regex.firstMatch(in: tag, range: NSRange(location: 0, length: (tag as NSString).length)) else { return nil }
         return (tag as NSString).substring(with: m.range(at: 1))
     }
+
+    static func decodeEntitiesForAmazon(_ s: String) -> String { decodeEntities(s) }
 
     private static func decodeEntities(_ s: String) -> String {
         s.replacingOccurrences(of: "&amp;", with: "&")

@@ -156,6 +156,18 @@ struct BodyScanView: View {
                 Button("Enter measurements manually", action: onManualEntry)
                     .frame(maxWidth: .infinity)
             }
+        case .clothesSuspected:
+            Card {
+                Label("Your clothes may have been measured", systemImage: "tshirt.fill")
+                    .font(.headline)
+                    .foregroundStyle(.orange)
+                Text("Chest, waist and hips came out well above what your height, weight and age suggest. Loose clothes add several centimetres. For the right sizes, scan again in fitted clothes or underwear; the photos never leave your phone.")
+                    .font(.subheadline)
+                Button("Scan again") { model.retry(); Task { await model.start() } }
+                    .buttonStyle(.primary)
+                Button("Keep these measurements") { model.keepDespiteClothes() }
+                    .frame(maxWidth: .infinity)
+            }
         case .completed:
             VStack(spacing: Theme.Spacing.m) {
                 Image(systemName: "checkmark.circle.fill")

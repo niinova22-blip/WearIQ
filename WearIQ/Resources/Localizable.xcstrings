@@ -1356,7 +1356,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yeniden tara"
+            "value": "Tekrar tara"
           }
         }
       }
@@ -5221,156 +5221,6 @@
         }
       }
     },
-    "Check a basket": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sepet kontrolü"
-          }
-        }
-      }
-    },
-    "Check a whole basket": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sepetini toplu kontrol et"
-          }
-        }
-      }
-    },
-    "Paste your basket, wishlist or collection link, or several product links. Every product gets a size.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sepet, favori listesi ya da koleksiyon linkini veya birkaç ürün linkini yapıştır. Her ürün için beden önerilir."
-          }
-        }
-      }
-    },
-    "Check all": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hepsini kontrol et"
-          }
-        }
-      }
-    },
-    "Sign in if the store asks, and open your basket or list. Products on the page appear here.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mağaza isterse giriş yap ve sepetini ya da listeni aç. Sayfadaki ürünler burada görünür."
-          }
-        }
-      }
-    },
-    "%lld products found on this page.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bu sayfada %lld ürün bulundu."
-          }
-        }
-      }
-    },
-    "Looking for products…": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ürünler aranıyor…"
-          }
-        }
-      }
-    },
-    "Check %lld products": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld ürünü kontrol et"
-          }
-        }
-      }
-    },
-    "WearIQ only reads the product links on the page, never your sign-in details.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "WearIQ sayfadaki yalnızca ürün linklerini okur; giriş bilgilerini asla görmez."
-          }
-        }
-      }
-    },
-    "Waiting": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sırada"
-          }
-        }
-      }
-    },
-    "Not checked": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kontrol edilmedi"
-          }
-        }
-      }
-    },
-    "No size chart found; open the product to add one.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beden tablosu bulunamadı; eklemek için ürünü aç."
-          }
-        }
-      }
-    },
-    "The size chart lacks the measurements needed.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beden tablosunda gereken ölçüler yok."
-          }
-        }
-      }
-    },
-    "Scan or enter your measurements first.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Önce ölçülerini tara ya da gir."
-          }
-        }
-      }
-    },
-    "Today's free checks are used up. Premium checks without a limit.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bugünkü ücretsiz kontrol hakların bitti. Premium ile sınırsız kontrol et."
-          }
-        }
-      }
-    },
     "Age": {
       "localizations": {
         "tr": {
@@ -5681,132 +5531,52 @@
         }
       }
     },
-    "between %@ and %@": {
+    "Roomy": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ ile %2$@ arasında"
+            "value": "Rahat"
           }
         }
       }
     },
-    "low confidence": {
+    "These measurements look larger than your body, probably because of your clothes. For the right sizes, scan again in fitted clothes or underwear.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "düşük güven"
+            "value": "Bu ölçüler vücudundan büyük görünüyor, büyük ihtimalle kıyafetin yüzünden. Doğru beden için dar kıyafetle ya da iç çamaşırıyla tekrar tara."
           }
         }
       }
     },
-    "%@ won't fit well": {
+    "Your clothes may have been measured": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ iyi oturmayabilir"
+            "value": "Kıyafetin de ölçülmüş olabilir"
           }
         }
       }
     },
-    "no size chart from the store": {
+    "Chest, waist and hips came out well above what your height, weight and age suggest. Loose clothes add several centimetres. For the right sizes, scan again in fitted clothes or underwear; the photos never leave your phone.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "mağazanın beden tablosu yok"
+            "value": "Göğüs, bel ve kalça; boyuna, kilona ve yaşına göre beklenenden epey büyük çıktı. Bol kıyafet birkaç santim ekler. Doğru beden için dar kıyafetle ya da iç çamaşırıyla tekrar tara; fotoğraflar telefonundan hiç çıkmaz."
           }
         }
       }
     },
-    "Return risk: %lld of %lld": {
+    "Keep these measurements": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "İade riski: %2$lld üründen %1$lld"
-          }
-        }
-      }
-    },
-    "Check these against the store's size chart or your own clothes before ordering.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sipariş vermeden önce bunları mağazanın beden tablosu ya da kendi kıyafetlerinle karşılaştır."
-          }
-        }
-      }
-    },
-    "Try it on live": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Canlı dene"
-          }
-        }
-      }
-    },
-    "The product photo couldn't be loaded.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ürün fotoğrafı yüklenemedi."
-          }
-        }
-      }
-    },
-    "No person was found in the product photo, so the garment can't be lifted out of it. Try a product whose photo shows it worn.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ürün fotoğrafında kişi bulunamadı, bu yüzden kıyafet fotoğraftan ayrılamadı. Fotoğrafında giyilmiş hâli görünen bir ürünle dene."
-          }
-        }
-      }
-    },
-    "Step back until your hips and ankles are in view.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kalçan ve ayak bileklerin görünene kadar geri git."
-          }
-        }
-      }
-    },
-    "Step back until your shoulders and hips are in view.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Omuzların ve kalçan görünene kadar geri git."
-          }
-        }
-      }
-    },
-    "Preparing the garment…": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kıyafet hazırlanıyor…"
-          }
-        }
-      }
-    },
-    "Preview: the product photo laid over you. It shows look and proportions, not how the fabric drapes. The camera image stays on this phone.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Önizleme: ürün fotoğrafı üzerine yerleştirilir. Görünüşü ve oranları gösterir, kumaşın nasıl düştüğünü göstermez. Kamera görüntüsü bu telefonda kalır."
+            "value": "Bu ölçüleri kullan"
           }
         }
       }

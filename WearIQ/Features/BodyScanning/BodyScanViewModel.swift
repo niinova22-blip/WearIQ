@@ -27,6 +27,9 @@ final class BodyScanViewModel {
         case failed(String)
         /// Measured; "scan complete" is shown and spoken before moving on.
         case completed
+        /// Measured, but chest, waist and hips came out far above what height, weight and
+        /// age allow: most likely clothes, not body. The user can rescan or keep them.
+        case clothesSuspected
         case finished
     }
 
@@ -115,6 +118,11 @@ final class BodyScanViewModel {
         } catch {
             stage = .failed(error.localizedDescription)
         }
+    }
+
+    /// Keeps measurements that look inflated by clothes.
+    func keepDespiteClothes() {
+        stage = .finished
     }
 
     func stop() {
@@ -475,6 +483,21 @@ final class BodyScanViewModel {
                     return
                 }
                 result = profile
+                // Two or more girths over two standard deviations above the statistics for
+                // this height, weight and age is what a sweater or loose shirt does (a device
+                // scan in clothes: +13, +15 and +7 cm; the same person in underwear: none).
+                let prior = basics.prior()
+                let inflated = [(BodyLevel.chest, BodyDimension.chest), (.waist, .waist), (.hip, .hip)].filter { level, dim in
+                    guard let measured = girths[level]?.cm, let expected = prior[dim] else { return false }
+                    return measured - expected.cm > 2 * expected.uncertaintyCm
+                }
+                if inflated.count >= 2 {
+                    stage = .clothesSuspected
+                    audio.play(.problem)
+                    audio.say(String(localized: "These measurements look larger than your body, probably because of your clothes. For the right sizes, scan again in fitted clothes or underwear."),
+                              priority: .high)
+                    return
+                }
                 stage = .completed
                 audio.say(String(localized: "Scan complete. Your measurements are ready."), priority: .high)
                 try? await Task.sleep(for: .seconds(2.5))

@@ -116,3 +116,25 @@ import WearIQCore
         #expect(info.sizeChartImageURLs.first?.path == "/media/beden-tablosu/pantolon.png")
     }
 }
+
+/// A trimmed excerpt of a real amazon.com.tr shirt page (no JSON-LD, no OpenGraph).
+@Suite struct AmazonPageTests {
+    @Test func readsAmazonProductPage() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/amazon_tr_shirt.html")
+        let html = try String(contentsOf: url, encoding: .utf8)
+        let info = ProductPageParser().parse(html: html, pageURL: URL(string: "https://www.amazon.com.tr/dp/B0776X8B3X"))
+        #expect(info.name?.hasPrefix("Tommy Jeans TJM") == true)
+        #expect(info.brand == "Tommy Jeans")
+        #expect(info.imageURL?.absoluteString.contains("_AC_SL1500_") == true)
+        #expect(info.availableSizes == ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"])
+        #expect(info.category == .shirt)
+        #expect(info.audience == .men)
+        #expect(!info.isEmpty)
+    }
+
+    @Test func bylineForms() {
+        #expect(AmazonPage.brand(fromByline: "Visit the Levi&#39;s Store") == "Levi's")
+        #expect(AmazonPage.brand(fromByline: "Levi's Mağazasını ziyaret edin") == "Levi's")
+    }
+}
