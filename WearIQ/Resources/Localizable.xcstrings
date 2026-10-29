@@ -5011,32 +5011,62 @@
         }
       }
     },
-    "Wear fitted clothes": {
+    "For the most accurate measurements": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dar kıyafet giy"
+            "value": "En doğru ölçüm için"
           }
         }
       }
     },
-    "The scan measures your outline, so loose clothes add several centimetres. Wear a fitted T-shirt or tank top and leggings or fitted shorts, and tie long hair up.": {
+    "The scan measures your outline, so every layer of loose clothing adds centimetres.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tarama vücudunun dış hattını ölçer; bol kıyafet ölçülere birkaç santim ekler. Dar bir tişört ya da atlet, tayt ya da dar şort giy; uzun saçını topla."
+            "value": "Tarama vücudunun dış hattını ölçer; bol kıyafetin her katı ölçülere santimler ekler."
           }
         }
       }
     },
-    "I'm wearing fitted clothes": {
+    "Best: scan in your underwear. The photos never leave this phone; they're analysed here and deleted right after measuring.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dar kıyafet giydim"
+            "value": "En iyisi: iç çamaşırıyla tara. Fotoğraflar bu telefondan hiç çıkmaz; burada analiz edilir ve ölçümden hemen sonra silinir."
+          }
+        }
+      }
+    },
+    "Otherwise: a fitted T-shirt or tank top with leggings or fitted shorts. Tie long hair up.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ya da: dar tişört veya atlet, tayt veya dar şort. Uzun saçını topla."
+          }
+        }
+      }
+    },
+    "I'm in underwear or fitted clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İç çamaşırı ya da dar kıyafetleyim"
+          }
+        }
+      }
+    },
+    "For the most accurate result, scan in your underwear or fitted clothes; the photos never leave your phone. Stand facing the phone, arms slightly away from your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En doğru sonuç için iç çamaşırıyla ya da dar kıyafetle tara; fotoğraflar telefonundan hiç çıkmaz. Telefona dönük dur, kollarını gövdenden biraz uzak tut."
           }
         }
       }

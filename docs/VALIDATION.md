@@ -58,15 +58,17 @@ yuvarlatılmış kutu biçimi (n = 4) oranı korunarak büyütülür. Sonra 8 du
 üzerinde simüle edilir: her durak ±15° rastgele sapmalı, her genişlik %1,5 silüet gürültülü.
 `StationScan` sonucu mezura değeriyle karşılaştırılır.
 
-**Sonuç (6.068 kişi):**
+**Sonuç (6.068 kişi):** Kalibrasyon öncesi bias göğüste −%0,99, belde −%0,25, kalçada −%0,46
+idi (8 yön, köşeli kesitlerin ortalama genişliğini biraz eksik örnekler). `StationScan.calibration`
+bu sapmayı giderir. Kalibrasyon sonrası:
 
 | Bölge | Bias | Ortalama mutlak hata | %95'lik hata | Eski önden+yandan elips |
 |---|---|---|---|---|
-| Göğüs | −%0,99 | %1,28 | %3,20 | bias −%17,5 |
-| Bel | −%0,25 | %0,98 | %2,43 | bias −%5,3 |
-| Kalça | −%0,46 | %1,09 | %2,77 | bias −%8,4 |
+| Göğüs | −%0,02 | %1,16 | %2,93 | bias −%17,5 |
+| Bel | −%0,02 | %0,96 | %2,42 | bias −%5,3 |
+| Kalça | −%0,01 | %1,04 | %2,58 | bias −%8,4 |
 
-Test, bias %1,5'i veya %95'lik hata %4'ü aşarsa başarısız olur.
+Test, bias %0,5'i veya %95'lik hata %4'ü aşarsa başarısız olur.
 
 **Makullük kontrolü:** Boy/kilo istatistiklerinin (3σ) doğru bir okumayı (±%3) yanlışlıkla
 reddetme oranı bütün ölçülerde %0,2'nin altındadır (test eşiği %2).

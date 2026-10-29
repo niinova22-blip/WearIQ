@@ -167,7 +167,7 @@ import WearIQCore
                          level.rawValue, e.relative.count, e.mean * 100, e.meanAbsolute * 100, e.p95 * 100,
                          base.mean * 100, base.p95 * 100))
             #expect(e.relative.count > 5000, "\(level)")
-            #expect(abs(e.mean) < 0.015, "\(level) bias \(e.mean)")
+            #expect(abs(e.mean) < 0.005, "\(level) bias \(e.mean)")
             #expect(e.p95 < 0.04, "\(level) p95 \(e.p95)")
         }
     }

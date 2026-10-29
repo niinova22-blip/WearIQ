@@ -31,6 +31,16 @@ private let frontJoints: [BodyJoint: Point2D] = [
 @Suite struct SilhouetteAnalyzerTests {
     let analyzer = SilhouetteAnalyzer()
 
+    @Test func legsTogetherDontGiveALowCrotch() throws {
+        // Legs touching down to the knees, a gap only below them.
+        var bits = [Bool](repeating: false, count: 400 * 1000)
+        let mask = frontMask()
+        for y in 0..<1000 { for x in 0..<400 where mask[x, y] { bits[y * 400 + x] = true } }
+        for y in 510..<720 { for x in 195..<205 { bits[y * 400 + x] = true } }
+        let o = try analyzer.analyzeFront(mask: BinaryMask(width: 400, height: 1000, bits: bits), joints: frontJoints)
+        #expect(o.crotchY == nil)
+    }
+
     @Test func findsHeightAndLevels() throws {
         let o = try analyzer.analyzeFront(mask: frontMask(), joints: frontJoints)
         #expect(o.personHeightPx == 800)

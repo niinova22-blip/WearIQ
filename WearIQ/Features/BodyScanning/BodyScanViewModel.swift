@@ -107,7 +107,8 @@ final class BodyScanViewModel {
         watchPose()
         do {
             try await camera.start(position: .front)
-            audio.say(String(localized: "Stand facing the phone, arms slightly away from your body."), priority: .high)
+            audio.say(String(localized: "For the most accurate result, scan in your underwear or fitted clothes; the photos never leave your phone. Stand facing the phone, arms slightly away from your body."),
+                      priority: .high)
         } catch {
             stage = .failed(error.localizedDescription)
         }

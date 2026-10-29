@@ -129,9 +129,12 @@ public struct SilhouetteAnalyzer: Sendable {
         }
 
         // The crotch is the first row below the hip joint where the centre column is empty.
-        let crotchY = (Int(root.y)...min(Int(kneeY), mask.height - 1)).first { y in
+        // The crotch sits well above mid-thigh. Legs held together, or loose trousers,
+        // can hide it until the knees; a gap found that low isn't the crotch.
+        let crotchLimit = min(Int(root.y + 0.45 * (kneeY - root.y)), mask.height - 1)
+        let crotchY = Int(root.y) <= crotchLimit ? (Int(root.y)...crotchLimit).first { y in
             !(-2...2).contains { mask[centerX + $0, y] }
-        }
+        } : nil
 
         // Widest row between the hip joints and the crotch.
         let hipEnd = crotchY.map { $0 - 1 } ?? Int(root.y + 0.3 * (kneeY - root.y))

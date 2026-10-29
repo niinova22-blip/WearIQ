@@ -186,12 +186,18 @@ struct ScanGuideView: View {
 
     private var clothingCard: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-            Label("Wear fitted clothes", systemImage: "tshirt.fill")
+            Label("For the most accurate measurements", systemImage: "tshirt.fill")
                 .font(.title3.weight(.bold))
-            Text("The scan measures your outline, so loose clothes add several centimetres. Wear a fitted T-shirt or tank top and leggings or fitted shorts, and tie long hair up.")
+            Text("The scan measures your outline, so every layer of loose clothing adds centimetres.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Toggle("I'm wearing fitted clothes", isOn: $wearingFittedClothes)
+            Label("Best: scan in your underwear. The photos never leave this phone; they're analysed here and deleted right after measuring.",
+                  systemImage: "1.circle.fill")
+                .font(.subheadline)
+            Label("Otherwise: a fitted T-shirt or tank top with leggings or fitted shorts. Tie long hair up.",
+                  systemImage: "2.circle.fill")
+                .font(.subheadline)
+            Toggle("I'm in underwear or fitted clothes", isOn: $wearingFittedClothes)
                 .font(.headline)
                 .tint(.green)
         }

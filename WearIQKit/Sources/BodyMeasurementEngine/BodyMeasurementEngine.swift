@@ -127,8 +127,9 @@ public struct BodyMeasurementEngine: Sendable {
         if let crotch = front.crotchY {
             p[.inseam] = value((front.floorY - crotch) * scale, calibration.lengthRelError)
         } else if let root = j[.root] {
-            // Hip joint centre is a few cm above the crotch; much less reliable.
-            p[.inseam] = value((front.floorY - root.y) * scale * 0.95, calibration.lengthRelError * 3)
+            // The hip joint centre sits at about 53% of stature and the crotch at about
+            // 47% (ANSUR II crotch height), so crotch height ≈ 0.9 × hip joint height.
+            p[.inseam] = value((front.floorY - root.y) * scale * 0.9, calibration.lengthRelError * 3)
         }
 
         let sideScale = side.map { heightCm / $0.personHeightPx }
