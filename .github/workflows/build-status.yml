@@ -1,0 +1,20 @@
+# Shows the latest builds' processing state on App Store Connect, to see why a
+# TestFlight build hasn't appeared yet.
+name: Build status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: pip install --quiet "pyjwt[crypto]==2.9.0"
+      - env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          printf '%s' "$P8" > "$RUNNER_TEMP/key.p8"
+          ASC_KEY_PATH="$RUNNER_TEMP/key.p8" python3 scripts/asc_builds.py 6828076171
