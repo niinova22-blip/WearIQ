@@ -6280,6 +6280,96 @@
           }
         }
       }
+    },
+    "Good, now hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Güzel, şimdi kıpırdama."
+          }
+        }
+      }
+    },
+    "See it on my avatar": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avatarımda gör"
+          }
+        }
+      }
+    },
+    "On your avatar": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avatarında"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitti"
+          }
+        }
+      }
+    },
+    "Scan or enter your measurements first": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce ölçülerini tara ya da gir"
+          }
+        }
+      }
+    },
+    "Drawn from the size chart and your measurements: hems and cuffs end where the numbers put them. It shows fit and proportions, not the fabric's exact drape.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosundan ve ölçülerinden çizilir: paçalar ve kol uçları sayıların gösterdiği yerde biter. Oturuşu ve oranları gösterir, kumaşın tam düşüşünü değil."
+          }
+        }
+      }
+    },
+    "My avatar": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avatarım"
+          }
+        }
+      }
+    },
+    "My 3D avatar": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D avatarım"
+          }
+        }
+      }
+    },
+    "Save to my measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülerime kaydet"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

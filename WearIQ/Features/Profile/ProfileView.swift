@@ -34,6 +34,7 @@ struct ProfileView: View {
                     Text("No body profile yet.")
                         .foregroundStyle(.secondary)
                 }
+                NavigationLink("My 3D avatar") { AvatarEditorView() }
                 Button("Scan again") { showRescan = true }
                 NavigationLink("Measurement changes") { MeasurementTrackingView() }
             } header: {

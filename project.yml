@@ -50,6 +50,8 @@ targets:
         product: ScanQuota
       - package: WearIQKit
         product: OutfitRecommendationEngine
+      - package: WearIQKit
+        product: AvatarEngine
       - package: GoogleMobileAds
       - package: GoogleUserMessagingPlatform
       - target: WearIQShare

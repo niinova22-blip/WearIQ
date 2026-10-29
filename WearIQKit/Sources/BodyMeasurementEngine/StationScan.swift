@@ -152,7 +152,7 @@ public enum StopGuide {
 /// Notices when the user stands still, and gives the widths measured during that moment.
 public struct StillnessDetector: Sendable {
     /// How long the pose has to hold, in seconds.
-    public var window = 0.7
+    public var window = 0.55
     /// Allowed relative change in width while still.
     public var tolerance = 0.035
     /// Allowed sideways drift, as a fraction of the image width.

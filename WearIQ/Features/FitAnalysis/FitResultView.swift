@@ -22,6 +22,7 @@ struct FitResultView: View {
     /// Fabric composition, for the fabric notes.
     var material: String?
     @State private var revealed = false
+    @State private var showingAvatar = false
 
     @State private var selectedLabel: String?
     @State private var addingToWardrobe = false
@@ -95,6 +96,9 @@ struct FitResultView: View {
                     ? spec?.sizes.first(where: { $0.label == selected?.label })?.values.mapValues(\.cm) : nil))
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
+        .fullScreenCover(isPresented: $showingAvatar) {
+            if let spec, let label = selectedLabel { AvatarFitView(analysis: analysis, spec: spec, sizeLabel: label) }
+        }
     }
 
     private var header: some View {
@@ -233,6 +237,14 @@ struct FitResultView: View {
 
     private var actions: some View {
         VStack(spacing: Theme.Spacing.s) {
+            if spec != nil, selectedLabel != nil {
+                Button {
+                    showingAvatar = true
+                } label: {
+                    Label("See it on my avatar", systemImage: "figure.stand")
+                }
+                .buttonStyle(.primary)
+            }
             if let pageURL {
                 Button("Open product page") { openURL(pageURL) }
                     .buttonStyle(.primary)

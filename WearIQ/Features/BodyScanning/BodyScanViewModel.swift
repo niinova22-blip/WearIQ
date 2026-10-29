@@ -309,15 +309,12 @@ final class BodyScanViewModel {
             return
         }
         stillness.add(reading, time: time)
-        // Time to hear the instruction and start moving.
-        guard Date().timeIntervalSince(stationStart) > 1.5 else { return }
-        guard let widths = stillness.stillWidths(at: time), let span = reading.armSpan else {
-            turn.holding = false
-            turn.fit = nil
-            return
-        }
+        // A moment to hear the instruction and start moving.
+        guard Date().timeIntervalSince(stationStart) > 1.0, let span = reading.armSpan else { return }
         let station = turn.station
         let shoulders = Self.shoulderSeparation(reading)
+        // Judged on every frame, so the voice guides while the user moves ("come closer",
+        // "turn further") instead of waiting for them to stand still first.
         let fit: StopFit
         if !StopGuide.fullyVisible(reading) {
             fit = .stepBack
@@ -330,6 +327,13 @@ final class BodyScanViewModel {
         } else {
             fit = StopGuide.fit(station: station, spanRatio: span / spanReference,
                                 shoulderRatio: shoulders.flatMap { s in shoulderReference.map { s / $0 } })
+        }
+        // Right place: hold still for the capture.
+        guard let widths = stillness.stillWidths(at: time) else {
+            turn.fit = fit
+            turn.holding = false
+            if fit == .ok { holdStillHint() } else { nudge(fit) }
+            return
         }
         turn.fit = fit
         turn.holding = fit == .ok
@@ -384,8 +388,14 @@ final class BodyScanViewModel {
         return abs(l.x - r.x) * 9 / 16 / (reading.floor - reading.top)
     }
 
+    /// In the right place but still moving: one short word, not a sentence.
+    private func holdStillHint() {
+        guard Date().timeIntervalSince(lastHintAt) > 3, !audio.isSpeaking else { return }
+        say(String(localized: "Good, now hold still."))
+    }
+
     private func nudge(_ fit: StopFit) {
-        guard Date().timeIntervalSince(lastHintAt) > 4, !audio.isSpeaking else { return }
+        guard Date().timeIntervalSince(lastHintAt) > 3, !audio.isSpeaking else { return }
         switch fit {
         case .ok: return
         case .turnFurther: say(String(localized: "Turn a little further clockwise."))

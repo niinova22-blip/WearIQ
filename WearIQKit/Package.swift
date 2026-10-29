@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "ProductMeasurementParser", targets: ["ProductMeasurementParser"]),
         .library(name: "ScanQuota", targets: ["ScanQuota"]),
         .library(name: "OutfitRecommendationEngine", targets: ["OutfitRecommendationEngine"]),
+        .library(name: "AvatarEngine", targets: ["AvatarEngine"]),
     ],
     targets: [
         .target(name: "WearIQCore"),
@@ -25,6 +26,8 @@ let package = Package(
         .target(name: "ProductMeasurementParser", dependencies: ["WearIQCore"]),
         .target(name: "ScanQuota"),
         .target(name: "OutfitRecommendationEngine"),
+        // 3D avatar from measurements, with garments drawn on it from the fit analysis.
+        .target(name: "AvatarEngine", dependencies: ["WearIQCore"]),
         .testTarget(name: "FitEngineTests", dependencies: ["FitEngine"]),
         .testTarget(name: "BodyMeasurementEngineTests", dependencies: ["BodyMeasurementEngine"]),
         .testTarget(name: "VisionIntegrationTests", dependencies: ["BodyScanVision", "BodyMeasurementEngine", "ProductMeasurementParser"],
@@ -32,5 +35,6 @@ let package = Package(
         .testTarget(name: "ProductMeasurementParserTests", dependencies: ["ProductMeasurementParser"]),
         .testTarget(name: "ScanQuotaTests", dependencies: ["ScanQuota"]),
         .testTarget(name: "OutfitRecommendationEngineTests", dependencies: ["OutfitRecommendationEngine"]),
+        .testTarget(name: "AvatarEngineTests", dependencies: ["AvatarEngine"]),
     ]
 )
