@@ -78,7 +78,7 @@ final class ScanAudio {
     func stop() {
         silence()
         engine.stop()
-        observers.forEach(NotificationCenter.default.removeObserver)
+        for observer in observers { NotificationCenter.default.removeObserver(observer) }
         observers.removeAll()
         configured = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)

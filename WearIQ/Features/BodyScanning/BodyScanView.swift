@@ -245,28 +245,33 @@ private struct TurnGuideOverlay: View {
     /// An ellipse on the floor around the feet, split into sectors starting nearest the camera.
     private func floorRing(_ reading: FrameReading, in rect: CGRect) -> some View {
         let center = point(reading.centerX, reading.floor, in: rect)
-        let hipWidth = reading.levels[.hip].map { ($0.right - $0.left) * rect.width } ?? rect.width * 0.2
-        let rx = max(hipWidth * 1.6, rect.width * 0.24)
-        let ry = rx * 0.28
-        let count = TurnTracker.sectorCount
-        let gap = 0.06
+        let width = Double(rect.width)
+        let hipWidth: Double = reading.levels[.hip].map { ($0.right - $0.left) * width } ?? width * 0.2
+        let rx: Double = Swift.max(hipWidth * 1.6, width * 0.24)
         return ZStack {
-            ForEach(0..<count, id: \.self) { i in
-                let done = i < state.sectors
-                Path { p in
-                    let a0 = Double.pi / 2 + (Double(i) + gap) / Double(count) * 2 * .pi
-                    let a1 = Double.pi / 2 + (Double(i + 1) - gap) / Double(count) * 2 * .pi
-                    let steps = 10
-                    for s in 0...steps {
-                        let a = a0 + (a1 - a0) * Double(s) / Double(steps)
-                        let pt = CGPoint(x: center.x + rx * cos(a), y: center.y + ry * sin(a))
-                        if s == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
-                    }
-                }
-                .stroke(done ? Color.green : .white.opacity(0.35), style: StrokeStyle(lineWidth: done ? 9 : 6, lineCap: .round))
-                .shadow(color: done ? .green.opacity(0.8) : .clear, radius: 6)
-                .animation(.spring(duration: 0.35), value: done)
+            ForEach(0..<TurnTracker.sectorCount, id: \.self) { i in
+                sector(i, center: center, rx: rx, ry: rx * 0.28, done: i < state.sectors)
             }
         }
+    }
+
+    private func sector(_ i: Int, center: CGPoint, rx: Double, ry: Double, done: Bool) -> some View {
+        let count = Double(TurnTracker.sectorCount)
+        let gap = 0.06
+        let a0 = Double.pi / 2 + (Double(i) + gap) / count * 2 * Double.pi
+        let a1 = Double.pi / 2 + (Double(i + 1) - gap) / count * 2 * Double.pi
+        let path = Path { p in
+            let steps = 10
+            for s in 0...steps {
+                let a = a0 + (a1 - a0) * Double(s) / Double(steps)
+                let pt = CGPoint(x: Double(center.x) + rx * cos(a), y: Double(center.y) + ry * sin(a))
+                if s == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+            }
+        }
+        let color: Color = done ? .green : .white.opacity(0.35)
+        return path
+            .stroke(color, style: StrokeStyle(lineWidth: done ? 9 : 6, lineCap: .round))
+            .shadow(color: done ? Color.green.opacity(0.8) : Color.clear, radius: 6)
+            .animation(.spring(duration: 0.35), value: done)
     }
 }
