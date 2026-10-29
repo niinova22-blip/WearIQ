@@ -103,6 +103,8 @@ public enum StopFit: Equatable, Sendable {
     case turnBack
     /// Arms not held out, so the outline can't show the turn.
     case openArms
+    /// Head or feet outside the picture: the height, which sets the scale, can't be seen.
+    case stepBack
 }
 
 public enum StopGuide {
@@ -114,6 +116,11 @@ public enum StopGuide {
     ///   - spanRatio: arm span relative to the front stop's.
     ///   - shoulderRatio: shoulder separation relative to the front stop's, when the
     ///     shoulders are detected. Lets dropped arms be told apart from a side view.
+    /// Whether the whole body, head to feet, is inside the picture.
+    public static func fullyVisible(_ reading: FrameReading) -> Bool {
+        reading.top > 0.01 && reading.floor < 0.99
+    }
+
     public static func fit(station: Int, spanRatio r: Double, shoulderRatio: Double?) -> StopFit {
         let shouldersWide = (shoulderRatio ?? 0) > 0.75
         switch station % 4 {

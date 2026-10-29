@@ -4960,6 +4960,26 @@
           }
         }
       }
+    },
+    "Step back until you're fully visible, head to feet.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baştan ayağa tamamen görünene kadar biraz geri git."
+          }
+        }
+      }
+    },
+    "Step back": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri git"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

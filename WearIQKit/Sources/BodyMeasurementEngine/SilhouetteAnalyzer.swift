@@ -30,6 +30,27 @@ public struct BinaryMask: Sendable {
         return bits[y * width + x]
     }
 
+    /// Nearest-neighbour resampling to a new size.
+    public func resampled(width newWidth: Int, height newHeight: Int) -> BinaryMask {
+        var out = [Bool](repeating: false, count: newWidth * newHeight)
+        for y in 0..<newHeight {
+            let sy = min(height - 1, y * height / newHeight)
+            for x in 0..<newWidth where bits[sy * width + min(width - 1, x * width / newWidth)] {
+                out[y * newWidth + x] = true
+            }
+        }
+        return BinaryMask(width: newWidth, height: newHeight, bits: out)
+    }
+
+    /// The mask with square pixels for an image of the given aspect ratio (width / height).
+    /// Segmentation masks don't always keep the image's aspect ratio; measured widths
+    /// would otherwise be scaled differently from heights.
+    public func matchingAspect(_ imageAspect: Double) -> BinaryMask {
+        let targetWidth = Int((Double(height) * imageAspect).rounded())
+        guard targetWidth > 0, abs(targetWidth - width) > max(1, width / 100) else { return self }
+        return resampled(width: targetWidth, height: height)
+    }
+
     /// Contiguous person runs in a row as half-open x ranges.
     func runs(inRow y: Int) -> [Range<Int>] {
         guard y >= 0, y < height else { return [] }

@@ -184,6 +184,8 @@ struct BodyScanView: View {
             Label("Turned too far", systemImage: "arrow.counterclockwise").foregroundStyle(.orange)
         case .openArms:
             Label("Open your arms", systemImage: "figure.arms.open").foregroundStyle(.orange)
+        case .stepBack:
+            Label("Step back", systemImage: "arrow.down.to.line").foregroundStyle(.orange)
         case nil:
             Label("Turn and stop", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
         }

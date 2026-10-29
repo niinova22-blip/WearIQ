@@ -81,6 +81,9 @@ final class BodyScanViewModel {
     /// Arm span and shoulder separation at the front stop; later stops are judged against them.
     private var spanReference = 1.0
     private var shoulderReference: Double?
+    private var levelFractions: [BodyLevel: Double] = [:]
+    /// A stop's still is being measured.
+    private var capturing = false
     private var lastHintAt = Date.distantPast
 
     /// Pose problems are spoken once they have lasted this long, so flickering
@@ -239,6 +242,8 @@ final class BodyScanViewModel {
         let start = turnStart
         let heightCm = basics.heightCm
         let fractions = front.fractions.merging(defaultFractions) { measured, _ in measured }
+        levelFractions = fractions
+        capturing = false
         let analyzer = RotationScanAnalyzer()
         camera.frameRate = 8
         camera.onFrame = { [weak self] buffer in
@@ -260,7 +265,7 @@ final class BodyScanViewModel {
     }
 
     private func handleStation(_ reading: FrameReading?, time: Double) {
-        guard case .turning = stage, turn.station < StationScan.stationCount else { return }
+        guard case .turning = stage, turn.station < StationScan.stationCount, !capturing else { return }
         turn.reading = reading
         guard let reading else {
             stillness.reset()
@@ -278,7 +283,9 @@ final class BodyScanViewModel {
         let station = turn.station
         let shoulders = Self.shoulderSeparation(reading)
         let fit: StopFit
-        if station == 0 {
+        if !StopGuide.fullyVisible(reading) {
+            fit = .stepBack
+        } else if station == 0 {
             fit = span >= StopGuide.openArmSpan ? .ok : .openArms
         } else {
             fit = StopGuide.fit(station: station, spanRatio: span / spanReference,
@@ -291,7 +298,30 @@ final class BodyScanViewModel {
             spanReference = span
             shoulderReference = shoulders
         }
-        record(widths)
+        capturePrecise(fallback: widths)
+    }
+
+    /// Re-measures the stop on a still at the best segmentation quality; the live frames'
+    /// faster masks have softer edges. Falls back to the live widths if that fails.
+    private func capturePrecise(fallback: [BodyLevel: Double]) {
+        guard !capturing else { return }
+        capturing = true
+        let station = turn.station
+        let image = camera.captureStill()
+        let heightCm = basics.heightCm
+        let fractions = levelFractions
+        Task {
+            let precise = await Task.detached(priority: .userInitiated) { () -> [BodyLevel: Double]? in
+                guard let image, let frame = VisionBodyAnalyzer().turnFrame(image, time: 0),
+                      let reading = RotationScanAnalyzer().reading(frame, heightCm: heightCm, levelFractions: fractions),
+                      StopGuide.fullyVisible(reading) else { return nil }
+                let widths = reading.levels.mapValues(\.widthCm)
+                return widths[.waist] != nil || widths[.hip] != nil ? widths : nil
+            }.value
+            capturing = false
+            guard case .turning = stage, turn.station == station else { return }
+            record(precise ?? fallback)
+        }
     }
 
     /// Shoulder joints' separation over body height, in the same units both ways.
@@ -308,6 +338,7 @@ final class BodyScanViewModel {
         case .turnFurther: say(String(localized: "Turn a little further clockwise."))
         case .turnBack: say(String(localized: "A little too far. Turn back slightly."))
         case .openArms: say(String(localized: "Open your arms fully, straight out at shoulder height."))
+        case .stepBack: say(String(localized: "Step back until you're fully visible, head to feet."))
         }
     }
 

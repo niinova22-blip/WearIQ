@@ -50,14 +50,27 @@ public struct VisionBodyAnalyzer: Sendable {
     /// One frame of the guided turn: person mask (balanced quality, fast enough for live
     /// frames), the joints, and the hip centre column when the pose is visible.
     public func turnFrame(_ buffer: CVPixelBuffer, time: Double) -> RotationFrame? {
+        let aspect = Double(CVPixelBufferGetWidth(buffer)) / Double(CVPixelBufferGetHeight(buffer))
+        return turnFrame(VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up), aspect: aspect,
+                         quality: .balanced, time: time)
+    }
+
+    /// The same from a still at the best segmentation quality, for the widths actually
+    /// recorded at a stop.
+    public func turnFrame(_ image: CGImage, time: Double) -> RotationFrame? {
+        turnFrame(VNImageRequestHandler(cgImage: image, orientation: .up),
+                  aspect: Double(image.width) / Double(image.height), quality: .accurate, time: time)
+    }
+
+    private func turnFrame(_ handler: VNImageRequestHandler, aspect: Double,
+                           quality: VNGeneratePersonSegmentationRequest.QualityLevel, time: Double) -> RotationFrame? {
         let pose = VNDetectHumanBodyPoseRequest()
         let segmentation = VNGeneratePersonSegmentationRequest()
-        segmentation.qualityLevel = .balanced
+        segmentation.qualityLevel = quality
         segmentation.outputPixelFormat = kCVPixelFormatType_OneComponent8
-        let handler = VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up)
         guard (try? handler.perform([pose, segmentation])) != nil,
               let maskBuffer = segmentation.results?.first?.pixelBuffer,
-              let mask = try? Self.binaryMask(from: maskBuffer) else { return nil }
+              let mask = try? Self.binaryMask(from: maskBuffer, imageAspect: aspect) else { return nil }
         var center: Double?
         var joints: [BodyJoint: Point2D] = [:]
         if let observation = pose.results?.first, let points = try? observation.recognizedPoints(.all) {
@@ -83,7 +96,7 @@ public struct VisionBodyAnalyzer: Sendable {
         guard let observation = pose.results?.first else { throw VisionAnalysisError.noPersonFound }
         guard let maskBuffer = segmentation.results?.first?.pixelBuffer else { throw VisionAnalysisError.maskUnavailable }
 
-        let mask = try Self.binaryMask(from: maskBuffer)
+        let mask = try Self.binaryMask(from: maskBuffer, imageAspect: Double(image.width) / Double(image.height))
         let points = try observation.recognizedPoints(.all)
         var joints: [BodyJoint: Point2D] = [:]
         for (name, joint) in Self.jointMap {
@@ -94,7 +107,13 @@ public struct VisionBodyAnalyzer: Sendable {
         return (mask, joints)
     }
 
-    private static func binaryMask(from buffer: CVPixelBuffer) throws -> BinaryMask {
+    /// The mask is resampled to the image's aspect ratio: Vision may return it at a
+    /// different one, which made every measured width about a third too large.
+    private static func binaryMask(from buffer: CVPixelBuffer, imageAspect: Double) throws -> BinaryMask {
+        try rawMask(from: buffer).matchingAspect(imageAspect)
+    }
+
+    private static func rawMask(from buffer: CVPixelBuffer) throws -> BinaryMask {
         CVPixelBufferLockBaseAddress(buffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
         guard let base = CVPixelBufferGetBaseAddress(buffer) else { throw VisionAnalysisError.maskUnavailable }

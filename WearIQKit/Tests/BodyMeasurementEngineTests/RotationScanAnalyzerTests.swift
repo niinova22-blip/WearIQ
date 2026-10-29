@@ -130,6 +130,19 @@ import WearIQCore
         #expect(abs(span - 1700.0 / 1800.0) < 0.01)
     }
 
+    @Test func maskStretchedToAnotherAspectIsCorrected() throws {
+        // A 9:16 image whose mask came back 3:4: widths look a third larger until resampled.
+        let true9x16 = frame(angle: 0, t: 0)
+        let squeezedWidth = Int(Double(true9x16.mask.height) * 3 / 4)
+        let stretched = true9x16.mask.resampled(width: squeezedWidth, height: true9x16.mask.height)
+        let imageAspect = Double(true9x16.mask.width) / Double(true9x16.mask.height)
+        let fixed = stretched.matchingAspect(imageAspect)
+        #expect(fixed.width == true9x16.mask.width)
+        let reading = try #require(RotationScanAnalyzer().reading(
+            RotationFrame(mask: fixed, centerX: Double(fixed.width) / 2, time: 0), heightCm: heightCm, levelFractions: fractions))
+        #expect(abs(try #require(reading.levels[.waist]).widthCm - 30) < 0.6)
+    }
+
     @Test func standingStillIsNotATurn() {
         let frames = (0..<60).map { i in frame(angle: 0, t: Double(i) / 5) }
         #expect(throws: RotationScanError.incompleteTurn) {
