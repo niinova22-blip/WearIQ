@@ -4661,16 +4661,6 @@
         }
       }
     },
-    "Turn a little more.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Biraz daha dön."
-          }
-        }
-      }
-    },
     "Stop and hold still for a moment.": {
       "localizations": {
         "tr": {
@@ -4731,96 +4721,6 @@
         }
       }
     },
-    "Halfway": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Çapraz"
-          }
-        }
-      }
-    },
-    "Face the phone and hold still.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Telefona dönük dur ve kıpırdama."
-          }
-        }
-      }
-    },
-    "Turn a little to your right, halfway to your side, and hold still.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sağına doğru biraz dön, yarı yan olacak şekilde, ve dur."
-          }
-        }
-      }
-    },
-    "Keep turning until your right side faces the phone, and hold still.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sağ yanın telefona bakana kadar dön ve dur."
-          }
-        }
-      }
-    },
-    "Turn a little more, halfway to your back, and hold still.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Biraz daha dön, sırtın yarı dönük olsun, ve dur."
-          }
-        }
-      }
-    },
-    "Keep turning until your back faces the phone, and hold still.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sırtın telefona dönük olana kadar dön ve dur."
-          }
-        }
-      }
-    },
-    "Turn a little more, halfway to your other side, and hold still.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Biraz daha dön, diğer yanına yarı dönük olsun, ve dur."
-          }
-        }
-      }
-    },
-    "Keep turning until your left side faces the phone, and hold still.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sol yanın telefona bakana kadar dön ve dur."
-          }
-        }
-      }
-    },
-    "Last one: turn a little more, halfway to the front, and hold still.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Son adım: biraz daha dön, önüne yarı dönük olsun, ve dur."
-          }
-        }
-      }
-    },
     "Step %lld of %lld": {
       "localizations": {
         "tr": {
@@ -4861,42 +4761,202 @@
         }
       }
     },
-    "Couldn't measure: %@. Hold still at each position with your arms slightly away from your body, in a bright room.": {
+    "Great. Now we'll measure you from eight sides. Hold your arms straight out to the sides at shoulder height, in one straight line, and keep them there. You'll always turn clockwise, to your right, and stop when I tell you.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ölçülemedi: %@. Aydınlık bir odada, kolların gövdenden biraz uzakta, her konumda bir an kıpırdamadan dur."
+            "value": "Harika. Şimdi seni sekiz yönden ölçeceğiz. Kollarını omuz hizasında yanlara tam aç, iki kolun düz bir çizgi olsun ve hep böyle tut. Hep saat yönünde, yani sağına doğru döneceksin ve ben söyleyince duracaksın."
           }
         }
       }
     },
-    "Hold your arms a little further out from your body.": {
+    "Turn a little further clockwise.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kollarını gövdenden biraz daha uzağa aç."
+            "value": "Saat yönünde biraz daha dön."
           }
         }
       }
     },
-    "Great. Now we'll measure you from eight sides. Hold your arms out to the sides, about a hand's width from your body, and keep them there while you turn.": {
+    "A little too far. Turn back slightly.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Harika. Şimdi seni sekiz yönden ölçeceğiz. Kollarını yanlara, gövdenden bir karış uzağa aç ve dönerken hep böyle tut."
+            "value": "Biraz fazla döndün. Hafifçe geri dön."
           }
         }
       }
     },
-    "Arms out to the sides the whole time": {
+    "Open your arms fully, straight out at shoulder height.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kollar hep yanlara açık"
+            "value": "Kollarını omuz hizasında yanlara tam aç."
+          }
+        }
+      }
+    },
+    "Calculated: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hesaplanan: %@"
+          }
+        }
+      }
+    },
+    "Couldn't measure: %@. Keep your arms straight out and stop at each position, in a bright room.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülemedi: %@. Aydınlık bir odada, kolların yanlara tam açık, her konumda dur."
+          }
+        }
+      }
+    },
+    "Back diagonal": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arka çapraz"
+          }
+        }
+      }
+    },
+    "Front diagonal": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ön çapraz"
+          }
+        }
+      }
+    },
+    "Face the phone with your arms straight out, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolların yanlara açık, telefona dönük dur ve kıpırdama."
+          }
+        }
+      }
+    },
+    "Turn a little clockwise, so you stand diagonally to the phone, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde biraz dön, telefona çapraz dur."
+          }
+        }
+      }
+    },
+    "Keep turning clockwise until your left side faces the phone, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde dönmeye devam et, sol yanın telefona baksın ve dur."
+          }
+        }
+      }
+    },
+    "Keep turning clockwise until your back is diagonal to the phone, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde dönmeye devam et, sırtın telefona çapraz olsun ve dur."
+          }
+        }
+      }
+    },
+    "Keep turning clockwise until your back faces the phone, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde dönmeye devam et, sırtın telefona baksın ve dur."
+          }
+        }
+      }
+    },
+    "Keep turning clockwise a little more, back diagonal again, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde biraz daha dön, sırtın yine çapraz olsun ve dur."
+          }
+        }
+      }
+    },
+    "Keep turning clockwise until your right side faces the phone, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde dönmeye devam et, sağ yanın telefona baksın ve dur."
+          }
+        }
+      }
+    },
+    "Last one: turn clockwise a little more, front diagonal to the phone, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son adım: saat yönünde biraz daha dön, önün telefona çapraz olsun ve dur."
+          }
+        }
+      }
+    },
+    "Arms straight out · turn clockwise": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar yanlara düz · saat yönünde dön"
+          }
+        }
+      }
+    },
+    "Turn further": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz daha dön"
+          }
+        }
+      }
+    },
+    "Turned too far": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fazla döndün"
+          }
+        }
+      }
+    },
+    "Open your arms": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollarını aç"
           }
         }
       }

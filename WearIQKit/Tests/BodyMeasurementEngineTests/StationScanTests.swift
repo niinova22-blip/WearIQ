@@ -93,6 +93,37 @@ import WearIQCore
         #expect(!scan.differs(widths(at: 3), from: 0))
     }
 
+    // MARK: Stop fit
+
+    /// Arm span seen at a body rotation: |cos θ| of the span, never below the body depth.
+    private func span(_ degrees: Double) -> Double {
+        max(0.22, abs(cos(degrees * .pi / 180)))
+    }
+
+    @Test func eachStopAcceptsItsOwnPosition() {
+        for i in 0..<8 {
+            #expect(StopGuide.fit(station: i, spanRatio: span(Double(i) * 45), shoulderRatio: nil) == .ok, "stop \(i)")
+        }
+    }
+
+    @Test func standingStillAtTheLastStopIsNotTheNext() {
+        // Not turning: each stop sees the previous stop's position.
+        for i in 1..<8 {
+            #expect(StopGuide.fit(station: i, spanRatio: span(Double(i - 1) * 45), shoulderRatio: nil) != .ok, "stop \(i)")
+        }
+    }
+
+    @Test func turningTooFarIsCalledOut() {
+        #expect(StopGuide.fit(station: 1, spanRatio: span(90), shoulderRatio: 0.2) == .turnBack)
+        #expect(StopGuide.fit(station: 2, spanRatio: span(20), shoulderRatio: nil) == .turnFurther)
+    }
+
+    @Test func droppedArmsAreCalledOut() {
+        // Facing the camera with the arms down: narrow outline but wide shoulders.
+        #expect(StopGuide.fit(station: 2, spanRatio: 0.3, shoulderRatio: 1) == .openArms)
+        #expect(StopGuide.fit(station: 4, spanRatio: 0.3, shoulderRatio: 1) == .openArms)
+    }
+
     // MARK: Stillness
 
     private func reading(waist: Double, center: Double = 0.5) -> FrameReading {

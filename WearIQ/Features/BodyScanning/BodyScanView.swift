@@ -18,12 +18,21 @@ struct BodyScanView: View {
             CameraPreview(session: model.camera.session)
                 .ignoresSafeArea()
                 .accessibilityHidden(true)
-            if case .turning = model.stage {
-                TurnGuideOverlay(state: model.turn)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
+            Group {
+                switch model.stage {
+                case .turning:
+                    TurnGuideOverlay(state: model.turn)
+                case .positioning, .countdown:
+                    GeometryReader { proxy in
+                        JointsView(joints: model.liveJoints, rect: cameraImageRect(in: proxy.size), tint: .cyan)
+                    }
+                default:
+                    EmptyView()
+                }
             }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
             VStack {
                 header
                 Spacer()
@@ -101,10 +110,8 @@ struct BodyScanView: View {
                             .foregroundStyle(.white)
                             .minimumScaleFactor(0.6)
                             .lineLimit(1)
-                        Label(model.turn.holding ? String(localized: "Hold still…") : String(localized: "Turn and stop"),
-                              systemImage: model.turn.holding ? "pause.circle.fill" : "arrow.turn.up.right")
+                        fitLabel(model.turn.fit)
                             .font(.system(size: 22, weight: .bold, design: .rounded))
-                            .foregroundStyle(model.turn.holding ? .green : .yellow)
                             .contentTransition(.opacity)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -115,7 +122,7 @@ struct BodyScanView: View {
                     }
                 }
                 // The one posture that lets chest, waist and hips all be measured.
-                Label("Arms out to the sides the whole time", systemImage: "figure.arms.open")
+                Label("Arms straight out · turn clockwise", systemImage: "figure.arms.open")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
             }
@@ -166,6 +173,22 @@ struct BodyScanView: View {
         }
     }
 
+    @ViewBuilder
+    private func fitLabel(_ fit: StopFit?) -> some View {
+        switch fit {
+        case .ok:
+            Label("Hold still…", systemImage: "pause.circle.fill").foregroundStyle(.green)
+        case .turnFurther:
+            Label("Turn further", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
+        case .turnBack:
+            Label("Turned too far", systemImage: "arrow.counterclockwise").foregroundStyle(.orange)
+        case .openArms:
+            Label("Open your arms", systemImage: "figure.arms.open").foregroundStyle(.orange)
+        case nil:
+            Label("Turn and stop", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
+        }
+    }
+
     private func regionChip(_ level: BodyLevel, done: Bool) -> some View {
         Label {
             Text(level.title)
@@ -200,20 +223,72 @@ struct BodyScanView: View {
     }
 }
 
-/// Guidance drawn over the camera during the turn, anchored to the person: a ring on the
-/// floor whose sectors fill as the user turns, and a band across the chest, waist and
-/// hips that turns green once that region has been seen from every direction.
+/// Where the camera image sits on screen: portrait 9:16 frames, shown aspect-fit.
+private func cameraImageRect(in size: CGSize) -> CGRect {
+    let aspect = 9.0 / 16.0
+    let width = min(size.width, size.height * aspect)
+    let height = width / aspect
+    return CGRect(x: (size.width - width) / 2, y: (size.height - height) / 2, width: width, height: height)
+}
+
+private func point(_ x: Double, _ y: Double, in rect: CGRect) -> CGPoint {
+    CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
+}
+
+/// The detected joints and the bones between them, drawn over the camera so the user
+/// sees what the scan sees.
+private struct JointsView: View {
+    let joints: [BodyJoint: Point2D]
+    let rect: CGRect
+    let tint: Color
+
+    private static let bones: [(BodyJoint, BodyJoint)] = [
+        (.nose, .neck), (.neck, .leftShoulder), (.neck, .rightShoulder),
+        (.leftShoulder, .leftElbow), (.leftElbow, .leftWrist),
+        (.rightShoulder, .rightElbow), (.rightElbow, .rightWrist),
+        (.neck, .root), (.root, .leftHip), (.root, .rightHip),
+        (.leftHip, .leftKnee), (.leftKnee, .leftAnkle),
+        (.rightHip, .rightKnee), (.rightKnee, .rightAnkle),
+    ]
+
+    var body: some View {
+        ZStack {
+            Path { p in
+                for (a, b) in Self.bones {
+                    guard let pa = joints[a], let pb = joints[b] else { continue }
+                    p.move(to: point(pa.x, pa.y, in: rect))
+                    p.addLine(to: point(pb.x, pb.y, in: rect))
+                }
+            }
+            .stroke(tint.opacity(0.85), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            ForEach(Array(joints.keys), id: \.self) { joint in
+                if let j = joints[joint] {
+                    Circle()
+                        .fill(.white)
+                        .overlay(Circle().stroke(tint, lineWidth: 2.5))
+                        .frame(width: 11, height: 11)
+                        .position(point(j.x, j.y, in: rect))
+                }
+            }
+        }
+        .shadow(color: .black.opacity(0.5), radius: 2)
+        .animation(.easeOut(duration: 0.15), value: joints)
+    }
+}
+
+/// Guidance drawn over the camera during the turn, anchored to the person: the joints,
+/// a ring on the floor with one sector per stop, and the chest, waist and hip lines
+/// where the girths are measured, which turn green once measured from enough sides.
 private struct TurnGuideOverlay: View {
     let state: BodyScanViewModel.TurnState
-    /// Camera frames are portrait 9:16, shown aspect-fit.
-    private let frameAspect = 9.0 / 16.0
 
     var body: some View {
         GeometryReader { proxy in
-            let rect = imageRect(in: proxy.size)
+            let rect = cameraImageRect(in: proxy.size)
             if let reading = state.reading {
                 ZStack {
                     floorRing(reading, in: rect)
+                    JointsView(joints: reading.joints, rect: rect, tint: state.fit == .ok ? .green : .cyan)
                     ForEach([BodyLevel.chest, .waist, .hip], id: \.self) { level in
                         if let band = reading.levels[level] {
                             bandView(level, band, in: rect)
@@ -225,22 +300,14 @@ private struct TurnGuideOverlay: View {
         }
     }
 
-    private func imageRect(in size: CGSize) -> CGRect {
-        let width = min(size.width, size.height * frameAspect)
-        let height = width / frameAspect
-        return CGRect(x: (size.width - width) / 2, y: (size.height - height) / 2, width: width, height: height)
-    }
-
-    private func point(_ x: Double, _ y: Double, in rect: CGRect) -> CGPoint {
-        CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
-    }
-
     private func bandView(_ level: BodyLevel, _ band: LevelReading, in rect: CGRect) -> some View {
         let done = state.measured.contains(level)
         let pad = 0.03
         let start = point(band.left - pad, band.y, in: rect)
         let end = point(band.right + pad, band.y, in: rect)
         let color: Color = done ? .green : .white
+        let edgeLeft = point(band.left, band.y, in: rect)
+        let edgeRight = point(band.right, band.y, in: rect)
         return ZStack {
             Path { p in
                 p.move(to: start)
@@ -249,6 +316,21 @@ private struct TurnGuideOverlay: View {
             .stroke(color.opacity(done ? 1 : 0.85),
                     style: StrokeStyle(lineWidth: done ? 6 : 4, lineCap: .round, dash: done ? [] : [10, 8]))
             .shadow(color: color.opacity(done ? 0.9 : 0.4), radius: done ? 8 : 3)
+            // The measured edges of the outline at this level.
+            ForEach([edgeLeft, edgeRight], id: \.x) { edge in
+                Circle()
+                    .fill(color)
+                    .frame(width: 12, height: 12)
+                    .position(edge)
+            }
+            Text(level.title)
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(done ? Color.black : .white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(done ? Color.green : .black.opacity(0.6), in: Capsule())
+                .fixedSize()
+                .position(x: start.x - 38, y: start.y)
             Image(systemName: done ? "checkmark.circle.fill" : "circle.dotted")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(color)

@@ -93,6 +93,44 @@ public struct StationScan: Sendable {
     }
 }
 
+/// Whether the user stands where a stop wants them, judged from the outline with the
+/// arms held straight out to the sides.
+public enum StopFit: Equatable, Sendable {
+    case ok
+    /// Not far enough round yet (the user always turns clockwise).
+    case turnFurther
+    /// Turned past the stop.
+    case turnBack
+    /// Arms not held out, so the outline can't show the turn.
+    case openArms
+}
+
+public enum StopGuide {
+    /// Arms straight out span about the body height; less than this at the front stop
+    /// means they aren't fully open.
+    public static let openArmSpan = 0.75
+
+    /// - Parameters:
+    ///   - spanRatio: arm span relative to the front stop's.
+    ///   - shoulderRatio: shoulder separation relative to the front stop's, when the
+    ///     shoulders are detected. Lets dropped arms be told apart from a side view.
+    public static func fit(station: Int, spanRatio r: Double, shoulderRatio: Double?) -> StopFit {
+        let shouldersWide = (shoulderRatio ?? 0) > 0.75
+        switch station % 4 {
+        case 0:  // facing or backing onto the camera: full span
+            if r >= 0.85 { return .ok }
+            return shouldersWide && r < 0.6 ? .openArms : .turnFurther
+        case 2:  // side-on: the arms point at and away from the camera
+            if r <= 0.5 { return shouldersWide ? .openArms : .ok }
+            return .turnFurther
+        default:  // diagonal: about cos 45° of the span
+            if r > 0.85 { return .turnFurther }
+            if r >= 0.45 { return .ok }
+            return shouldersWide ? .openArms : .turnBack
+        }
+    }
+}
+
 /// Notices when the user stands still, and gives the widths measured during that moment.
 public struct StillnessDetector: Sendable {
     /// How long the pose has to hold, in seconds.

@@ -11,12 +11,16 @@ public struct RotationFrame: Sendable {
     /// backing onto) the camera, 90° side-on. Folded this way it doesn't depend on
     /// which way the user turns or on front/back confusions of the pose model.
     public var axisAngle: Double?
+    /// Detected joints, normalised image coordinates (y down).
+    public var joints: [BodyJoint: Point2D]
 
-    public init(mask: BinaryMask, centerX: Double?, time: Double, axisAngle: Double? = nil) {
+    public init(mask: BinaryMask, centerX: Double?, time: Double, axisAngle: Double? = nil,
+                joints: [BodyJoint: Point2D] = [:]) {
         self.mask = mask
         self.centerX = centerX
         self.time = time
         self.axisAngle = axisAngle
+        self.joints = joints
     }
 }
 
@@ -35,6 +39,13 @@ public struct FrameReading: Sendable, Equatable {
     public var floor: Double
     public var centerX: Double
     public var levels: [BodyLevel: LevelReading]
+    /// Widest outline across the shoulder band, as a fraction of body height. With the
+    /// arms held straight out it is about 1 seen from the front or back, about 0.7 from
+    /// a diagonal and only the body's depth side-on, so it shows how far the user has
+    /// turned without estimating any angle.
+    public var armSpan: Double? = nil
+    /// Detected joints, normalised image coordinates (y down).
+    public var joints: [BodyJoint: Point2D] = [:]
 }
 
 public enum RotationScanError: Error, Equatable {
@@ -112,7 +123,23 @@ public struct RotationScanAnalyzer: Sendable {
             levels[level] = levelReading(frame, top: top, height: floor - top, fraction: fraction, heightCm: heightCm)
         }
         let center = frame.centerX ?? levels[.hip].map { ($0.left + $0.right) / 2 * w } ?? w / 2
-        return FrameReading(top: Double(top) / h, floor: Double(floor) / h, centerX: center / w, levels: levels)
+        return FrameReading(top: Double(top) / h, floor: Double(floor) / h, centerX: center / w, levels: levels,
+                            armSpan: armSpan(frame.mask, top: top, height: floor - top, center: Int(center)),
+                            joints: frame.joints)
+    }
+
+    /// Widest run through the body centre across the shoulder band (12–28% of body
+    /// height below the top of the head), over body height. Pixels are converted to the
+    /// vertical scale, since masks may not keep the camera frame's aspect ratio.
+    func armSpan(_ mask: BinaryMask, top: Int, height: Int, center: Int, frameAspect: Double = 9.0 / 16.0) -> Double? {
+        guard height > 0 else { return nil }
+        let rows = (top + height * 12 / 100)...(top + height * 28 / 100)
+        let widest = rows.compactMap { y in mask.run(inRow: y, containing: center)?.count }.max()
+        guard let widest else { return nil }
+        // Normalised x spans frameAspect as much distance as normalised y.
+        let widthUnits = Double(widest) / Double(mask.width) * frameAspect
+        let heightUnits = Double(height) / Double(mask.height)
+        return widthUnits / heightUnits
     }
 
     /// Mean over angle bins, each bin weighted equally. `nil` when the turn covered too

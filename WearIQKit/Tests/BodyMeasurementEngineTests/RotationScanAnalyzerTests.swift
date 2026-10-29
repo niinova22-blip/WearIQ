@@ -114,6 +114,22 @@ import WearIQCore
         #expect(waist.y > reading.top && waist.y < reading.floor)
     }
 
+    @Test func armSpanSeesOutstretchedArms() throws {
+        // 180 cm person, 1 px = 0.1 cm: torso 34 cm wide, arms out to 170 cm span at 20%.
+        let width = 2000, top = 40, heightPx = 1800, height = heightPx + 100
+        var bits = [Bool](repeating: false, count: width * height)
+        for y in top..<(top + heightPx) {
+            let f = Double(y - top) / Double(heightPx)
+            let half = (0.18...0.22).contains(f) ? 850 : 170
+            for x in (width / 2 - half)..<(width / 2 + half) { bits[y * width + x] = true }
+        }
+        let mask = BinaryMask(width: width, height: height, bits: bits)
+        // A square-pixel mask: no aspect conversion.
+        let span = try #require(RotationScanAnalyzer().armSpan(mask, top: top, height: heightPx, center: width / 2,
+                                                              frameAspect: Double(width) / Double(height)))
+        #expect(abs(span - 1700.0 / 1800.0) < 0.01)
+    }
+
     @Test func standingStillIsNotATurn() {
         let frames = (0..<60).map { i in frame(angle: 0, t: Double(i) / 5) }
         #expect(throws: RotationScanError.incompleteTurn) {

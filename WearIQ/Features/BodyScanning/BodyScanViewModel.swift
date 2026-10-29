@@ -9,12 +9,12 @@ import WearIQCore
 /// The user props the phone up and steps back, so capture is hands-free: once the
 /// pose has been good for a moment a countdown starts, and spoken cues tell the user
 /// what to fix. The front photo gives lengths and shoulder width. Girths come from a
-/// turn in eight stops 45° apart (see `StationScan`): each stop has one plain spoken
-/// instruction, and as soon as the user holds still there its sector of the floor ring
-/// turns green and the next instruction follows. Nothing depends on estimating the
-/// body's angle, which proved unreliable with the front camera. Height/weight statistics
-/// are only used to catch failed detections, never as values. Images and masks live
-/// only in memory.
+/// clockwise turn in eight stops 45° apart (see `StationScan`), arms held straight out
+/// to the sides. Each stop has one plain spoken instruction; the outstretched arms show
+/// how far the user has turned (`StopGuide`), so a stop is only taken when the user
+/// stands still in the right place, and they are told to turn further, turn back or
+/// open their arms otherwise. Height/weight statistics are only used to catch failed
+/// detections, never as values. Images and masks live only in memory.
 @MainActor
 @Observable
 final class BodyScanViewModel {
@@ -40,6 +40,8 @@ final class BodyScanViewModel {
         var reading: FrameReading?
         /// The user is holding still at a new stop; it is about to be captured.
         var holding = false
+        /// How the user's current position matches the stop, while holding still.
+        var fit: StopFit?
     }
 
     private(set) var pose: ScanPose = .front
@@ -48,6 +50,8 @@ final class BodyScanViewModel {
     /// Values measured before a failure, so the user can keep them and add the rest.
     private(set) var partialResult: BodyProfile?
     private(set) var turn = TurnState()
+    /// Joints seen while positioning for the front photo, normalised (y down), for the overlay.
+    private(set) var liveJoints: [BodyJoint: Point2D] = [:]
     var voiceGuidance = true {
         didSet { audio.isEnabled = voiceGuidance }
     }
@@ -57,7 +61,14 @@ final class BodyScanViewModel {
     let camera = CameraController()
     let basics: BodyBasics
     private let vision = VisionBodyAnalyzer()
-    private let guidance = PoseGuidance()
+    /// The turn is done with the arms straight out, spanning about the body height; the
+    /// user stands far enough back for them to fit in the portrait frame.
+    private let guidance: PoseGuidance = {
+        var guidance = PoseGuidance()
+        guidance.minBodySpan = 0.45
+        guidance.maxBodySpan = 0.66
+        return guidance
+    }()
     private let audio = ScanAudio()
 
     private var goodSince: Date?
@@ -67,12 +78,9 @@ final class BodyScanViewModel {
     private var stillness = StillnessDetector()
     private var turnStart = Date()
     private var stationStart = Date()
-    /// The user moved since the last stop was captured.
-    private var movedSinceCapture = false
-    /// The user is standing still, but in the same place as the last stop.
-    private var stillButUnchanged = false
-    /// Times the user was asked to move their arms away at the current stop.
-    private var armNudges = 0
+    /// Arm span and shoulder separation at the front stop; later stops are judged against them.
+    private var spanReference = 1.0
+    private var shoulderReference: Double?
     private var lastHintAt = Date.distantPast
 
     /// Pose problems are spoken once they have lasted this long, so flickering
@@ -84,9 +92,6 @@ final class BodyScanViewModel {
 
     /// How long the pose must be held before the countdown starts.
     private let holdDuration: TimeInterval = 1.0
-    /// A still pose that looks like the last stop is accepted after this long, for
-    /// bodies whose width barely changes between neighbouring stops.
-    private let stationTimeout: TimeInterval = 9
     private let maxTurnDuration: TimeInterval = 150
     private let defaultFractions: [BodyLevel: Double] = [.chest: 0.27, .waist: 0.39, .hip: 0.5]
 
@@ -142,6 +147,7 @@ final class BodyScanViewModel {
         case .positioning, .countdown: break
         default: return
         }
+        liveJoints = joints.filter { $0.value.confidence >= 0.3 }.mapValues(\.point)
         let issue = guidance.issue(for: joints, pose: pose)
         if let issue {
             goodSince = nil
@@ -203,13 +209,13 @@ final class BodyScanViewModel {
         stage = .turning(0)
         let front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
         self.front = front
-        audio.say(String(localized: "Great. Now we'll measure you from eight sides. Hold your arms out to the sides, about a hand's width from your body, and keep them there while you turn."),
+        audio.say(String(localized: "Great. Now we'll measure you from eight sides. Hold your arms straight out to the sides at shoulder height, in one straight line, and keep them there. You'll always turn clockwise, to your right, and stop when I tell you."),
                   priority: .high)
         countdownTask = Task { [weak self] in
             do {
                 let result = try await front.value
                 // Let the sentence above finish before the first stop.
-                try? await Task.sleep(for: .seconds(2.5))
+                try? await Task.sleep(for: .seconds(6))
                 guard !Task.isCancelled else { return }
                 self?.startStations(result)
             } catch {
@@ -226,7 +232,8 @@ final class BodyScanViewModel {
         turn = TurnState()
         turnStart = Date()
         stationStart = Date()
-        movedSinceCapture = true
+        spanReference = 1
+        shoulderReference = nil
 
         let vision = vision
         let start = turnStart
@@ -262,29 +269,46 @@ final class BodyScanViewModel {
         }
         stillness.add(reading, time: time)
         // Time to hear the instruction and start moving.
-        guard Date().timeIntervalSince(stationStart) > 1.2 else { return }
-        guard let widths = stillness.stillWidths(at: time) else {
-            movedSinceCapture = true
-            stillButUnchanged = false
+        guard Date().timeIntervalSince(stationStart) > 1.5 else { return }
+        guard let widths = stillness.stillWidths(at: time), let span = reading.armSpan else {
             turn.holding = false
+            turn.fit = nil
             return
         }
         let station = turn.station
-        let changed = station == 0 || scan.differs(widths, from: station - 1)
-        let waitedLongEnough = movedSinceCapture && Date().timeIntervalSince(stationStart) > stationTimeout
-        stillButUnchanged = !changed
-        // The chest can't be measured through arms resting against it; ask once or twice,
-        // then take the stop anyway (its chest width is rebuilt from the neighbours).
-        if changed, StationScan.armsAgainstChest(widths, at: station), armNudges < 2 {
-            turn.holding = false
-            if Date().timeIntervalSince(lastHintAt) > 4 {
-                armNudges += 1
-                say(String(localized: "Hold your arms a little further out from your body."))
-            }
-            return
+        let shoulders = Self.shoulderSeparation(reading)
+        let fit: StopFit
+        if station == 0 {
+            fit = span >= StopGuide.openArmSpan ? .ok : .openArms
+        } else {
+            fit = StopGuide.fit(station: station, spanRatio: span / spanReference,
+                                shoulderRatio: shoulders.flatMap { s in shoulderReference.map { s / $0 } })
         }
-        turn.holding = changed
-        if changed || waitedLongEnough { record(widths) }
+        turn.fit = fit
+        turn.holding = fit == .ok
+        guard fit == .ok else { return nudge(fit) }
+        if station == 0 {
+            spanReference = span
+            shoulderReference = shoulders
+        }
+        record(widths)
+    }
+
+    /// Shoulder joints' separation over body height, in the same units both ways.
+    private static func shoulderSeparation(_ reading: FrameReading) -> Double? {
+        guard let l = reading.joints[.leftShoulder], let r = reading.joints[.rightShoulder],
+              reading.floor > reading.top else { return nil }
+        return abs(l.x - r.x) * 9 / 16 / (reading.floor - reading.top)
+    }
+
+    private func nudge(_ fit: StopFit) {
+        guard Date().timeIntervalSince(lastHintAt) > 4, !audio.isSpeaking else { return }
+        switch fit {
+        case .ok: return
+        case .turnFurther: say(String(localized: "Turn a little further clockwise."))
+        case .turnBack: say(String(localized: "A little too far. Turn back slightly."))
+        case .openArms: say(String(localized: "Open your arms fully, straight out at shoulder height."))
+        }
     }
 
     private func record(_ widths: [BodyLevel: Double]) {
@@ -297,9 +321,7 @@ final class BodyScanViewModel {
         turn.holding = false
         audio.play(.sector(station))
         stillness.reset()
-        movedSinceCapture = false
-        stillButUnchanged = false
-        armNudges = 0
+        turn.fit = nil
 
         let next = station + 1
         turn.station = next
@@ -309,16 +331,16 @@ final class BodyScanViewModel {
         say(String(localized: "Good.") + " " + StationGuide.instruction(next))
     }
 
-    /// Runs twice a second: nudges the user when a stop is taking long.
+    /// Runs twice a second: helps when a stop is taking long.
     private func coach() {
         if Date().timeIntervalSince(turnStart) > maxTurnDuration { return finishTurn() }
-        guard Date().timeIntervalSince(lastHintAt) > 6, !audio.isSpeaking else { return }
+        guard Date().timeIntervalSince(lastHintAt) > 8, !audio.isSpeaking else { return }
         if turn.reading == nil {
             say(String(localized: "Step back into the frame."))
-        } else if stillButUnchanged {
-            say(String(localized: "Turn a little more.") + " " + StationGuide.instruction(turn.station))
-        } else {
+        } else if turn.fit == nil {
             say(String(localized: "Stop and hold still for a moment."))
+        } else {
+            say(StationGuide.instruction(turn.station))
         }
     }
 
@@ -364,8 +386,13 @@ final class BodyScanViewModel {
                     partialResult = profile
                     let names = missing.map { $0 == .chest ? BodyLevel.chest.title : BodyLevel.waist.title }
                         .joined(separator: ", ")
+                    let girths = scan.girths()
+                    let calculated = [BodyLevel.chest, .waist, .hip].map { level in
+                        "\(level.title) " + (girths[level].map { "\(Int($0.cm.rounded())) cm" } ?? "–")
+                    }.joined(separator: ", ")
                     let detail = String(localized: "Positions measured: chest \(scan.count(.chest)) of 8, waist \(scan.count(.waist)) of 8, hips \(scan.count(.hip)) of 8.")
-                    fail(String(localized: "Couldn't measure: \(names). Hold still at each position with your arms slightly away from your body, in a bright room.") + "\n\n" + detail,
+                        + "\n" + String(localized: "Calculated: \(calculated)")
+                    fail(String(localized: "Couldn't measure: \(names). Keep your arms straight out and stop at each position, in a bright room.") + "\n\n" + detail,
                          spoken: String(localized: "Let's try the turn again."))
                     return
                 }
@@ -471,28 +498,31 @@ extension BodyLevel {
     }
 }
 
-/// The eight stops of the guided turn, 45° apart, turning to the user's right.
+/// The eight stops of the guided turn, 45° apart, always turning clockwise (to the
+/// user's right) as seen from above. Turning right first brings the left side to the
+/// phone, then the back, then the right side.
 enum StationGuide {
     static func title(_ station: Int) -> String {
         switch station {
         case 0: String(localized: "Front")
-        case 2: String(localized: "Right side")
+        case 2: String(localized: "Left side")
         case 4: String(localized: "Back")
-        case 6: String(localized: "Left side")
-        default: String(localized: "Halfway")
+        case 6: String(localized: "Right side")
+        case 3, 5: String(localized: "Back diagonal")
+        default: String(localized: "Front diagonal")
         }
     }
 
     static func instruction(_ station: Int) -> String {
         switch station {
-        case 0: String(localized: "Face the phone and hold still.")
-        case 1: String(localized: "Turn a little to your right, halfway to your side, and hold still.")
-        case 2: String(localized: "Keep turning until your right side faces the phone, and hold still.")
-        case 3: String(localized: "Turn a little more, halfway to your back, and hold still.")
-        case 4: String(localized: "Keep turning until your back faces the phone, and hold still.")
-        case 5: String(localized: "Turn a little more, halfway to your other side, and hold still.")
-        case 6: String(localized: "Keep turning until your left side faces the phone, and hold still.")
-        default: String(localized: "Last one: turn a little more, halfway to the front, and hold still.")
+        case 0: String(localized: "Face the phone with your arms straight out, and hold still.")
+        case 1: String(localized: "Turn a little clockwise, so you stand diagonally to the phone, and stop.")
+        case 2: String(localized: "Keep turning clockwise until your left side faces the phone, and stop.")
+        case 3: String(localized: "Keep turning clockwise until your back is diagonal to the phone, and stop.")
+        case 4: String(localized: "Keep turning clockwise until your back faces the phone, and stop.")
+        case 5: String(localized: "Keep turning clockwise a little more, back diagonal again, and stop.")
+        case 6: String(localized: "Keep turning clockwise until your right side faces the phone, and stop.")
+        default: String(localized: "Last one: turn clockwise a little more, front diagonal to the phone, and stop.")
         }
     }
 }

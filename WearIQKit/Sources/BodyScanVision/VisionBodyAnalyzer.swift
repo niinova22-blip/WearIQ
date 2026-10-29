@@ -48,7 +48,7 @@ public struct VisionBodyAnalyzer: Sendable {
     }
 
     /// One frame of the guided turn: person mask (balanced quality, fast enough for live
-    /// frames) and the hip centre column when the pose is visible.
+    /// frames), the joints, and the hip centre column when the pose is visible.
     public func turnFrame(_ buffer: CVPixelBuffer, time: Double) -> RotationFrame? {
         let pose = VNDetectHumanBodyPoseRequest()
         let segmentation = VNGeneratePersonSegmentationRequest()
@@ -59,10 +59,15 @@ public struct VisionBodyAnalyzer: Sendable {
               let maskBuffer = segmentation.results?.first?.pixelBuffer,
               let mask = try? Self.binaryMask(from: maskBuffer) else { return nil }
         var center: Double?
-        if let root = try? pose.results?.first?.recognizedPoint(.root), root.confidence >= 0.3 {
-            center = Double(root.location.x) * Double(mask.width)
+        var joints: [BodyJoint: Point2D] = [:]
+        if let observation = pose.results?.first, let points = try? observation.recognizedPoints(.all) {
+            for (name, joint) in Self.jointMap {
+                guard let p = points[name], p.confidence >= 0.3 else { continue }
+                joints[joint] = Point2D(Double(p.location.x), 1 - Double(p.location.y))
+            }
+            center = joints[.root].map { $0.x * Double(mask.width) }
         }
-        return RotationFrame(mask: mask, centerX: center, time: time)
+        return RotationFrame(mask: mask, centerX: center, time: time, joints: joints)
     }
 
     /// Full analysis of a captured still: segmentation mask plus joints in mask pixels.
