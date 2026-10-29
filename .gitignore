@@ -22,3 +22,5 @@ Secrets.xcconfig
 
 .DS_Store
 WearIQKit/Info.plist
+
+.claude/settings.local.json
