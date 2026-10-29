@@ -49,8 +49,8 @@ struct BodyScanView: View {
 
     private var header: some View {
         HStack(spacing: Theme.Spacing.m) {
-            stepBadge(1, active: model.pose == .front, title: "Front")
-            stepBadge(2, active: model.pose == .side, title: "Side")
+            stepBadge(1, active: !model.turnNext, title: "Front")
+            stepBadge(2, active: model.turnNext, title: "Turn")
         }
         .padding(.vertical, Theme.Spacing.s)
         .padding(.horizontal, Theme.Spacing.m)
@@ -77,6 +77,28 @@ struct BodyScanView: View {
                 .contentTransition(.numericText())
                 .shadow(color: .black.opacity(0.8), radius: 12)
                 .accessibilityLabel(Text("Taking photo in \(n)"))
+        case let .turning(progress):
+            VStack(spacing: Theme.Spacing.m) {
+                ZStack {
+                    Circle().stroke(.white.opacity(0.25), lineWidth: 14)
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(Theme.accentGradient, style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .animation(.linear(duration: 0.2), value: progress)
+                    Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90")
+                        .font(.system(size: 52, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                .frame(width: 170, height: 170)
+                Text("Turn slowly")
+                    .font(.system(size: 36, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+            .padding(Theme.Spacing.l)
+            .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text("Turning, \(Int(progress * 100)) percent"))
         case .analyzing:
             VStack(spacing: Theme.Spacing.m) {
                 ProgressView().tint(.white).controlSize(.large)
@@ -91,12 +113,12 @@ struct BodyScanView: View {
                 Label("Scan didn't work", systemImage: "exclamationmark.triangle.fill")
                     .font(.headline)
                 Text(message).font(.subheadline)
-                Button("Continue with estimated values") { onFinished(model.basics.estimatedProfile()) }
-                    .buttonStyle(.primary)
-                Text("Estimated from your height and weight. You can correct each value with a tape measure.")
-                    .font(.footnote).foregroundStyle(.secondary)
                 Button("Try again") { model.retry(); Task { await model.start() } }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.primary)
+                if let partial = model.partialResult {
+                    Button("Keep what was measured") { onFinished(partial) }
+                        .frame(maxWidth: .infinity)
+                }
                 Button("Enter measurements manually", action: onManualEntry)
                     .frame(maxWidth: .infinity)
             }
@@ -116,15 +138,6 @@ struct BodyScanView: View {
             .sensoryFeedback(.success, trigger: model.stage)
         case .finished:
             EmptyView()
-        }
-        if model.pose == .side, model.stage != .analyzing, model.stage != .finished, model.stage != .completed {
-            Button("Skip side photo (less accurate)") { model.skipSidePhoto() }
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
-                .padding(.vertical, Theme.Spacing.s)
-                .padding(.horizontal, Theme.Spacing.m)
-                .background(.black.opacity(0.6), in: Capsule())
-                .padding(.top, Theme.Spacing.s)
         }
     }
 

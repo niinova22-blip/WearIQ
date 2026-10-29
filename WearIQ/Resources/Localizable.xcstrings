@@ -4510,6 +4510,136 @@
           }
         }
       }
+    },
+    "Now turn slowly all the way around.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdi yavaşça kendi etrafında tam bir tur dön."
+          }
+        }
+      }
+    },
+    "Keep turning slowly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yavaşça dönmeye devam et."
+          }
+        }
+      }
+    },
+    "You can stop now.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamam, durabilirsin."
+          }
+        }
+      }
+    },
+    "Great. Keep your arms slightly away from your body. After the countdown, turn slowly all the way around.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harika. Kollarını vücudundan hafifçe açık tut. Geri sayımdan sonra yavaşça kendi etrafında bir tur dön."
+          }
+        }
+      }
+    },
+    "Your chest and waist couldn't be measured from the turn. Turn a little slower with your arms away from your body, in a bright room.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dönüşten göğüs ve bel ölçülemedi. Kolların vücudundan açık, aydınlık bir ortamda biraz daha yavaş dön."
+          }
+        }
+      }
+    },
+    "Let's try the turn again.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dönüşü bir kez daha deneyelim."
+          }
+        }
+      }
+    },
+    "Turn": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dönüş"
+          }
+        }
+      }
+    },
+    "Turn slowly": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yavaşça dön"
+          }
+        }
+      }
+    },
+    "Turning, %lld percent": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dönüş, yüzde %lld"
+          }
+        }
+      }
+    },
+    "Keep what was measured": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülenleri kullan"
+          }
+        }
+      }
+    },
+    "The store gives no %@ measurement for this garment.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mağaza bu ürün için %@ ölçüsü vermiyor."
+          }
+        }
+      }
+    },
+    "First a front photo: face the phone, arms slightly away from your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce önden bir fotoğraf: telefona dön, kolların vücudundan hafifçe açık olsun."
+          }
+        }
+      }
+    },
+    "Then turn slowly all the way around on the spot (about 15 seconds). This measures your chest, waist and hips.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonra olduğun yerde yavaşça tam bir tur dön (yaklaşık 15 saniye). Göğüs, bel ve kalçan böyle ölçülür."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -178,7 +178,9 @@ struct FitResultView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 4)
                 .contentTransition(.opacity)
-            ForEach(size.regions, id: \.region) { region in
+            let shown = size.regions.filter { $0.missing != .garmentMeasurement }
+            let notInChart = size.regions.filter { $0.missing == .garmentMeasurement }.map(\.region.title)
+            ForEach(shown, id: \.region) { region in
                 HStack(alignment: .firstTextBaseline) {
                     Image(systemName: region.severity.symbol)
                         .foregroundStyle(region.severity.color)
@@ -192,6 +194,11 @@ struct FitResultView: View {
                 .font(.subheadline)
                 .padding(.vertical, 2)
                 .accessibilityElement(children: .combine)
+            }
+            if !notInChart.isEmpty {
+                Text("The store gives no \(notInChart.joined(separator: ", ").lowercased()) measurement for this garment.")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
             }
         }
     }

@@ -33,6 +33,8 @@ public struct PoseGuidance: Sendable {
     /// Fraction of image height the body (head to ankles) should cover.
     public var minBodySpan = 0.55
     public var maxBodySpan = 0.92
+    /// Width / height of the camera frame (portrait 1080×1920).
+    public var frameAspect = 9.0 / 16.0
 
     public init() {}
 
@@ -65,6 +67,12 @@ public struct PoseGuidance: Sendable {
         case .front:
             // Shoulders of a front-facing adult span roughly 0.2× body height.
             if shoulderSpan < 0.12 * span { return .notFacingCamera }
+            // Upper arms angled out (A-pose) so the chest rows don't run into the arms:
+            // at least ~15° from vertical, in pixel units of a portrait frame.
+            for (s, e) in [(j[.leftShoulder], j[.leftElbow]), (j[.rightShoulder], j[.rightElbow])] {
+                guard let s, let e, e.y > s.y else { continue }
+                if abs(e.x - s.x) * frameAspect / (e.y - s.y) < 0.27 { return .armsTooCloseToBody }
+            }
             // Wrists must be clear of the hips so the waist/hip rows only contain torso.
             if let lh = j[.leftHip], let rh = j[.rightHip], let lw = j[.leftWrist], let rw = j[.rightWrist] {
                 let hipHalf = abs(lh.x - rh.x) / 2

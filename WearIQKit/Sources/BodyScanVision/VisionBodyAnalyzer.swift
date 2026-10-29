@@ -47,6 +47,24 @@ public struct VisionBodyAnalyzer: Sendable {
         return result
     }
 
+    /// One frame of the 360° turn: person mask (balanced quality, fast enough for live
+    /// frames) and the hip centre column when the pose is visible.
+    public func turnFrame(_ buffer: CVPixelBuffer, time: Double) -> RotationFrame? {
+        let pose = VNDetectHumanBodyPoseRequest()
+        let segmentation = VNGeneratePersonSegmentationRequest()
+        segmentation.qualityLevel = .balanced
+        segmentation.outputPixelFormat = kCVPixelFormatType_OneComponent8
+        let handler = VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up)
+        guard (try? handler.perform([pose, segmentation])) != nil,
+              let maskBuffer = segmentation.results?.first?.pixelBuffer,
+              let mask = try? Self.binaryMask(from: maskBuffer) else { return nil }
+        var center: Double?
+        if let root = try? pose.results?.first?.recognizedPoint(.root), root.confidence >= 0.3 {
+            center = Double(root.location.x) * Double(mask.width)
+        }
+        return RotationFrame(mask: mask, centerX: center, time: time)
+    }
+
     /// Full analysis of a captured still: segmentation mask plus joints in mask pixels.
     public func analyze(_ image: CGImage) throws -> (mask: BinaryMask, joints: [BodyJoint: Point2D]) {
         let pose = VNDetectHumanBodyPoseRequest()

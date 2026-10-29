@@ -184,7 +184,8 @@ struct ScanGuideView: View {
                 tip("iphone.gen3", "Prop the phone upright at waist height, about 2–3 m away.")
                 tip("tshirt", "Wear fitted clothes (e.g. sportswear) so your outline is visible.")
                 tip("lightbulb", "Use a bright room with a plain background.")
-                tip("figure.arms.open", "Front photo: face the phone, arms slightly away from your body. Side photo: turn 90°.")
+                tip("figure.arms.open", "First a front photo: face the phone, arms slightly away from your body.")
+                tip("arrow.trianglehead.2.clockwise.rotate.90", "Then turn slowly all the way around on the spot (about 15 seconds). This measures your chest, waist and hips.")
                 tip("speaker.wave.2", "Voice cues guide you; the photo is taken automatically.")
                 tip("lock.shield", "Photos are analysed on this device and deleted right after measuring.")
             }

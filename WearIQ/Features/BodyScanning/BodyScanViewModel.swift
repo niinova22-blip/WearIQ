@@ -4,17 +4,21 @@ import BodyScanVision
 import Observation
 import WearIQCore
 
-/// Front photo → side photo → on-device analysis.
+/// Front photo → slow 360° turn → on-device analysis.
 ///
 /// The user props the phone up and steps back, so capture is hands-free: once the
 /// pose has been good for a moment a countdown starts, and spoken cues tell the user
-/// what to fix. Captured images live only in memory and are released after analysis.
+/// what to fix. The front photo gives lengths and shoulder width; the turn gives real
+/// girths (see `RotationScanAnalyzer`). Height/weight statistics are only used to catch
+/// failed detections, never as values. Images and masks live only in memory.
 @MainActor
 @Observable
 final class BodyScanViewModel {
     enum Stage: Equatable {
         case positioning(PoseIssue?)
         case countdown(Int)
+        /// Recording the turn; 0–1.
+        case turning(Double)
         case analyzing
         case failed(String)
         /// Measured; "scan complete" is shown and spoken before moving on.
@@ -25,7 +29,11 @@ final class BodyScanViewModel {
     private(set) var pose: ScanPose = .front
     private(set) var stage: Stage = .positioning(.noPerson)
     private(set) var result: BodyProfile?
+    /// Values measured before a failure, so the user can keep them and add the rest.
+    private(set) var partialResult: BodyProfile?
     var voiceGuidance = true
+    /// After the front photo the next capture is the turn.
+    private(set) var turnNext = false
 
     let camera = CameraController()
     let basics: BodyBasics
@@ -36,7 +44,9 @@ final class BodyScanViewModel {
     private var goodSince: Date?
     private var countdownTask: Task<Void, Never>?
     private var frontImage: CGImage?
-    private var sideImage: CGImage?
+    private let turnFrames = FrameStore()
+    /// Length of the recorded turn; a slow full turn takes about 12–15 s.
+    private let turnDuration: TimeInterval = 15
     private var lastSpokenIssue: PoseIssue?
     private var lastSpokenAt = Date.distantPast
 
@@ -48,15 +58,11 @@ final class BodyScanViewModel {
     }
 
     func start() async {
-        let vision = vision
-        camera.onFrame = { [weak self] buffer in
-            let joints = vision.detectJoints(in: buffer)
-            Task { @MainActor in self?.handle(joints) }
-        }
+        activateAudio()
+        watchPose()
         do {
             try await camera.start(position: .front)
-            speak(pose == .front ? String(localized: "Stand facing the phone, arms slightly away from your body.")
-                                 : String(localized: "Turn to your side."))
+            speak(String(localized: "Stand facing the phone, arms slightly away from your body."))
         } catch {
             stage = .failed(error.localizedDescription)
         }
@@ -66,23 +72,36 @@ final class BodyScanViewModel {
         countdownTask?.cancel()
         camera.onFrame = nil
         camera.stop()
-    }
-
-    /// Lets the user continue with only the front photo. Girths then use typical body
-    /// proportions and are marked low confidence.
-    func skipSidePhoto() {
-        guard pose == .side else { return }
-        countdownTask?.cancel()
-        analyze()
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     func retry() {
         frontImage = nil
-        sideImage = nil
+        turnFrames.reset()
         result = nil
+        partialResult = nil
+        turnNext = false
         pose = .front
         goodSince = nil
         stage = .positioning(.noPerson)
+        watchPose()
+    }
+
+    /// Spoken guidance must be heard even with the ring/silent switch on, and should
+    /// lower other audio rather than stop it.
+    private func activateAudio() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .voicePrompt, options: [.duckOthers])
+        try? session.setActive(true)
+    }
+
+    private func watchPose() {
+        let vision = vision
+        camera.frameRate = 5
+        camera.onFrame = { [weak self] buffer in
+            let joints = vision.detectJoints(in: buffer)
+            Task { @MainActor in self?.handle(joints) }
+        }
     }
 
     private func handle(_ joints: [BodyJoint: DetectedJoint]) {
@@ -118,7 +137,39 @@ final class BodyScanViewModel {
                 try? await Task.sleep(for: .seconds(1))
             }
             guard let self, !Task.isCancelled else { return }
-            self.capture()
+            if self.turnNext { self.recordTurn() } else { self.capture() }
+        }
+    }
+
+    /// Records the slow turn: every frame becomes a person mask; widths are averaged later.
+    private func recordTurn() {
+        turnFrames.reset()
+        let vision = vision
+        let store = turnFrames
+        let start = Date()
+        camera.frameRate = 8
+        camera.onFrame = { buffer in
+            if let frame = vision.turnFrame(buffer, time: Date().timeIntervalSince(start)) { store.append(frame) }
+        }
+        stage = .turning(0)
+        speak(String(localized: "Now turn slowly all the way around."))
+        countdownTask = Task { [weak self] in
+            guard let self else { return }
+            var spokeHalf = false
+            while !Task.isCancelled {
+                let elapsed = Date().timeIntervalSince(start)
+                if elapsed >= self.turnDuration { break }
+                self.stage = .turning(elapsed / self.turnDuration)
+                if !spokeHalf, elapsed > self.turnDuration / 2 {
+                    spokeHalf = true
+                    self.speak(String(localized: "Keep turning slowly."))
+                }
+                try? await Task.sleep(for: .milliseconds(200))
+            }
+            guard !Task.isCancelled else { return }
+            self.camera.onFrame = nil
+            self.speak(String(localized: "You can stop now."))
+            self.analyze()
         }
     }
 
@@ -128,21 +179,15 @@ final class BodyScanViewModel {
             return
         }
         goodSince = nil
-        switch pose {
-        case .front:
-            frontImage = image
-            pose = .side
-            stage = .positioning(nil)
-            speak(String(localized: "Great. Now turn to your side and keep your arms relaxed."))
-        case .side:
-            sideImage = image
-            analyze()
-        }
+        frontImage = image
+        turnNext = true
+        stage = .positioning(nil)
+        speak(String(localized: "Great. Keep your arms slightly away from your body. After the countdown, turn slowly all the way around."))
     }
 
     private func analyze() {
         guard let front = frontImage else { return retry() }
-        let side = sideImage
+        let frames = turnFrames.drain()
         let basics = basics
         stage = .analyzing
         camera.onFrame = nil
@@ -151,29 +196,47 @@ final class BodyScanViewModel {
             let outcome = await Task.detached(priority: .userInitiated) { () -> Result<BodyProfile, Error> in
                 Result {
                     let vision = VisionBodyAnalyzer()
-                    let silhouette = SilhouetteAnalyzer()
                     let f = try vision.analyze(front)
-                    let frontObs = try silhouette.analyzeFront(mask: f.mask, joints: f.joints)
-                    let sideObs = try side.map { img -> ScanObservation in
-                        let s = try vision.analyze(img)
-                        return try silhouette.analyzeSide(mask: s.mask, front: frontObs)
+                    let frontObs = try SilhouetteAnalyzer().analyzeFront(mask: f.mask, joints: f.joints)
+                    // Lengths and shoulder width from the front photo; its girths would rely
+                    // on an assumed body depth, so they are replaced by the turn's.
+                    var profile = try BodyMeasurementEngine().measure(heightCm: basics.heightCm, front: frontObs, side: nil)
+                    for d in [BodyDimension.chest, .waist, .hip] { profile[d] = nil }
+                    let top = frontObs.floorY - frontObs.personHeightPx
+                    let fractions = frontObs.levels.mapValues { ($0.y - top) / frontObs.personHeightPx }
+                    let girths = (try? RotationScanAnalyzer().girths(frames: frames, heightCm: basics.heightCm,
+                                                                      levelFractions: fractions)) ?? [:]
+                    for (level, value) in girths {
+                        switch level {
+                        case .chest: profile[.chest] = value
+                        case .waist: profile[.waist] = value
+                        case .hip: profile[.hip] = value
+                        case .thigh: profile[.thigh] = value
+                        }
                     }
-                    var scanned = try BodyMeasurementEngine().measure(heightCm: basics.heightCm, front: frontObs, side: sideObs)
-                    scanned.weightKg = basics.weightKg
-                    scanned.sex = basics.sex
-                    // Photo values that disagree wildly with height/weight statistics are
-                    // detection errors; the estimate fills them and any value the photos missed.
-                    return MeasurementFusion.fuse(scan: scanned, prior: basics.prior()).profile
+                    profile.weightKg = basics.weightKg
+                    profile.sex = basics.sex
+                    // Height/weight statistics only flag impossible readings; they never
+                    // become values.
+                    let rejected = MeasurementFusion.fuse(scan: profile, prior: basics.prior()).rejected
+                    for d in rejected { profile[d] = nil }
+                    return profile
                 }
             }.value
 
             // Photos are no longer needed once measured.
             frontImage = nil
-            sideImage = nil
             camera.stop()
 
             switch outcome {
             case let .success(profile):
+                let missing = [BodyDimension.chest, .waist].filter { profile[$0] == nil }
+                guard missing.isEmpty else {
+                    partialResult = profile
+                    stage = .failed(String(localized: "Your chest and waist couldn't be measured from the turn. Turn a little slower with your arms away from your body, in a bright room."))
+                    speak(String(localized: "Let's try the turn again."))
+                    return
+                }
                 result = profile
                 stage = .completed
                 speak(String(localized: "Scan complete. Your measurements are ready."))
@@ -238,4 +301,14 @@ extension PoseIssue {
         case .notSideways: String(localized: "Turn fully to your side.")
         }
     }
+}
+
+/// Turn frames arrive on the camera queue and are read on the main actor.
+private final class FrameStore: @unchecked Sendable {
+    private let lock = NSLock()
+    private var frames: [RotationFrame] = []
+
+    func append(_ frame: RotationFrame) { lock.withLock { frames.append(frame) } }
+    func reset() { lock.withLock { frames.removeAll() } }
+    func drain() -> [RotationFrame] { lock.withLock { defer { frames.removeAll() }; return frames } }
 }

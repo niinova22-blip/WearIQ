@@ -43,6 +43,7 @@ struct MainTabView: View {
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
                 .tag(AppTab.profile)
         }
+        .sensoryFeedback(.selection, trigger: selection)
         #if DEBUG
         .onAppear { if DemoMode.isActive { selection = DemoMode.initialTab } }
         #endif

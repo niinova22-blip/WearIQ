@@ -5,6 +5,10 @@ import SwiftUI
 struct WearIQApp: App {
     @State private var container = AppContainer.live()
 
+    init() {
+        NavigationHaptics.install()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
