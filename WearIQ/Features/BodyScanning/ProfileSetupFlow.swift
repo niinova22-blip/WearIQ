@@ -143,16 +143,19 @@ struct ScanGuideView: View {
     let onManual: () -> Void
 
     @State private var status = CameraController.authorizationStatus
+    /// The scan measures the outline, so loose clothes are measured as body. Starting
+    /// needs an explicit "yes, fitted clothes".
+    @State private var wearingFittedClothes = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+                clothingCard
                 tip("iphone.gen3", "Prop the phone upright at waist height, about 2–3 m away.")
-                tip("tshirt", "Wear fitted clothes (e.g. sportswear) so your outline is visible.")
                 tip("lightbulb", "Use a bright room with a plain background.")
                 tip("figure.arms.open", "First a front photo: face the phone, arms slightly away from your body.")
-                tip("arrow.trianglehead.2.clockwise.rotate.90", "Then turn on the spot in 8 small steps, stopping briefly at each one. The voice tells you where to face; this measures your chest, waist and hips.")
+                tip("arrow.trianglehead.2.clockwise.rotate.90", "Then hold your arms straight out and turn clockwise in 8 small steps, stopping at each one. The voice tells you where to face; this measures your chest, waist and hips.")
                 tip("speaker.wave.2", "Voice cues guide you; the photo is taken automatically.")
                 tip("lock.shield", "Photos are analysed on this device and deleted right after measuring.")
             }
@@ -172,12 +175,31 @@ struct ScanGuideView: View {
                 } else {
                     Button("Start scan") { Task { await requestAndScan() } }
                         .buttonStyle(.primary)
+                        .disabled(!wearingFittedClothes)
                 }
                 Button("Enter measurements manually", action: onManual)
             }
             .padding(Theme.Spacing.m)
             .background(.bar)
         }
+    }
+
+    private var clothingCard: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            Label("Wear fitted clothes", systemImage: "tshirt.fill")
+                .font(.title3.weight(.bold))
+            Text("The scan measures your outline, so loose clothes add several centimetres. Wear a fitted T-shirt or tank top and leggings or fitted shorts, and tie long hair up.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Toggle("I'm wearing fitted clothes", isOn: $wearingFittedClothes)
+                .font(.headline)
+                .tint(.green)
+        }
+        .padding(Theme.Spacing.m)
+        .background(.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+            .strokeBorder(wearingFittedClothes ? Color.green : .orange, lineWidth: 1.5))
+        .sensoryFeedback(.selection, trigger: wearingFittedClothes)
     }
 
     private func tip(_ symbol: String, _ text: LocalizedStringKey) -> some View {

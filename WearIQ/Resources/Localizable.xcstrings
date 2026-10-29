@@ -1251,16 +1251,6 @@
         }
       }
     },
-    "Wear fitted clothes (e.g. sportswear) so your outline is visible.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vücut hatların görünsün diye dar kıyafet (ör. spor kıyafeti) giy."
-          }
-        }
-      }
-    },
     "Use a bright room with a plain background.": {
       "localizations": {
         "tr": {
@@ -4751,16 +4741,6 @@
         }
       }
     },
-    "Then turn on the spot in 8 small steps, stopping briefly at each one. The voice tells you where to face; this measures your chest, waist and hips.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sonra olduğun yerde 8 küçük adımda dön, her adımda kısa bir an dur. Ses sana nereye dönmen gerektiğini söyler; böylece göğüs, bel ve kalçan ölçülür."
-          }
-        }
-      }
-    },
     "Great. Now we'll measure you from eight sides. Hold your arms straight out to the sides at shoulder height, in one straight line, and keep them there. You'll always turn clockwise, to your right, and stop when I tell you.": {
       "localizations": {
         "tr": {
@@ -5017,6 +4997,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tahmini · taramada %lld cm okundu, boyun ve kilonla uyuşmuyor"
+          }
+        }
+      }
+    },
+    "Then hold your arms straight out and turn clockwise in 8 small steps, stopping at each one. The voice tells you where to face; this measures your chest, waist and hips.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonra kollarını yanlara düz aç ve saat yönünde 8 küçük adımda dön, her adımda dur. Ses nereye bakman gerektiğini söyler; böylece göğüs, bel ve kalçan ölçülür."
+          }
+        }
+      }
+    },
+    "Wear fitted clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar kıyafet giy"
+          }
+        }
+      }
+    },
+    "The scan measures your outline, so loose clothes add several centimetres. Wear a fitted T-shirt or tank top and leggings or fitted shorts, and tie long hair up.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarama vücudunun dış hattını ölçer; bol kıyafet ölçülere birkaç santim ekler. Dar bir tişört ya da atlet, tayt ya da dar şort giy; uzun saçını topla."
+          }
+        }
+      }
+    },
+    "I'm wearing fitted clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar kıyafet giydim"
           }
         }
       }

@@ -43,3 +43,36 @@ veri setinin %70'i üzerinde en küçük kareler yöntemiyle ayarlanır. Kalan %
 
 `WearIQKit/Tests` içindeki birim testleri matematiği ve kuralları doğrular, gerçek dünya doğruluğunu
 doğrulamaz. Gerçek doğruluk yalnızca bu protokolle ölçülür.
+
+## 4. ANSUR II ile motor doğrulaması (otomatik test)
+
+`WearIQKit/Tests/BodyMeasurementEngineTests/AnsurValidationTests.swift`, ABD Ordusu'nun
+ANSUR II ölçüm araştırmasını (2012, kamu malı, 4.082 erkek + 1.986 kadın, mezura ve kumpasla
+ölçülmüş; https://www.openlab.psu.edu/ansur2/) kullanır. Veri dosyaları testin `Data/`
+klasöründedir.
+
+**Yöntem:** Her kişinin göğüs, bel ve kalça kesiti; ANSUR'daki önden genişlik, yandan derinlik
+ve mezura çevresine birebir uyan bir süperelips (|x/a|ⁿ + |y/b|ⁿ = 1) olarak modellenir. Göğüs
+mezurası sırt kaslarının üzerinden geçtiği için kumpas genişliğinin izin verdiğinden büyükse,
+yuvarlatılmış kutu biçimi (n = 4) oranı korunarak büyütülür. Sonra 8 duraklı dönüş bu kesitler
+üzerinde simüle edilir: her durak ±15° rastgele sapmalı, her genişlik %1,5 silüet gürültülü.
+`StationScan` sonucu mezura değeriyle karşılaştırılır.
+
+**Sonuç (6.068 kişi):**
+
+| Bölge | Bias | Ortalama mutlak hata | %95'lik hata | Eski önden+yandan elips |
+|---|---|---|---|---|
+| Göğüs | −%0,99 | %1,28 | %3,20 | bias −%17,5 |
+| Bel | −%0,25 | %0,98 | %2,43 | bias −%5,3 |
+| Kalça | −%0,46 | %1,09 | %2,77 | bias −%8,4 |
+
+Test, bias %1,5'i veya %95'lik hata %4'ü aşarsa başarısız olur.
+
+**Makullük kontrolü:** Boy/kilo istatistiklerinin (3σ) doğru bir okumayı (±%3) yanlışlıkla
+reddetme oranı bütün ölçülerde %0,2'nin altındadır (test eşiği %2).
+
+**Sınırları:** Bu simülasyon motorun geometrisini ve duraklardaki açı hatalarına
+dayanıklılığını doğrular; kamera, segmentasyon ve kıyafet kaynaklı hataları ölçmez. Onlar için
+1–3. bölümlerdeki gerçek kişili protokol gerekir. Amazon'un BodyM veri seti (önden ve yandan
+silüet + ölçü, 2.505 kişi) bu açığı kısmen kapatabilir, ancak lisansı (CC BY-NC 4.0 / CC BY 4.0
+belirsizliği) ticari kullanım için netleşmeden kullanılmamalıdır.
