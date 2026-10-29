@@ -52,9 +52,16 @@ public struct FrameReading: Sendable, Equatable {
     public var outline: [OutlineRow] = []
 }
 
-/// One row of the outer outline: leftmost and rightmost person pixel, normalised.
+/// One row of the outer outline: leftmost and rightmost person pixel, normalised, and
+/// each stretch of the person along the row, so arms and legs keep the gaps between them.
 public struct OutlineRow: Sendable, Equatable {
     public var y: Double
+    public var left: Double
+    public var right: Double
+    public var spans: [OutlineSpan] = []
+}
+
+public struct OutlineSpan: Sendable, Equatable {
     public var left: Double
     public var right: Double
 }
@@ -141,14 +148,17 @@ public struct RotationScanAnalyzer: Sendable {
                             outline: outline(frame.mask, top: top, floor: floor))
     }
 
-    /// Leftmost and rightmost person pixel on about 70 evenly spaced rows.
+    /// The person's extent on about 100 evenly spaced rows; specks under 1% of the
+    /// picture's width are left out of the spans.
     func outline(_ mask: BinaryMask, top: Int, floor: Int) -> [OutlineRow] {
-        let step = max(1, (floor - top) / 70)
+        let step = max(1, (floor - top) / 100)
         let w = Double(mask.width), h = Double(mask.height)
         return stride(from: top, through: floor, by: step).compactMap { y in
             let runs = mask.runs(inRow: y)
             guard let first = runs.first, let last = runs.last else { return nil }
-            return OutlineRow(y: Double(y) / h, left: Double(first.lowerBound) / w, right: Double(last.upperBound) / w)
+            let spans = runs.filter { $0.count * 100 >= mask.width }
+                .map { OutlineSpan(left: Double($0.lowerBound) / w, right: Double($0.upperBound) / w) }
+            return OutlineRow(y: Double(y) / h, left: Double(first.lowerBound) / w, right: Double(last.upperBound) / w, spans: spans)
         }
     }
 

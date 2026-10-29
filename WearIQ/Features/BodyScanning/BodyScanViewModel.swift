@@ -322,6 +322,10 @@ final class BodyScanViewModel {
             fit = .comeCloser
         } else if abs(reading.centerX - 0.5) > 0.18 {
             fit = .moveToCentre
+        } else if StopGuide.armsDown(reading) {
+            // Checked at every stop before the turn: dropped arms also shrink the span,
+            // which would otherwise read as "turn further".
+            fit = .openArms
         } else if station == 0 {
             fit = span >= StopGuide.openArmSpan ? .ok : .openArms
         } else {
@@ -395,14 +399,15 @@ final class BodyScanViewModel {
     }
 
     private func nudge(_ fit: StopFit) {
-        guard Date().timeIntervalSince(lastHintAt) > 3, !audio.isSpeaking else { return }
+        // Dropped arms are said straight away; everything else waits a little longer.
+        guard Date().timeIntervalSince(lastHintAt) > (fit == .openArms ? 1.5 : 3), !audio.isSpeaking else { return }
         switch fit {
         case .ok: return
         case .turnFurther: say(String(localized: "Turn a little further clockwise."))
         case .turnBack: say(String(localized: "A little too far. Turn back slightly, counter-clockwise."))
         case .comeCloser: say(String(localized: "Come a little closer to the phone."))
         case .moveToCentre: say(String(localized: "Move to the middle of the picture."))
-        case .openArms: say(String(localized: "Open your arms fully, straight out at shoulder height."))
+        case .openArms: say(String(localized: "Raise your arms to shoulder height, straight out to the sides."))
         case .stepBack: say(String(localized: "Step back until you're fully visible, head to feet."))
         }
     }

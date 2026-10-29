@@ -97,7 +97,7 @@ struct FitResultView: View {
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
         .fullScreenCover(isPresented: $showingAvatar) {
-            if let spec, let label = selectedLabel { AvatarFitView(analysis: analysis, spec: spec, sizeLabel: label) }
+            if let spec, let label = selectedLabel { AvatarFitView(analysis: analysis, spec: spec, sizeLabel: label, material: material) }
         }
     }
 

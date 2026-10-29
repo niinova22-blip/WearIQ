@@ -2496,7 +2496,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kapat"
+            "value": "Sınırda"
           }
         }
       }
@@ -4751,16 +4751,6 @@
         }
       }
     },
-    "Open your arms fully, straight out at shoulder height.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kollarını omuz hizasında yanlara tam aç."
-          }
-        }
-      }
-    },
     "Calculated: %@": {
       "localizations": {
         "tr": {
@@ -4897,16 +4887,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Biraz daha dön"
-          }
-        }
-      }
-    },
-    "Open your arms": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kollarını aç"
           }
         }
       }
@@ -6331,16 +6311,6 @@
         }
       }
     },
-    "Drawn from the size chart and your measurements: hems and cuffs end where the numbers put them. It shows fit and proportions, not the fabric's exact drape.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beden tablosundan ve ölçülerinden çizilir: paçalar ve kol uçları sayıların gösterdiği yerde biter. Oturuşu ve oranları gösterir, kumaşın tam düşüşünü değil."
-          }
-        }
-      }
-    },
     "My avatar": {
       "localizations": {
         "tr": {
@@ -6367,6 +6337,76 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ölçülerime kaydet"
+          }
+        }
+      }
+    },
+    "Raise your arms to shoulder height, straight out to the sides.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollarını omuz hizasına kaldır, yanlara düz aç."
+          }
+        }
+      }
+    },
+    "Raise your arms": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollarını kaldır"
+          }
+        }
+      }
+    },
+    "Draping the fabric…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumaş vücuda oturtuluyor…"
+          }
+        }
+      }
+    },
+    "Fit map": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oturuş haritası"
+          }
+        }
+      }
+    },
+    "Relaxed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rahat"
+          }
+        }
+      }
+    },
+    "Pulling": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geriliyor"
+          }
+        }
+      }
+    },
+    "Draped with cloth physics: the garment is cut to the size chart and settles on your body under its own weight. The fit map shows where the fabric has to stretch, judged by what its fibres allow.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumaş fiziğiyle giydirilir: kıyafet beden tablosuna göre kesilir ve kendi ağırlığıyla vücuduna oturur. Oturuş haritası kumaşın nerede esnemek zorunda kaldığını, liflerinin izin verdiği esnemeye göre gösterir."
           }
         }
       }

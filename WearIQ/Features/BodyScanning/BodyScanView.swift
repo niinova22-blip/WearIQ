@@ -223,7 +223,7 @@ struct BodyScanView: View {
         case .turnBack:
             Label("Turn back counter-clockwise", systemImage: "arrow.counterclockwise").foregroundStyle(.orange)
         case .openArms:
-            Label("Open your arms", systemImage: "figure.arms.open").foregroundStyle(.orange)
+            Label("Raise your arms", systemImage: "figure.arms.open").foregroundStyle(.orange)
         case .stepBack:
             Label("Step back", systemImage: "arrow.down.to.line").foregroundStyle(.orange)
         case .comeCloser:
@@ -281,8 +281,10 @@ private func point(_ x: Double, _ y: Double, in rect: CGRect) -> CGPoint {
     CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
 }
 
-/// The person's own outline, traced live from the segmentation, so the user sees what
+/// The person's own silhouette, drawn live from the segmentation, so the user sees what
 /// the scan sees: whether the arms are out and whether head and feet are in the picture.
+/// Each row's stretches of body are filled and softened, so the gaps between arms and
+/// body and between the legs stay open, as in the picture.
 private struct LiveOutline: View {
     let outline: [OutlineRow]
     let rect: CGRect
@@ -290,17 +292,21 @@ private struct LiveOutline: View {
 
     var body: some View {
         let shape = Path { p in
-            guard let first = outline.first else { return }
-            p.move(to: point(first.left, first.y, in: rect))
-            for row in outline.dropFirst() { p.addLine(to: point(row.left, row.y, in: rect)) }
-            for row in outline.reversed() { p.addLine(to: point(row.right, row.y, in: rect)) }
-            p.closeSubpath()
+            for (i, row) in outline.enumerated() {
+                let next = i + 1 < outline.count ? outline[i + 1].y : row.y + (i > 0 ? row.y - outline[i - 1].y : 0.01)
+                let top = rect.minY + row.y * rect.height, bottom = rect.minY + next * rect.height
+                let spans = row.spans.isEmpty ? [OutlineSpan(left: row.left, right: row.right)] : row.spans
+                for span in spans {
+                    p.addRect(CGRect(x: rect.minX + span.left * rect.width, y: top,
+                                     width: (span.right - span.left) * rect.width, height: max(1, bottom - top + 0.5)))
+                }
+            }
         }
         ZStack {
-            shape.fill(tint.opacity(0.22))
-            shape.stroke(tint, style: StrokeStyle(lineWidth: 3, lineJoin: .round))
-                .shadow(color: tint.opacity(0.7), radius: 5)
+            shape.fill(tint.opacity(0.32)).blur(radius: 7)
+            shape.fill(tint.opacity(0.2)).blur(radius: 1.5)
         }
+        .compositingGroup()
         .animation(.easeOut(duration: 0.15), value: outline)
     }
 }
@@ -317,7 +323,7 @@ private struct TurnGuideOverlay: View {
                 TargetFigure(pose: .armsOut(station: min(state.station, StationScan.stationCount - 1)),
                              matched: matched, rect: rect)
                 if let reading = state.reading {
-                    LiveOutline(outline: reading.outline, rect: rect, tint: matched ? .green : .cyan)
+                    LiveOutline(outline: reading.outline, rect: rect, tint: matched ? .silhouetteMatched : .silhouette)
                 }
             }
         }
@@ -335,21 +341,21 @@ private struct PositioningOverlay: View {
             ZStack {
                 TargetFigure(pose: .front, matched: good, rect: rect)
                 if let reading {
-                    LiveOutline(outline: reading.outline, rect: rect, tint: good ? .green : .cyan)
+                    LiveOutline(outline: reading.outline, rect: rect, tint: good ? .silhouetteMatched : .silhouette)
                 }
             }
         }
     }
 }
 
-/// A see-through human figure showing where and how to stand: in the middle of the
-/// picture at a good distance. For the front photo the arms hang slightly away from the
-/// body; during the turn they are held straight out and the figure is turned clockwise
-/// by 45° per stop, with a nose showing where the face points (hidden from behind). It
-/// turns green while the user matches it.
+/// A soft see-through human figure showing where and how to stand: in the middle of
+/// the picture at a good distance. For the front photo the arms hang slightly away from
+/// the body; during the turn they are held straight out and the figure is turned
+/// clockwise by 45° per stop. It turns green while the user matches it.
 ///
 /// Built from typical body proportions in stature units: each part's half-width seen at
 /// an angle is √((w·cos θ)² + (d·sin θ)²) for its front half-width w and side half-depth d.
+/// The parts are joined into one outline with smooth curves, so no seams show inside it.
 private struct TargetFigure: View {
     enum Pose: Equatable {
         case front
@@ -362,13 +368,14 @@ private struct TargetFigure: View {
 
     /// (height above the floor, front half-width, side half-depth) up the torso and neck.
     private static let torso: [(y: Double, w: Double, d: Double)] = [
-        (0.47, 0.095, 0.075), (0.52, 0.105, 0.078), (0.56, 0.095, 0.070), (0.60, 0.085, 0.062),
-        (0.66, 0.092, 0.066), (0.72, 0.100, 0.072), (0.78, 0.115, 0.066), (0.815, 0.12, 0.060),
-        (0.83, 0.05, 0.045), (0.87, 0.035, 0.040),
+        (0.46, 0.088, 0.072), (0.50, 0.104, 0.080), (0.535, 0.103, 0.078), (0.57, 0.094, 0.070), (0.605, 0.086, 0.064),
+        (0.65, 0.089, 0.066), (0.70, 0.097, 0.072), (0.745, 0.104, 0.074), (0.775, 0.112, 0.068), (0.80, 0.112, 0.062),
+        (0.815, 0.092, 0.056), (0.828, 0.05, 0.046), (0.845, 0.036, 0.04), (0.87, 0.035, 0.04),
     ]
-    /// One leg: (height, half-width, half-depth), centred 0.055 out from the middle.
+    /// One leg: (height, half-width, half-depth), centred 0.052 out from the middle.
     private static let leg: [(y: Double, w: Double, d: Double)] = [
-        (0.0, 0.040, 0.075), (0.04, 0.030, 0.035), (0.28, 0.042, 0.045), (0.40, 0.055, 0.060), (0.49, 0.065, 0.070),
+        (0.0, 0.032, 0.07), (0.02, 0.028, 0.05), (0.045, 0.022, 0.026), (0.10, 0.03, 0.034), (0.19, 0.04, 0.046),
+        (0.26, 0.034, 0.04), (0.29, 0.036, 0.042), (0.37, 0.048, 0.054), (0.44, 0.058, 0.064), (0.49, 0.062, 0.068),
     ]
 
     var body: some View {
@@ -383,69 +390,82 @@ private struct TargetFigure: View {
         func half(_ w: Double, _ d: Double) -> Double { ((w * c) * (w * c) + (d * s) * (d * s)).squareRoot() }
         func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: mid + x * stature, y: floor - y * stature) }
 
-        let figure = Path { p in
-            // Torso and neck.
-            let rows = Self.torso
-            p.move(to: pt(-half(rows[0].w, rows[0].d), rows[0].y))
-            for r in rows.dropFirst() { p.addLine(to: pt(-half(r.w, r.d), r.y)) }
-            for r in rows.reversed() { p.addLine(to: pt(half(r.w, r.d), r.y)) }
-            p.closeSubpath()
-            // Legs: their centres come together as the body turns side-on.
+        // Torso and neck.
+        let rows = Self.torso
+        var parts = [Self.smooth(rows.map { pt(-half($0.w, $0.d), $0.y) } + rows.reversed().map { pt(half($0.w, $0.d), $0.y) })]
+        // Legs: their centres come together as the body turns side-on.
+        for side in [-1.0, 1.0] {
+            let centre = side * 0.052 * abs(c)
+            parts.append(Self.smooth(Self.leg.map { pt(centre - half($0.w, $0.d), $0.y) }
+                + Self.leg.reversed().map { pt(centre + half($0.w, $0.d), $0.y) }))
+        }
+        // Head.
+        let headW = half(0.056, 0.066) * stature, headH = 0.122 * stature
+        parts.append(Path(ellipseIn: CGRect(x: mid - headW, y: floor - 0.997 * stature, width: 2 * headW, height: headH)))
+        // Arms, tapering from the shoulder to the wrist, with the hand.
+        let arm = 0.048 * stature, wrist = 0.03 * stature
+        switch pose {
+        case .front:
+            // Hanging slightly away from the body, about 15° out.
             for side in [-1.0, 1.0] {
-                let centre = side * 0.055 * abs(c)
-                p.move(to: pt(centre - half(Self.leg[0].w, Self.leg[0].d), Self.leg[0].y))
-                for r in Self.leg.dropFirst() { p.addLine(to: pt(centre - half(r.w, r.d), r.y)) }
-                for r in Self.leg.reversed() { p.addLine(to: pt(centre + half(r.w, r.d), r.y)) }
-                p.closeSubpath()
+                let shoulder = pt(side * 0.105, 0.785), hand = pt(side * 0.19, 0.49)
+                parts.append(Self.limb(from: shoulder, to: hand, startWidth: arm, endWidth: wrist))
+                let palm = pt(side * 0.2, 0.455)
+                parts.append(Path(ellipseIn: CGRect(x: palm.x - wrist * 0.6, y: palm.y - 0.04 * stature,
+                                                    width: wrist * 1.2, height: 0.08 * stature)))
             }
-            // Head.
-            let headW = half(0.058, 0.07) * stature, headH = 0.125 * stature
-            p.addEllipse(in: CGRect(x: mid - headW, y: floor - 0.997 * stature, width: 2 * headW, height: headH))
-            // Arms.
-            switch pose {
-            case .front:
-                // Hanging slightly away from the body, about 15° out.
-                for side in [-1.0, 1.0] {
-                    let shoulder = pt(side * 0.115, 0.80), hand = pt(side * 0.20, 0.46)
-                    p.addPath(Self.limb(from: shoulder, to: hand, width: 0.055 * stature))
-                }
-            case .armsOut:
-                // Straight out at shoulder height; seen side-on they point at the phone.
-                for side in [-1.0, 1.0] {
-                    let reach = side * 0.5 * c
-                    p.addPath(Self.limb(from: pt(side * 0.1 * abs(c), 0.80), to: pt(reach, 0.80), width: 0.055 * stature))
-                }
+        case .armsOut:
+            // Straight out at shoulder height; seen side-on they point at the phone.
+            for side in [-1.0, 1.0] {
+                let reach = side * 0.44 * c
+                parts.append(Self.limb(from: pt(side * 0.095 * abs(c), 0.785), to: pt(reach, 0.785), startWidth: arm, endWidth: wrist))
+                let palm = pt(reach + side * 0.045 * c, 0.785)
+                let hw = max(wrist * 0.5, 0.04 * stature * abs(c))
+                parts.append(Path(ellipseIn: CGRect(x: palm.x - hw, y: palm.y - wrist * 0.6, width: 2 * hw, height: wrist * 1.2)))
             }
         }
-        let color: Color = matched ? .green : .white
-        let showNose = c > -0.3
-        let nose = pt(0.075 * s, 0.935)
+        let figure = parts.dropFirst().reduce(parts[0]) { $0.union($1) }
+        let color: Color = matched ? .silhouetteMatched : .white
         return ZStack {
-            figure.fill(color.opacity(matched ? 0.25 : 0.14))
-            figure.stroke(color.opacity(0.75), style: StrokeStyle(lineWidth: 2, lineJoin: .round, dash: [8, 6]))
-            if showNose, case .armsOut = pose {
-                Circle().fill(color.opacity(0.8))
-                    .frame(width: 0.03 * stature, height: 0.03 * stature)
-                    .position(nose)
-            }
+            figure.fill(color.opacity(matched ? 0.22 : 0.12))
+            figure.stroke(color.opacity(0.55), style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+                .blur(radius: 0.6)
+                .shadow(color: color.opacity(0.35), radius: 6)
         }
         .animation(.easeInOut(duration: 0.5), value: pose)
         .animation(.easeInOut(duration: 0.2), value: matched)
     }
 
-    /// A rounded bar between two points.
-    private static func limb(from a: CGPoint, to b: CGPoint, width: Double) -> Path {
-        let dx = b.x - a.x, dy = b.y - a.y
-        let length = max((dx * dx + dy * dy).squareRoot(), 1)
-        let nx = -dy / length * width / 2, ny = dx / length * width / 2
+    /// A closed curve through the points (Catmull–Rom, as cubic Béziers).
+    private static func smooth(_ points: [CGPoint]) -> Path {
         var p = Path()
-        p.move(to: CGPoint(x: a.x + nx, y: a.y + ny))
-        p.addLine(to: CGPoint(x: b.x + nx, y: b.y + ny))
-        p.addArc(center: b, radius: width / 2, startAngle: .radians(atan2(ny, nx)), endAngle: .radians(atan2(-ny, -nx)), clockwise: true)
-        p.addLine(to: CGPoint(x: a.x - nx, y: a.y - ny))
-        p.addArc(center: a, radius: width / 2, startAngle: .radians(atan2(-ny, -nx)), endAngle: .radians(atan2(ny, nx)), clockwise: true)
+        let n = points.count
+        guard n > 2 else { return p }
+        p.move(to: points[0])
+        for i in 0..<n {
+            let p0 = points[(i - 1 + n) % n], p1 = points[i], p2 = points[(i + 1) % n], p3 = points[(i + 2) % n]
+            p.addCurve(to: p2,
+                       control1: CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6),
+                       control2: CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6))
+        }
         p.closeSubpath()
         return p
+    }
+
+    /// A tapered bar with rounded ends between two points.
+    private static func limb(from a: CGPoint, to b: CGPoint, startWidth: Double, endWidth: Double) -> Path {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let length = max((dx * dx + dy * dy).squareRoot(), 1)
+        let ux = -dy / length, uy = dx / length
+        var p = Path()
+        p.move(to: CGPoint(x: a.x + ux * startWidth / 2, y: a.y + uy * startWidth / 2))
+        p.addLine(to: CGPoint(x: b.x + ux * endWidth / 2, y: b.y + uy * endWidth / 2))
+        p.addLine(to: CGPoint(x: b.x - ux * endWidth / 2, y: b.y - uy * endWidth / 2))
+        p.addLine(to: CGPoint(x: a.x - ux * startWidth / 2, y: a.y - uy * startWidth / 2))
+        p.closeSubpath()
+        return p
+            .union(Path(ellipseIn: CGRect(x: a.x - startWidth / 2, y: a.y - startWidth / 2, width: startWidth, height: startWidth)))
+            .union(Path(ellipseIn: CGRect(x: b.x - endWidth / 2, y: b.y - endWidth / 2, width: endWidth, height: endWidth)))
     }
 }
 
@@ -492,3 +512,9 @@ private struct StationDial: View {
     }
 }
 
+
+private extension Color {
+    /// Soft tints for the live silhouette: a pale blue while positioning, mint once it fits.
+    static let silhouette = Color(red: 0.66, green: 0.8, blue: 1.0)
+    static let silhouetteMatched = Color(red: 0.5, green: 0.92, blue: 0.68)
+}

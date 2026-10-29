@@ -1,17 +1,21 @@
 import AvatarEngine
 import FitEngine
+import ProductMeasurementParser
 import SceneKit
 import SwiftData
 import SwiftUI
 import WearIQCore
 
-/// Renders an `Avatar` with SceneKit: drag to turn it, pinch to zoom. Body and garment
-/// geometry are swapped in place, so the camera stays where the user put it while
-/// measurements or sizes change.
+/// Renders an `Avatar` with SceneKit: drag to turn it, pinch to zoom. A matte grey body
+/// under a soft key light with ambient occlusion and a contact shadow on the floor. Body
+/// and garment geometry are swapped in place, so the camera stays where the user put it
+/// while measurements or sizes change. With `fitMap` the garment is coloured by how hard
+/// the fabric stretches: teal relaxed, yellow close, red pulling.
 struct AvatarSceneView: UIViewRepresentable {
     let avatar: Avatar
     /// Small coloured dots on the garment where a region fits well (green) or not.
     var markers: [(Avatar.Anchor, UIColor)] = []
+    var fitMap = false
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -22,12 +26,12 @@ struct AvatarSceneView: UIViewRepresentable {
         view.allowsCameraControl = true
         view.defaultCameraController.interactionMode = .orbitTurntable
         view.scene = context.coordinator.scene
-        context.coordinator.update(avatar, markers: markers, in: view)
+        context.coordinator.update(avatar, markers: markers, fitMap: fitMap, in: view)
         return view
     }
 
     func updateUIView(_ view: SCNView, context: Context) {
-        context.coordinator.update(avatar, markers: markers, in: view)
+        context.coordinator.update(avatar, markers: markers, fitMap: fitMap, in: view)
     }
 
     @MainActor
@@ -42,30 +46,56 @@ struct AvatarSceneView: UIViewRepresentable {
             scene.rootNode.addChildNode(bodyNode)
             scene.rootNode.addChildNode(garmentNode)
             scene.rootNode.addChildNode(markerNode)
+            // Soft key light from the front left, casting a blurred shadow.
             let key = SCNNode()
             key.light = SCNLight()
             key.light?.type = .directional
-            key.light?.intensity = 900
-            key.eulerAngles = SCNVector3(-0.6, 0.5, 0)
+            key.light?.intensity = 800
+            key.light?.castsShadow = true
+            key.light?.shadowMode = .deferred
+            key.light?.shadowSampleCount = 16
+            key.light?.shadowRadius = 10
+            key.light?.shadowColor = UIColor(white: 0, alpha: 0.28)
+            key.light?.orthographicScale = 1.4
+            key.eulerAngles = SCNVector3(-1.0, 0.45, 0)
             scene.rootNode.addChildNode(key)
+            // Rim light from behind, so the outline reads against the background.
+            let rim = SCNNode()
+            rim.light = SCNLight()
+            rim.light?.type = .directional
+            rim.light?.intensity = 420
+            rim.eulerAngles = SCNVector3(-0.35, .pi * 0.85, 0)
+            scene.rootNode.addChildNode(rim)
             let fill = SCNNode()
             fill.light = SCNLight()
             fill.light?.type = .ambient
-            fill.light?.intensity = 450
+            fill.light?.intensity = 380
+            fill.light?.color = UIColor(red: 0.93, green: 0.95, blue: 1, alpha: 1)
             scene.rootNode.addChildNode(fill)
+            // A floor that only shows the shadow.
+            let floor = SCNFloor()
+            floor.reflectivity = 0
+            let floorMaterial = SCNMaterial()
+            floorMaterial.lightingModel = .shadowOnly
+            floor.materials = [floorMaterial]
+            scene.rootNode.addChildNode(SCNNode(geometry: floor))
         }
 
-        func update(_ avatar: Avatar, markers: [(Avatar.Anchor, UIColor)], in view: SCNView) {
-            bodyNode.geometry = Self.geometry(avatar.body, color: UIColor(red: 0.86, green: 0.74, blue: 0.66, alpha: 1), roughness: 0.7)
+        func update(_ avatar: Avatar, markers: [(Avatar.Anchor, UIColor)], fitMap: Bool, in view: SCNView) {
+            bodyNode.geometry = Self.geometry(avatar.body, color: UIColor(red: 0.8, green: 0.81, blue: 0.83, alpha: 1), roughness: 0.92)
+            bodyNode.castsShadow = true
             garmentNode.geometry = avatar.garment.map {
-                Self.geometry($0, color: UIColor(red: 0.22, green: 0.28, blue: 0.42, alpha: 1), roughness: 0.85, doubleSided: true)
+                fitMap
+                    ? Self.geometry($0, color: .white, roughness: 0.9, doubleSided: true, colors: $0.strain.map(Self.strainColor))
+                    : Self.geometry($0, color: UIColor(red: 0.24, green: 0.3, blue: 0.44, alpha: 1), roughness: 0.88, doubleSided: true)
             }
             markerNode.childNodes.forEach { $0.removeFromParentNode() }
-            for (anchor, color) in markers {
+            for (anchor, color) in markers where !fitMap {
                 guard let p = avatar.anchors[anchor] else { continue }
-                let dot = SCNNode(geometry: SCNSphere(radius: 0.018))
+                let dot = SCNNode(geometry: SCNSphere(radius: 0.016))
                 dot.geometry?.firstMaterial?.diffuse.contents = color
                 dot.geometry?.firstMaterial?.lightingModel = .constant
+                dot.castsShadow = false
                 dot.position = SCNVector3(p.x + 0.02, p.y, p.z + 0.08)
                 markerNode.addChildNode(dot)
             }
@@ -75,6 +105,8 @@ struct AvatarSceneView: UIViewRepresentable {
                 let camera = SCNNode()
                 camera.camera = SCNCamera()
                 camera.camera?.fieldOfView = 34
+                camera.camera?.screenSpaceAmbientOcclusionIntensity = 0.9
+                camera.camera?.screenSpaceAmbientOcclusionRadius = 0.08
                 camera.position = SCNVector3(0, height * 0.55, height * 1.9)
                 camera.look(at: SCNVector3(0, height * 0.5, 0))
                 scene.rootNode.addChildNode(camera)
@@ -82,15 +114,33 @@ struct AvatarSceneView: UIViewRepresentable {
             }
         }
 
-        static func geometry(_ mesh: Mesh, color: UIColor, roughness: CGFloat, doubleSided: Bool = false) -> SCNGeometry {
-            let vertices = SCNGeometrySource(vertices: mesh.positions.map { SCNVector3($0.x, $0.y, $0.z) })
-            let normals = SCNGeometrySource(normals: mesh.normals.map { SCNVector3($0.x, $0.y, $0.z) })
+        /// Fit-map colour for a strain (1 = the fabric's stretch limit).
+        static func strainColor(_ strain: Float) -> SIMD4<Float> {
+            let relaxed = SIMD4<Float>(0.36, 0.72, 0.68, 1), close = SIMD4<Float>(0.98, 0.8, 0.32, 1)
+            let pulling = SIMD4<Float>(0.9, 0.3, 0.28, 1)
+            if strain < 0.6 { return relaxed + (close - relaxed) * max(0, (strain - 0.2) / 0.4) }
+            return close + (pulling - close) * min(1, (strain - 0.6) / 0.5)
+        }
+
+        static func geometry(_ mesh: Mesh, color: UIColor, roughness: CGFloat, doubleSided: Bool = false,
+                             colors: [SIMD4<Float>]? = nil) -> SCNGeometry {
+            var sources = [
+                SCNGeometrySource(vertices: mesh.positions.map { SCNVector3($0.x, $0.y, $0.z) }),
+                SCNGeometrySource(normals: mesh.normals.map { SCNVector3($0.x, $0.y, $0.z) }),
+            ]
+            if let colors, colors.count == mesh.positions.count {
+                let data = colors.withUnsafeBufferPointer { Data(buffer: $0) }
+                sources.append(SCNGeometrySource(data: data, semantic: .color, vectorCount: colors.count, usesFloatComponents: true,
+                                                 componentsPerVector: 4, bytesPerComponent: 4, dataOffset: 0,
+                                                 dataStride: MemoryLayout<SIMD4<Float>>.stride))
+            }
             let element = SCNGeometryElement(indices: mesh.indices, primitiveType: .triangles)
-            let geometry = SCNGeometry(sources: [vertices, normals], elements: [element])
+            let geometry = SCNGeometry(sources: sources, elements: [element])
             let material = SCNMaterial()
             material.lightingModel = .physicallyBased
             material.diffuse.contents = color
             material.roughness.contents = roughness
+            material.metalness.contents = 0.0
             material.isDoubleSided = doubleSided
             geometry.materials = [material]
             return geometry
@@ -137,6 +187,19 @@ enum AvatarFitMapper {
         return fit
     }
 
+    /// How the fabric stretches and drapes, from its composition when the product page
+    /// gave one, otherwise from the category and the chart's stretch setting.
+    static func fabric(spec: GarmentSpec, material: String?) -> Fabric {
+        let knit = spec.category == .tshirt
+        let fibres = FabricAdvice.fibres(in: material ?? "")
+        guard !fibres.isEmpty else {
+            var fabric: Fabric = knit ? .knit : .woven
+            fabric.stretchLimit += Float(spec.stretch.comfortableStretch)
+            return fabric
+        }
+        return Fabric(fibres: Dictionary(uniqueKeysWithValues: fibres.map { ($0.key.rawValue, $0.value) }), knit: knit)
+    }
+
     /// Where each fit region's dot goes.
     static func anchor(for region: FitRegion, trousers: Bool) -> Avatar.Anchor {
         switch region {
@@ -151,29 +214,38 @@ enum AvatarFitMapper {
     }
 }
 
-/// "See it on my avatar": the chosen size on the user's own 3D body, with the verdict
-/// for each region next to it.
+/// "See it on my avatar": the chosen size draped on the user's own 3D body, with the
+/// verdict for each region next to it, or the fit map of where the fabric stretches.
 struct AvatarFitView: View {
     let analysis: FitAnalysis
     let spec: GarmentSpec
     @State var sizeLabel: String
+    /// The fabric composition from the product page, when known.
+    var material: String?
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
     @Environment(\.dismiss) private var dismiss
+    @State private var showFitMap = false
+    @State private var avatar: Avatar?
 
     var body: some View {
         NavigationStack {
             Group {
-                if let body = profiles.first?.profile, let m = Avatar.Measurements(body),
-                   let size = spec.sizes.first(where: { $0.label == sizeLabel }) {
-                    let fit = AvatarFitMapper.fit(spec: spec, size: size, body: body)
+                if let body = profiles.first?.profile, Avatar.Measurements(body) != nil {
                     let regions = analysis.sizes.first { $0.label == sizeLabel }?.regions.filter { $0.verdict != .insufficientData } ?? []
                     VStack(spacing: 0) {
-                        AvatarSceneView(avatar: Avatar(m, garment: fit), markers: regions.map {
-                            (AvatarFitMapper.anchor(for: $0.region, trousers: spec.category == .pants), UIColor($0.severity.color))
-                        })
+                        ZStack {
+                            if let avatar {
+                                AvatarSceneView(avatar: avatar, markers: regions.map {
+                                    (AvatarFitMapper.anchor(for: $0.region, trousers: spec.category == .pants), UIColor($0.severity.color))
+                                }, fitMap: showFitMap)
+                            } else {
+                                ProgressView("Draping the fabric…")
+                            }
+                        }
                         .frame(maxHeight: .infinity)
                         panel(regions)
                     }
+                    .task(id: sizeLabel) { await drape(body) }
                 } else {
                     ContentUnavailableView("Scan or enter your measurements first", systemImage: "figure.stand")
                 }
@@ -185,6 +257,16 @@ struct AvatarFitView: View {
         }
     }
 
+    /// Runs the cloth simulation off the main thread.
+    private func drape(_ body: BodyProfile) async {
+        guard let m = Avatar.Measurements(body), let size = spec.sizes.first(where: { $0.label == sizeLabel }) else { return }
+        var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body)
+        fit.fabric = AvatarFitMapper.fabric(spec: spec, material: material)
+        let draped = await Task.detached(priority: .userInitiated) { Avatar(m, garment: fit) }.value
+        guard !Task.isCancelled else { return }
+        withAnimation(.easeOut(duration: 0.2)) { avatar = draped }
+    }
+
     private func panel(_ regions: [RegionFit]) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             if spec.sizes.count > 1 {
@@ -193,22 +275,44 @@ struct AvatarFitView: View {
                 }
                 .pickerStyle(.segmented)
             }
-            ForEach(regions, id: \.region) { r in
-                HStack {
-                    Image(systemName: r.severity.symbol).foregroundStyle(r.severity.color)
-                    Text(r.region.title)
-                    Spacer()
-                    Text(r.detailText).foregroundStyle(.secondary)
+            Picker("View", selection: $showFitMap) {
+                Text("Garment").tag(false)
+                Text("Fit map").tag(true)
+            }
+            .pickerStyle(.segmented)
+            if showFitMap {
+                HStack(spacing: Theme.Spacing.m) {
+                    legend("Relaxed", Color(red: 0.36, green: 0.72, blue: 0.68))
+                    legend("Close", Color(red: 0.98, green: 0.8, blue: 0.32))
+                    legend("Pulling", Color(red: 0.9, green: 0.3, blue: 0.28))
                 }
                 .font(.subheadline)
+            } else {
+                ForEach(regions, id: \.region) { r in
+                    HStack {
+                        Image(systemName: r.severity.symbol).foregroundStyle(r.severity.color)
+                        Text(r.region.title)
+                        Spacer()
+                        Text(r.detailText).foregroundStyle(.secondary)
+                    }
+                    .font(.subheadline)
+                }
             }
-            Text("Drawn from the size chart and your measurements: hems and cuffs end where the numbers put them. It shows fit and proportions, not the fabric's exact drape.")
+            Text("Draped with cloth physics: the garment is cut to the size chart and settles on your body under its own weight. The fit map shows where the fabric has to stretch, judged by what its fibres allow.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
         .padding(Theme.Spacing.m)
         .background(.bar)
         .sensoryFeedback(.selection, trigger: sizeLabel)
+        .sensoryFeedback(.selection, trigger: showFitMap)
+    }
+
+    private func legend(_ title: LocalizedStringKey, _ color: Color) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(color).frame(width: 10, height: 10)
+            Text(title)
+        }
     }
 }
 

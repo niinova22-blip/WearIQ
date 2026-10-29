@@ -173,4 +173,17 @@ import WearIQCore
         for i in 0..<2 { detector.add(reading(waist: 30), time: Double(i) / 6) }
         #expect(detector.stillWidths(at: 1.0 / 6) == nil)
     }
+
+    @Test func armsDownFromThePose() {
+        func pose(wristDrop: Double?, elbowDrop: Double) -> FrameReading {
+            var r = FrameReading(top: 0.1, floor: 0.9, centerX: 0.5, levels: [:])
+            r.joints = [.leftShoulder: Point2D(0.45, 0.25), .leftElbow: Point2D(0.35, 0.25 + elbowDrop * 0.8)]
+            if let wristDrop { r.joints[.leftWrist] = Point2D(0.3, 0.25 + wristDrop * 0.8) }
+            return r
+        }
+        #expect(!StopGuide.armsDown(pose(wristDrop: 0.02, elbowDrop: 0.01)))   // held out
+        #expect(StopGuide.armsDown(pose(wristDrop: 0.33, elbowDrop: 0.17)))    // hanging
+        #expect(StopGuide.armsDown(pose(wristDrop: nil, elbowDrop: 0.16)))     // wrist hidden
+        #expect(!StopGuide.armsDown(FrameReading(top: 0.1, floor: 0.9, centerX: 0.5, levels: [:])))
+    }
 }

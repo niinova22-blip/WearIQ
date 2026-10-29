@@ -132,6 +132,23 @@ public enum StopGuide {
         reading.top > 0.01 && reading.floor < 0.99
     }
 
+    /// Whether an arm has come down from shoulder height, from the pose: held out, the
+    /// wrist and elbow sit level with the shoulder; hanging, the elbow is about a tenth
+    /// of the body's height below it and the wrist a fifth or more. Works from any side,
+    /// since the drop is vertical; an arm whose joints aren't seen doesn't count.
+    public static func armsDown(_ reading: FrameReading) -> Bool {
+        let span = reading.floor - reading.top
+        guard span > 0 else { return false }
+        let j = reading.joints
+        for (shoulder, elbow, wrist) in [(BodyJoint.leftShoulder, BodyJoint.leftElbow, BodyJoint.leftWrist),
+                                         (.rightShoulder, .rightElbow, .rightWrist)] {
+            guard let s = j[shoulder] ?? j[.neck] else { continue }
+            if let w = j[wrist], (w.y - s.y) / span > 0.2 { return true }
+            if j[wrist] == nil, let e = j[elbow], (e.y - s.y) / span > 0.1 { return true }
+        }
+        return false
+    }
+
     public static func fit(station: Int, spanRatio r: Double, shoulderRatio: Double?) -> StopFit {
         let shouldersWide = (shoulderRatio ?? 0) > 0.75
         switch station % 4 {

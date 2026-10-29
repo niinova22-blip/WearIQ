@@ -54,4 +54,56 @@ import Testing
         #expect(oversized.anchors[.shoulder]!.x > regular.anchors[.shoulder]!.x + 0.03)
         #expect(oversized.anchors[.chest]!.x > regular.anchors[.chest]!.x)
     }
+
+    @Test func bodySectionsKeepTheMeasuredGirths() {
+        let a = Avatar(me)
+        // The waist level of the loft: the ring of vertices closest to 0.601 of stature.
+        let n = Shapes.segments
+        let rings = stride(from: 0, to: a.body.positions.count - n, by: n).map { Array(a.body.positions[$0..<($0 + n)]) }
+        let waist = rings.min { abs($0[0].y - 0.601 * 1.73) < abs($1[0].y - 0.601 * 1.73) }!
+        let perimeter = zip(waist, waist.dropFirst() + [waist[0]]).reduce(Float(0)) { $0 + ($1.0 - $1.1).length }
+        #expect(abs(perimeter * 100 - 83.5) < 1.0)
+    }
+
+    @Test func tightWovenStrainsAndStretchGives() {
+        var fit = Avatar.GarmentFit(kind: .top(longSleeves: false))
+        fit.chestEase = -5; fit.waistEase = -4; fit.hipEase = -2
+        fit.fabric = .woven
+        let woven = Avatar(me, garment: fit).garment!.maxStrain
+        fit.fabric = Fabric(fibres: ["cotton": 95, "elastane": 5], knit: true)
+        let stretchy = Avatar(me, garment: fit).garment!.maxStrain
+        fit.chestEase = 14; fit.waistEase = 14; fit.hipEase = 14
+        fit.fabric = .woven
+        let loose = Avatar(me, garment: fit).garment!
+        #expect(woven > 1)
+        #expect(stretchy < woven / 3)
+        // Loose fabric hangs nearly relaxed (gravity, its own weight, stretches it slightly).
+        let relaxed = loose.strain.filter { $0 < 0.5 }.count
+        #expect(Float(relaxed) / Float(loose.strain.count) > 0.9)
+        #expect(loose.strain.count == loose.positions.count)
+    }
+
+    @Test func garmentStaysOutsideTheBody() {
+        var fit = Avatar.GarmentFit(kind: .top(longSleeves: false))
+        fit.chestEase = -6
+        let avatar = Avatar(me, garment: fit)
+        // At chest height, every garment vertex on the torso sits at least as far out as
+        // the body section there.
+        let chestY: Float = 0.728 * 1.73
+        let body = avatar.body.positions.filter { abs($0.y - chestY) < 0.01 && abs($0.x) < 0.15 }
+        let garment = avatar.garment!.positions.filter { abs($0.y - chestY) < 0.01 && abs($0.x) < 0.15 }
+        let bodyFront = body.map(\.z).max()!, garmentFront = garment.map(\.z).max()!
+        #expect(garmentFront >= bodyFront)
+    }
+
+    @Test func fabricFromComposition() {
+        let jersey = Fabric(fibres: ["cotton": 95, "elastane": 5], knit: true)
+        let denim = Fabric(fibres: ["cotton": 100], knit: false)
+        let viscose = Fabric(fibres: ["viscose": 100], knit: false)
+        #expect(jersey.stretchLimit > 0.3)
+        #expect(denim.stretchLimit < 0.05)
+        #expect(viscose.drape < denim.drape)
+        // Fluid fabrics fall into more folds (Cusick).
+        #expect(viscose.folds > denim.folds)
+    }
 }
