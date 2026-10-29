@@ -64,6 +64,8 @@ public struct OutlineRow: Sendable, Equatable {
 public struct OutlineSpan: Sendable, Equatable {
     public var left: Double
     public var right: Double
+
+    public init(left: Double, right: Double) { self.left = left; self.right = right }
 }
 
 public enum RotationScanError: Error, Equatable {
