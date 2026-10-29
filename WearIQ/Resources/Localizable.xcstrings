@@ -5140,6 +5140,236 @@
           }
         }
       }
+    },
+    "Your clothes look loose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafetin bol görünüyor"
+          }
+        }
+      }
+    },
+    "Your sleeves and top look loose, which adds centimetres to every measurement.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolların ve üstün bol görünüyor; bu her ölçüye santimler ekler."
+          }
+        }
+      }
+    },
+    "Your sleeves look loose, which adds centimetres to the measurements.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolların bol görünüyor; bu ölçülere santimler ekler."
+          }
+        }
+      }
+    },
+    "Your top hides your waist, which adds centimetres to the measurements.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üstün belini gizliyor; bu ölçülere santimler ekler."
+          }
+        }
+      }
+    },
+    "Take it off or change into something fitted, then come back to the front position.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çıkar ya da dar bir şey giy, sonra tekrar önden duruşa geç."
+          }
+        }
+      }
+    },
+    "I've changed, try again": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değiştirdim, tekrar dene"
+          }
+        }
+      }
+    },
+    "Continue anyway": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yine de devam et"
+          }
+        }
+      }
+    },
+    "Your clothes look loose, which makes the measurements too large. Take them off or put on something fitted.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafetin bol görünüyor, bu ölçüleri büyütür. Çıkar ya da dar bir şey giy."
+          }
+        }
+      }
+    },
+    "Check a basket": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sepet kontrolü"
+          }
+        }
+      }
+    },
+    "Check a whole basket": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sepetini toplu kontrol et"
+          }
+        }
+      }
+    },
+    "Paste your basket, wishlist or collection link, or several product links. Every product gets a size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sepet, favori listesi ya da koleksiyon linkini veya birkaç ürün linkini yapıştır. Her ürün için beden önerilir."
+          }
+        }
+      }
+    },
+    "Check all": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hepsini kontrol et"
+          }
+        }
+      }
+    },
+    "Sign in if the store asks, and open your basket or list. Products on the page appear here.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mağaza isterse giriş yap ve sepetini ya da listeni aç. Sayfadaki ürünler burada görünür."
+          }
+        }
+      }
+    },
+    "%lld products found on this page.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu sayfada %lld ürün bulundu."
+          }
+        }
+      }
+    },
+    "Looking for products…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürünler aranıyor…"
+          }
+        }
+      }
+    },
+    "Check %lld products": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ürünü kontrol et"
+          }
+        }
+      }
+    },
+    "WearIQ only reads the product links on the page, never your sign-in details.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ sayfadaki yalnızca ürün linklerini okur; giriş bilgilerini asla görmez."
+          }
+        }
+      }
+    },
+    "Waiting": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sırada"
+          }
+        }
+      }
+    },
+    "Not checked": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrol edilmedi"
+          }
+        }
+      }
+    },
+    "No size chart found; open the product to add one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosu bulunamadı; eklemek için ürünü aç."
+          }
+        }
+      }
+    },
+    "The size chart lacks the measurements needed.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosunda gereken ölçüler yok."
+          }
+        }
+      }
+    },
+    "Scan or enter your measurements first.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce ölçülerini tara ya da gir."
+          }
+        }
+      }
+    },
+    "Today's free checks are used up. Premium checks without a limit.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugünkü ücretsiz kontrol hakların bitti. Premium ile sınırsız kontrol et."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

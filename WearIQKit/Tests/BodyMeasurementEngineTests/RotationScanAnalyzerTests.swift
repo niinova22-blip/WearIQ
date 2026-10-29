@@ -143,6 +143,24 @@ import WearIQCore
         #expect(abs(try #require(reading.levels[.waist]).widthCm - 30) < 0.6)
     }
 
+    @Test func armThicknessOfOutstretchedArms() throws {
+        // 180 cm (1800 px) person, arms 10 cm thick straight out at shoulder height.
+        let width = 2000, top = 40, heightPx = 1800, height = heightPx + 100
+        var bits = [Bool](repeating: false, count: width * height)
+        for y in top..<(top + heightPx) {
+            let f = Double(y - top) / Double(heightPx)
+            let half = (0.17...0.225).contains(f) ? 850 : 170
+            for x in (width / 2 - half)..<(width / 2 + half) { bits[y * width + x] = true }
+        }
+        let mask = BinaryMask(width: width, height: height, bits: bits)
+        let analyzer = RotationScanAnalyzer()
+        let t = try #require(analyzer.armThickness(mask, top: top, height: heightPx, center: width / 2))
+        #expect(abs(t - 0.055) < 0.003)
+        let outline = analyzer.outline(mask, top: top, floor: top + heightPx - 1)
+        #expect(outline.count > 60)
+        #expect(outline.contains { $0.right - $0.left > 0.8 })
+    }
+
     @Test func standingStillIsNotATurn() {
         let frames = (0..<60).map { i in frame(angle: 0, t: Double(i) / 5) }
         #expect(throws: RotationScanError.incompleteTurn) {

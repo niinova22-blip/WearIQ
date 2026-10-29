@@ -46,6 +46,17 @@ public struct FrameReading: Sendable, Equatable {
     public var armSpan: Double? = nil
     /// Detected joints, normalised image coordinates (y down).
     public var joints: [BodyJoint: Point2D] = [:]
+    /// Upper-arm thickness over stature, read with the arms held out; nil otherwise.
+    public var armThickness: Double? = nil
+    /// The person's outer outline, top to bottom, for drawing it live.
+    public var outline: [OutlineRow] = []
+}
+
+/// One row of the outer outline: leftmost and rightmost person pixel, normalised.
+public struct OutlineRow: Sendable, Equatable {
+    public var y: Double
+    public var left: Double
+    public var right: Double
 }
 
 public enum RotationScanError: Error, Equatable {
@@ -123,9 +134,48 @@ public struct RotationScanAnalyzer: Sendable {
             levels[level] = levelReading(frame, top: top, height: floor - top, fraction: fraction, heightCm: heightCm)
         }
         let center = frame.centerX ?? levels[.hip].map { ($0.left + $0.right) / 2 * w } ?? w / 2
+        let span = armSpan(frame.mask, top: top, height: floor - top, center: Int(center))
         return FrameReading(top: Double(top) / h, floor: Double(floor) / h, centerX: center / w, levels: levels,
-                            armSpan: armSpan(frame.mask, top: top, height: floor - top, center: Int(center)),
-                            joints: frame.joints)
+                            armSpan: span, joints: frame.joints,
+                            armThickness: (span ?? 0) >= 0.7 ? armThickness(frame.mask, top: top, height: floor - top, center: Int(center)) : nil,
+                            outline: outline(frame.mask, top: top, floor: floor))
+    }
+
+    /// Leftmost and rightmost person pixel on about 70 evenly spaced rows.
+    func outline(_ mask: BinaryMask, top: Int, floor: Int) -> [OutlineRow] {
+        let step = max(1, (floor - top) / 70)
+        let w = Double(mask.width), h = Double(mask.height)
+        return stride(from: top, through: floor, by: step).compactMap { y in
+            let runs = mask.runs(inRow: y)
+            guard let first = runs.first, let last = runs.last else { return nil }
+            return OutlineRow(y: Double(y) / h, left: Double(first.lowerBound) / w, right: Double(last.upperBound) / w)
+        }
+    }
+
+    /// Vertical thickness of each outstretched arm halfway along the upper arm (21.5% of
+    /// stature out from the body centre, at shoulder height), over stature, the thinner of
+    /// the two sides. Masks have square pixels (see `BinaryMask.matchingAspect`).
+    func armThickness(_ mask: BinaryMask, top: Int, height: Int, center: Int) -> Double? {
+        let shoulderRow = top + height * 19 / 100
+        let window = height * 7 / 100
+        let sides = [-1, 1].compactMap { side -> Double? in
+            let x = center + side * height * 215 / 1000
+            guard x >= 0, x < mask.width else { return nil }
+            // The arm's run in this column nearest the shoulder line.
+            var best: Range<Int>?
+            var y = shoulderRow - window
+            while y <= shoulderRow + window {
+                guard mask[x, y] else { y += 1; continue }
+                let start = y
+                while y <= shoulderRow + 2 * window, mask[x, y] { y += 1 }
+                let run = start..<y
+                if best.map({ abs(($0.lowerBound + $0.upperBound) / 2 - shoulderRow) }) ?? Int.max
+                    > abs((start + y) / 2 - shoulderRow) { best = run }
+            }
+            return best.map { Double($0.count) / Double(height) }
+        }
+        // The thinner side: a bent or lowered arm only ever reads thicker.
+        return sides.min()
     }
 
     /// Widest run through the body centre across the shoulder band (12–28% of body

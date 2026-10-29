@@ -42,6 +42,8 @@ final class BodyScanViewModel {
         var holding = false
         /// How the user's current position matches the stop, while holding still.
         var fit: StopFit?
+        /// Loose clothing seen at the front stop; the turn waits while this is non-empty.
+        var clothing: [ClothingCheck.Finding] = []
     }
 
     private(set) var pose: ScanPose = .front
@@ -50,8 +52,8 @@ final class BodyScanViewModel {
     /// Values measured before a failure, so the user can keep them and add the rest.
     private(set) var partialResult: BodyProfile?
     private(set) var turn = TurnState()
-    /// Joints seen while positioning for the front photo, normalised (y down), for the overlay.
-    private(set) var liveJoints: [BodyJoint: Point2D] = [:]
+    /// The outline seen while positioning for the front photo, for the overlay.
+    private(set) var liveReading: FrameReading?
     var voiceGuidance = true {
         didSet { audio.isEnabled = voiceGuidance }
     }
@@ -82,6 +84,8 @@ final class BodyScanViewModel {
     private var spanReference = 1.0
     private var shoulderReference: Double?
     private var levelFractions: [BodyLevel: Double] = [:]
+    /// The user chose to scan in their clothes after the loose-clothing warning.
+    private var clothingWarningDismissed = false
     /// A stop's still is being measured.
     private var capturing = false
     private var lastHintAt = Date.distantPast
@@ -136,13 +140,37 @@ final class BodyScanViewModel {
         watchPose()
     }
 
+    /// Positioning for the front photo: joints for the pose checks and the outline for
+    /// the live overlay, from the same frame.
     private func watchPose() {
         let vision = vision
+        let analyzer = RotationScanAnalyzer()
+        let heightCm = basics.heightCm
+        let fractions = defaultFractions
         camera.frameRate = 5
         camera.onFrame = { [weak self] buffer in
-            let joints = vision.detectJoints(in: buffer)
-            Task { @MainActor in self?.handle(joints) }
+            let frame = vision.turnFrame(buffer, time: 0)
+            let joints = frame?.joints.mapValues { DetectedJoint($0, confidence: 1) } ?? [:]
+            let reading = frame.flatMap { analyzer.reading($0, heightCm: heightCm, levelFractions: fractions) }
+            Task { @MainActor in
+                self?.liveReading = reading
+                self?.handle(joints)
+            }
         }
+    }
+
+    func dismissClothingWarning() {
+        clothingWarningDismissed = true
+        turn.clothing = []
+        stillness.reset()
+        stationStart = Date()
+    }
+
+    func retryAfterChangingClothes() {
+        turn.clothing = []
+        stillness.reset()
+        stationStart = Date()
+        say(StationGuide.instruction(turn.station))
     }
 
     private func handle(_ joints: [BodyJoint: DetectedJoint]) {
@@ -150,7 +178,6 @@ final class BodyScanViewModel {
         case .positioning, .countdown: break
         default: return
         }
-        liveJoints = joints.filter { $0.value.confidence >= 0.3 }.mapValues(\.point)
         let issue = guidance.issue(for: joints, pose: pose)
         if let issue {
             goodSince = nil
@@ -267,6 +294,7 @@ final class BodyScanViewModel {
     private func handleStation(_ reading: FrameReading?, time: Double) {
         guard case .turning = stage, turn.station < StationScan.stationCount, !capturing else { return }
         turn.reading = reading
+        guard turn.clothing.isEmpty else { return }
         guard let reading else {
             stillness.reset()
             turn.holding = false
@@ -299,6 +327,19 @@ final class BodyScanViewModel {
         turn.holding = fit == .ok
         guard fit == .ok else { return nudge(fit) }
         if station == 0 {
+            // Facing the phone with the arms out is where loose clothing shows.
+            let bmi = basics.weightKg / ((basics.heightCm / 100) * (basics.heightCm / 100))
+            let findings = ClothingCheck.findings(armThickness: reading.armThickness,
+                                                  waistWidthCm: reading.levels[.waist]?.widthCm,
+                                                  hipWidthCm: reading.levels[.hip]?.widthCm,
+                                                  bmi: bmi, sex: basics.sex)
+            if !findings.isEmpty, !clothingWarningDismissed {
+                turn.clothing = findings
+                turn.holding = false
+                audio.play(.problem)
+                say(String(localized: "Your clothes look loose, which makes the measurements too large. Take them off or put on something fitted."))
+                return
+            }
             spanReference = span
             shoulderReference = shoulders
         }

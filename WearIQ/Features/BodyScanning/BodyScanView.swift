@@ -22,10 +22,10 @@ struct BodyScanView: View {
                 switch model.stage {
                 case .turning:
                     TurnGuideOverlay(state: model.turn)
-                case .positioning, .countdown:
-                    GeometryReader { proxy in
-                        JointsView(joints: model.liveJoints, rect: cameraImageRect(in: proxy.size), tint: .cyan)
-                    }
+                case let .positioning(issue):
+                    PositioningOverlay(reading: model.liveReading, good: issue == nil)
+                case .countdown:
+                    PositioningOverlay(reading: model.liveReading, good: true)
                 default:
                     EmptyView()
                 }
@@ -94,6 +94,8 @@ struct BodyScanView: View {
                 .contentTransition(.numericText())
                 .shadow(color: .black.opacity(0.8), radius: 12)
                 .accessibilityLabel(Text("Taking photo in \(n)"))
+        case .turning where !model.turn.clothing.isEmpty:
+            clothingCard(model.turn.clothing)
         case .turning:
             let station = min(model.turn.station, StationScan.stationCount - 1)
             VStack(spacing: Theme.Spacing.m) {
@@ -173,6 +175,32 @@ struct BodyScanView: View {
         }
     }
 
+    /// Shown when the outline says the clothes are too loose to measure through.
+    private func clothingCard(_ findings: [ClothingCheck.Finding]) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            Label("Your clothes look loose", systemImage: "tshirt.fill")
+                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                .foregroundStyle(.orange)
+            Text(findings.contains(.looseSleeves) && findings.contains(.looseTop)
+                 ? "Your sleeves and top look loose, which adds centimetres to every measurement."
+                 : findings.contains(.looseSleeves)
+                 ? "Your sleeves look loose, which adds centimetres to the measurements."
+                 : "Your top hides your waist, which adds centimetres to the measurements.")
+                .font(.system(size: 20, weight: .medium, design: .rounded))
+                .foregroundStyle(.white)
+            Text("Take it off or change into something fitted, then come back to the front position.")
+                .font(.system(size: 18, design: .rounded))
+                .foregroundStyle(.white.opacity(0.8))
+            Button("I've changed, try again") { model.retryAfterChangingClothes() }
+                .buttonStyle(.primary)
+            Button("Continue anyway") { model.dismissClothingWarning() }
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(.white)
+        }
+        .padding(Theme.Spacing.l)
+        .background(.black.opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+
     @ViewBuilder
     private func fitLabel(_ fit: StopFit?) -> some View {
         switch fit {
@@ -241,150 +269,171 @@ private func point(_ x: Double, _ y: Double, in rect: CGRect) -> CGPoint {
     CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
 }
 
-/// The detected joints and the bones between them, drawn over the camera so the user
-/// sees what the scan sees.
-private struct JointsView: View {
-    let joints: [BodyJoint: Point2D]
+/// The person's own outline, traced live from the segmentation, so the user sees what
+/// the scan sees: whether the arms are out and whether head and feet are in the picture.
+private struct LiveOutline: View {
+    let outline: [OutlineRow]
     let rect: CGRect
     let tint: Color
 
-    private static let bones: [(BodyJoint, BodyJoint)] = [
-        (.nose, .neck), (.neck, .leftShoulder), (.neck, .rightShoulder),
-        (.leftShoulder, .leftElbow), (.leftElbow, .leftWrist),
-        (.rightShoulder, .rightElbow), (.rightElbow, .rightWrist),
-        (.neck, .root), (.root, .leftHip), (.root, .rightHip),
-        (.leftHip, .leftKnee), (.leftKnee, .leftAnkle),
-        (.rightHip, .rightKnee), (.rightKnee, .rightAnkle),
-    ]
-
     var body: some View {
-        ZStack {
-            Path { p in
-                for (a, b) in Self.bones {
-                    guard let pa = joints[a], let pb = joints[b] else { continue }
-                    p.move(to: point(pa.x, pa.y, in: rect))
-                    p.addLine(to: point(pb.x, pb.y, in: rect))
-                }
-            }
-            .stroke(tint.opacity(0.85), style: StrokeStyle(lineWidth: 3, lineCap: .round))
-            ForEach(Array(joints.keys), id: \.self) { joint in
-                if let j = joints[joint] {
-                    Circle()
-                        .fill(.white)
-                        .overlay(Circle().stroke(tint, lineWidth: 2.5))
-                        .frame(width: 11, height: 11)
-                        .position(point(j.x, j.y, in: rect))
-                }
-            }
+        let shape = Path { p in
+            guard let first = outline.first else { return }
+            p.move(to: point(first.left, first.y, in: rect))
+            for row in outline.dropFirst() { p.addLine(to: point(row.left, row.y, in: rect)) }
+            for row in outline.reversed() { p.addLine(to: point(row.right, row.y, in: rect)) }
+            p.closeSubpath()
         }
-        .shadow(color: .black.opacity(0.5), radius: 2)
-        .animation(.easeOut(duration: 0.15), value: joints)
+        ZStack {
+            shape.fill(tint.opacity(0.22))
+            shape.stroke(tint, style: StrokeStyle(lineWidth: 3, lineJoin: .round))
+                .shadow(color: tint.opacity(0.7), radius: 5)
+        }
+        .animation(.easeOut(duration: 0.15), value: outline)
     }
 }
 
-/// Guidance drawn over the camera during the turn, anchored to the person: the joints,
-/// a ring on the floor with one sector per stop, and the chest, waist and hip lines
-/// where the girths are measured, which turn green once measured from enough sides.
+/// During the turn: the target pose for the current stop, and the user's live outline on top.
 private struct TurnGuideOverlay: View {
     let state: BodyScanViewModel.TurnState
 
     var body: some View {
         GeometryReader { proxy in
             let rect = cameraImageRect(in: proxy.size)
-            // Where and how to stand at this stop, drawn first so the live skeleton sits on top.
-            TargetFigure(station: min(state.station, StationScan.stationCount - 1), matched: state.fit == .ok, rect: rect)
-            if let reading = state.reading {
-                ZStack {
-                    floorRing(reading, in: rect)
-                    JointsView(joints: reading.joints, rect: rect, tint: state.fit == .ok ? .green : .cyan)
-                    ForEach([BodyLevel.chest, .waist, .hip], id: \.self) { level in
-                        if let band = reading.levels[level] {
-                            bandView(level, band, in: rect)
-                        }
-                    }
+            let matched = state.fit == .ok
+            ZStack {
+                TargetFigure(pose: .armsOut(station: min(state.station, StationScan.stationCount - 1)),
+                             matched: matched, rect: rect)
+                if let reading = state.reading {
+                    LiveOutline(outline: reading.outline, rect: rect, tint: matched ? .green : .cyan)
                 }
-                .animation(.easeOut(duration: 0.18), value: reading)
             }
         }
     }
+}
 
-    private func bandView(_ level: BodyLevel, _ band: LevelReading, in rect: CGRect) -> some View {
-        let done = state.measured.contains(level)
-        let pad = 0.03
-        let start = point(band.left - pad, band.y, in: rect)
-        let end = point(band.right + pad, band.y, in: rect)
-        let color: Color = done ? .green : .white
-        let edgeLeft = point(band.left, band.y, in: rect)
-        let edgeRight = point(band.right, band.y, in: rect)
+/// Before the front photo: the target stance and the live outline.
+private struct PositioningOverlay: View {
+    let reading: FrameReading?
+    let good: Bool
+
+    var body: some View {
+        GeometryReader { proxy in
+            let rect = cameraImageRect(in: proxy.size)
+            ZStack {
+                TargetFigure(pose: .front, matched: good, rect: rect)
+                if let reading {
+                    LiveOutline(outline: reading.outline, rect: rect, tint: good ? .green : .cyan)
+                }
+            }
+        }
+    }
+}
+
+/// A see-through human figure showing where and how to stand: in the middle of the
+/// picture at a good distance. For the front photo the arms hang slightly away from the
+/// body; during the turn they are held straight out and the figure is turned clockwise
+/// by 45° per stop, with a nose showing where the face points (hidden from behind). It
+/// turns green while the user matches it.
+///
+/// Built from typical body proportions in stature units: each part's half-width seen at
+/// an angle is √((w·cos θ)² + (d·sin θ)²) for its front half-width w and side half-depth d.
+private struct TargetFigure: View {
+    enum Pose: Equatable {
+        case front
+        case armsOut(station: Int)
+    }
+
+    let pose: Pose
+    let matched: Bool
+    let rect: CGRect
+
+    /// (height above the floor, front half-width, side half-depth) up the torso and neck.
+    private static let torso: [(y: Double, w: Double, d: Double)] = [
+        (0.47, 0.095, 0.075), (0.52, 0.105, 0.078), (0.56, 0.095, 0.070), (0.60, 0.085, 0.062),
+        (0.66, 0.092, 0.066), (0.72, 0.100, 0.072), (0.78, 0.115, 0.066), (0.815, 0.12, 0.060),
+        (0.83, 0.05, 0.045), (0.87, 0.035, 0.040),
+    ]
+    /// One leg: (height, half-width, half-depth), centred 0.055 out from the middle.
+    private static let leg: [(y: Double, w: Double, d: Double)] = [
+        (0.0, 0.040, 0.075), (0.04, 0.030, 0.035), (0.28, 0.042, 0.045), (0.40, 0.055, 0.060), (0.49, 0.065, 0.070),
+    ]
+
+    var body: some View {
+        let theta: Double = switch pose {
+        case let .armsOut(station): Double(station) * 45 * .pi / 180
+        case .front: 0
+        }
+        let c = cos(theta), s = sin(theta)
+        let stature = 0.56 * rect.height
+        let floor = rect.minY + 0.93 * rect.height
+        let mid = rect.midX
+        func half(_ w: Double, _ d: Double) -> Double { ((w * c) * (w * c) + (d * s) * (d * s)).squareRoot() }
+        func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: mid + x * stature, y: floor - y * stature) }
+
+        let figure = Path { p in
+            // Torso and neck.
+            let rows = Self.torso
+            p.move(to: pt(-half(rows[0].w, rows[0].d), rows[0].y))
+            for r in rows.dropFirst() { p.addLine(to: pt(-half(r.w, r.d), r.y)) }
+            for r in rows.reversed() { p.addLine(to: pt(half(r.w, r.d), r.y)) }
+            p.closeSubpath()
+            // Legs: their centres come together as the body turns side-on.
+            for side in [-1.0, 1.0] {
+                let centre = side * 0.055 * abs(c)
+                p.move(to: pt(centre - half(Self.leg[0].w, Self.leg[0].d), Self.leg[0].y))
+                for r in Self.leg.dropFirst() { p.addLine(to: pt(centre - half(r.w, r.d), r.y)) }
+                for r in Self.leg.reversed() { p.addLine(to: pt(centre + half(r.w, r.d), r.y)) }
+                p.closeSubpath()
+            }
+            // Head.
+            let headW = half(0.058, 0.07) * stature, headH = 0.125 * stature
+            p.addEllipse(in: CGRect(x: mid - headW, y: floor - 0.997 * stature, width: 2 * headW, height: headH))
+            // Arms.
+            switch pose {
+            case .front:
+                // Hanging slightly away from the body, about 15° out.
+                for side in [-1.0, 1.0] {
+                    let shoulder = pt(side * 0.115, 0.80), hand = pt(side * 0.20, 0.46)
+                    p.addPath(Self.limb(from: shoulder, to: hand, width: 0.055 * stature))
+                }
+            case .armsOut:
+                // Straight out at shoulder height; seen side-on they point at the phone.
+                for side in [-1.0, 1.0] {
+                    let reach = side * 0.5 * c
+                    p.addPath(Self.limb(from: pt(side * 0.1 * abs(c), 0.80), to: pt(reach, 0.80), width: 0.055 * stature))
+                }
+            }
+        }
+        let color: Color = matched ? .green : .white
+        let showNose = c > -0.3
+        let nose = pt(0.075 * s, 0.935)
         return ZStack {
-            Path { p in
-                p.move(to: start)
-                p.addLine(to: end)
+            figure.fill(color.opacity(matched ? 0.25 : 0.14))
+            figure.stroke(color.opacity(0.75), style: StrokeStyle(lineWidth: 2, lineJoin: .round, dash: [8, 6]))
+            if showNose, case .armsOut = pose {
+                Circle().fill(color.opacity(0.8))
+                    .frame(width: 0.03 * stature, height: 0.03 * stature)
+                    .position(nose)
             }
-            .stroke(color.opacity(done ? 1 : 0.85),
-                    style: StrokeStyle(lineWidth: done ? 6 : 4, lineCap: .round, dash: done ? [] : [10, 8]))
-            .shadow(color: color.opacity(done ? 0.9 : 0.4), radius: done ? 8 : 3)
-            // The measured edges of the outline at this level.
-            ForEach([edgeLeft, edgeRight], id: \.x) { edge in
-                Circle()
-                    .fill(color)
-                    .frame(width: 12, height: 12)
-                    .position(edge)
-            }
-            Text(level.title)
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .foregroundStyle(done ? Color.black : .white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(done ? Color.green : .black.opacity(0.6), in: Capsule())
-                .fixedSize()
-                .position(x: start.x - 38, y: start.y)
-            Image(systemName: done ? "checkmark.circle.fill" : "circle.dotted")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(color)
-                .shadow(color: .black.opacity(0.6), radius: 4)
-                .position(x: end.x + 22, y: end.y)
         }
-        .animation(.spring(duration: 0.4), value: done)
+        .animation(.easeInOut(duration: 0.5), value: pose)
+        .animation(.easeInOut(duration: 0.2), value: matched)
     }
 
-    /// An ellipse on the floor around the feet, one sector per stop, starting nearest
-    /// the camera: captured stops are green, the current one is highlighted.
-    private func floorRing(_ reading: FrameReading, in rect: CGRect) -> some View {
-        let center = point(reading.centerX, reading.floor, in: rect)
-        let width = Double(rect.width)
-        let hipWidth: Double = reading.levels[.hip].map { ($0.right - $0.left) * width } ?? width * 0.2
-        let rx: Double = Swift.max(hipWidth * 1.6, width * 0.24)
-        return ZStack {
-            ForEach(0..<StationScan.stationCount, id: \.self) { i in
-                sector(i, center: center, rx: rx, ry: rx * 0.28)
-            }
-        }
-    }
-
-    private func sector(_ i: Int, center: CGPoint, rx: Double, ry: Double) -> some View {
-        let done = state.captured.contains(i)
-        let current = i == state.station
-        let count = Double(StationScan.stationCount)
-        let gap = 0.07
-        // Centred on its direction: stop 0 is the point of the ring nearest the camera.
-        // The preview is mirrored, so a turn to the user's right moves towards screen right.
-        let a0 = Double.pi / 2 - (Double(i) - 0.5 + gap) / count * 2 * Double.pi
-        let a1 = Double.pi / 2 - (Double(i) + 0.5 - gap) / count * 2 * Double.pi
-        let path = Path { p in
-            let steps = 12
-            for s in 0...steps {
-                let a = a0 + (a1 - a0) * Double(s) / Double(steps)
-                let pt = CGPoint(x: Double(center.x) + rx * cos(a), y: Double(center.y) + ry * sin(a))
-                if s == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
-            }
-        }
-        let color: Color = done ? .green : current ? (state.holding ? .green : .yellow) : .white.opacity(0.3)
-        return path
-            .stroke(color, style: StrokeStyle(lineWidth: done || current ? 10 : 6, lineCap: .round))
-            .shadow(color: done || current ? color.opacity(0.8) : Color.clear, radius: 6)
-            .animation(.spring(duration: 0.35), value: done)
-            .animation(.easeInOut(duration: 0.2), value: current)
+    /// A rounded bar between two points.
+    private static func limb(from a: CGPoint, to b: CGPoint, width: Double) -> Path {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let length = max((dx * dx + dy * dy).squareRoot(), 1)
+        let nx = -dy / length * width / 2, ny = dx / length * width / 2
+        var p = Path()
+        p.move(to: CGPoint(x: a.x + nx, y: a.y + ny))
+        p.addLine(to: CGPoint(x: b.x + nx, y: b.y + ny))
+        p.addArc(center: b, radius: width / 2, startAngle: .radians(atan2(ny, nx)), endAngle: .radians(atan2(-ny, -nx)), clockwise: true)
+        p.addLine(to: CGPoint(x: a.x - nx, y: a.y - ny))
+        p.addArc(center: a, radius: width / 2, startAngle: .radians(atan2(-ny, -nx)), endAngle: .radians(atan2(ny, nx)), clockwise: true)
+        p.closeSubpath()
+        return p
     }
 }
 
@@ -431,62 +480,3 @@ private struct StationDial: View {
     }
 }
 
-/// A see-through figure showing the pose for the current stop: standing in the middle of
-/// the picture at a good distance, arms straight out, turned clockwise by 45° per stop.
-/// The nose marks where the face points (hidden when the back faces the phone). It turns
-/// green while the user holds the stop.
-private struct TargetFigure: View {
-    let station: Int
-    let matched: Bool
-    let rect: CGRect
-
-    /// Points of a standing body in stature units: x across, y up from the floor, z towards
-    /// the phone when facing it.
-    private struct P { var x, y, z: Double }
-
-    var body: some View {
-        let angle = Double(station) * 45 * .pi / 180
-        let stature = 0.56 * rect.height
-        let floor = rect.minY + 0.93 * rect.height
-        let center = rect.midX
-        // The preview is mirrored, so a clockwise turn shows the face moving to screen right.
-        func project(_ p: P) -> CGPoint {
-            CGPoint(x: center + (p.x * cos(angle) + p.z * sin(angle)) * stature, y: floor - p.y * stature)
-        }
-        let color: Color = matched ? .green : .white
-        let limbs: [(P, P)] = [
-            (P(x: -0.5, y: 0.81, z: 0), P(x: 0.5, y: 0.81, z: 0)),        // arms straight out
-            (P(x: 0, y: 0.86, z: 0), P(x: 0, y: 0.52, z: 0)),             // spine
-            (P(x: -0.09, y: 0.52, z: 0), P(x: -0.08, y: 0.04, z: 0)),     // legs
-            (P(x: 0.09, y: 0.52, z: 0), P(x: 0.08, y: 0.04, z: 0)),
-        ]
-        let torsoWidth = (0.22 * abs(cos(angle)) + 0.13 * abs(sin(angle))) * stature
-        let head = project(P(x: 0, y: 0.935, z: 0))
-        let nose = project(P(x: 0, y: 0.93, z: 0.075))
-        return ZStack {
-            Path { path in
-                for (a, b) in limbs {
-                    path.move(to: project(a))
-                    path.addLine(to: project(b))
-                }
-            }
-            .stroke(color.opacity(0.35), style: StrokeStyle(lineWidth: 0.05 * stature, lineCap: .round))
-            RoundedRectangle(cornerRadius: torsoWidth / 3)
-                .fill(color.opacity(0.22))
-                .frame(width: torsoWidth, height: 0.32 * stature)
-                .position(x: center, y: floor - 0.66 * stature)
-            Circle()
-                .fill(color.opacity(0.3))
-                .frame(width: 0.13 * stature, height: 0.13 * stature)
-                .position(head)
-            if cos(angle) > -0.3 {
-                Circle()
-                    .fill(color.opacity(0.7))
-                    .frame(width: 0.035 * stature, height: 0.035 * stature)
-                    .position(nose)
-            }
-        }
-        .animation(.easeInOut(duration: 0.5), value: station)
-        .animation(.easeInOut(duration: 0.2), value: matched)
-    }
-}

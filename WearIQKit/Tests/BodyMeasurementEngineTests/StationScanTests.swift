@@ -124,6 +124,24 @@ import WearIQCore
         #expect(StopGuide.fit(station: 4, spanRatio: 0.3, shoulderRatio: 1) == .openArms)
     }
 
+    // MARK: Clothing
+
+    @Test func bareArmsAndBodyPass() {
+        // 173 cm, 70 kg man: arm diameter about 0.057 of stature, waist 0.88 of hips.
+        #expect(ClothingCheck.findings(armThickness: 0.057, waistWidthCm: 29, hipWidthCm: 33, bmi: 23.4, sex: .male).isEmpty)
+    }
+
+    @Test func sweatshirtIsCaught() {
+        let found = ClothingCheck.findings(armThickness: 0.085, waistWidthCm: 36, hipWidthCm: 33, bmi: 23.4, sex: .male)
+        #expect(found.contains(.looseSleeves))
+        #expect(found.contains(.looseTop))
+    }
+
+    @Test func heavierBodiesAreNotFlagged() {
+        // BMI 34: thicker arms and a fuller waist are the body, not the clothes.
+        #expect(ClothingCheck.findings(armThickness: 0.075, waistWidthCm: 36, hipWidthCm: 37, bmi: 34, sex: .male).isEmpty)
+    }
+
     // MARK: Stillness
 
     private func reading(waist: Double, center: Double = 0.5) -> FrameReading {
