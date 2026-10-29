@@ -410,9 +410,10 @@ private struct FrontAnalysis: Sendable {
 
     init(_ image: CGImage) throws {
         let f = try VisionBodyAnalyzer().analyze(image)
-        observation = try SilhouetteAnalyzer().analyzeFront(mask: f.mask, joints: f.joints)
-        let top = observation.floorY - observation.personHeightPx
-        fractions = observation.levels.mapValues { ($0.y - top) / observation.personHeightPx }
+        let front = try SilhouetteAnalyzer().analyzeFront(mask: f.mask, joints: f.joints)
+        let top = front.floorY - front.personHeightPx
+        observation = front
+        fractions = front.levels.mapValues { ($0.y - top) / front.personHeightPx }
     }
 }
 
