@@ -74,7 +74,6 @@ final class LiveTryOnModel {
         phase = .live
         let renderer = renderer
         let vision = VisionBodyAnalyzer()
-        let category = category
         let scale = scale
         camera.frameRate = 15
         // Pose and drawing run on the camera queue; only the finished frame goes to the UI.
