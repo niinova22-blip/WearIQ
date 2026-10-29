@@ -22,6 +22,8 @@ struct WardrobeItemEditor: View {
     @State private var photo: Data?
     private let prefillImageURL: URL?
     @State private var photoItem: PhotosPickerItem?
+    /// Typed measurements of the garment, keyed by dimension.
+    @State private var measurementText: [GarmentDimension: String]
     private let fitScore: Double?
 
     init(existing: WardrobeEntry? = nil, prefill: Prefill? = nil) {
@@ -37,6 +39,8 @@ struct WardrobeItemEditor: View {
         _photo = State(initialValue: existing?.photo)
         fitScore = existing?.fitScore ?? prefill?.fitScore
         prefillImageURL = existing == nil ? prefill?.imageURL : nil
+        let known = existing?.measurements ?? prefill?.measurements ?? [:]
+        _measurementText = State(initialValue: known.mapValues { String(format: "%.0f", $0) })
     }
 
     /// Values carried over from a fit analysis ("Add to wardrobe").
@@ -49,6 +53,16 @@ struct WardrobeItemEditor: View {
         var fitScore: Double?
         /// Product photo from the store page; downloaded as the item's photo.
         var imageURL: URL?
+        /// The size's garment measurements, when the store's chart lists them.
+        var measurements: [GarmentDimension: Double]?
+    }
+
+    /// The measurements that matter for comparing garments of this kind.
+    private var measurable: [GarmentDimension] {
+        switch category {
+        case .bottom: [.waist, .hip, .inseam, .outseam]
+        default: [.chest, .shoulderWidth, .bodyLength, .sleeveLength]
+        }
     }
 
     var body: some View {
@@ -80,6 +94,22 @@ struct WardrobeItemEditor: View {
                         Text("Not specified").tag(FitStyle?.none)
                         ForEach(FitStyle.allCases, id: \.self) { Text($0.title).tag(FitStyle?.some($0)) }
                     }
+                }
+                Section {
+                    ForEach(measurable, id: \.self) { d in
+                        HStack {
+                            Text(d.title)
+                            Spacer()
+                            TextField("cm", text: Binding(get: { measurementText[d] ?? "" }, set: { measurementText[d] = $0 }))
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 80)
+                        }
+                    }
+                } header: {
+                    Text("Its measurements (optional)")
+                } footer: {
+                    Text("Lay it flat and measure. Chest, waist and hip: double the flat width. New products are compared with clothes you like.")
                 }
                 Section("Seasons") {
                     ForEach(Season.allCases, id: \.self) { s in
@@ -129,6 +159,9 @@ struct WardrobeItemEditor: View {
         entry.seasons = seasons
         entry.styles = styles
         entry.photo = photo
+        entry.measurements = measurementText.compactMapValues { text in
+            Double(text.replacingOccurrences(of: ",", with: ".")).flatMap { $0 > 0 ? $0 : nil }
+        }
         if existing == nil { modelContext.insert(entry) }
         try? modelContext.save()
         dismiss()

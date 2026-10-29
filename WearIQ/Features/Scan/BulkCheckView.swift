@@ -138,13 +138,31 @@ private struct BulkResultsView: View {
         var name: String?
         var imageURL: URL?
         var state: State = .waiting
+        /// Why this one might go back, if it might.
+        var risk: [String] = []
     }
+
+    private var risky: [Item] { items.filter { !$0.risk.isEmpty } }
 
     var body: some View {
         List {
             if let stopped {
                 Label(stopped, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
+            }
+            if !risky.isEmpty {
+                Section {
+                    ForEach(risky) { item in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.name ?? item.url.host ?? "").font(.subheadline.weight(.semibold)).lineLimit(1)
+                            Text(item.risk.joined(separator: " · ")).font(.caption).foregroundStyle(.orange)
+                        }
+                    }
+                } header: {
+                    Label("Return risk: \(risky.count) of \(items.count)", systemImage: "arrow.uturn.backward.circle")
+                } footer: {
+                    Text("Check these against the store's size chart or your own clothes before ordering.")
+                }
             }
             ForEach(items) { item in
                 row(item)
@@ -211,12 +229,17 @@ private struct BulkResultsView: View {
                 items[index].name = lookup.info.name
                 items[index].imageURL = lookup.info.imageURL
                 let draft = GarmentDraft(info: lookup.info)
+                var standard = false
                 if let chart = lookup.chart {
                     draft.apply(chart)
                 } else {
-                    draft.fillStandardChart(fallbackAudience: Self.profileAudience)
+                    standard = draft.fillStandardChart(fallbackAudience: Self.profileAudience)
                 }
-                items[index].state = analyse(draft, index: index)
+                let state = analyse(draft, index: index)
+                items[index].state = state
+                if case let .analysed(saved) = state, let analysis = saved.analysis {
+                    items[index].risk = BulkRisk.reasons(analysis, standardChart: standard)
+                }
             } catch {
                 items[index].state = .problem(error.localizedDescription)
             }
@@ -253,5 +276,26 @@ private struct BulkResultsView: View {
         case .female: .women
         case nil: nil
         }
+    }
+}
+
+enum BulkRisk {
+    /// Products whose advice is shaky: between two sizes, a clear mismatch somewhere in
+    /// the recommended size, no chart from the store, or low confidence.
+    static func reasons(_ analysis: FitAnalysis, standardChart: Bool) -> [String] {
+        var reasons: [String] = []
+        switch analysis.recommendation {
+        case let .between(smaller, larger):
+            reasons.append(String(localized: "between \(smaller) and \(larger)"))
+        case let .size(_, confidence) where confidence == .low:
+            reasons.append(String(localized: "low confidence"))
+        default: break
+        }
+        if let best = analysis.recommendedSize {
+            let major = best.regions.filter { $0.severity == .major }.map { $0.region.title.lowercased() }
+            if !major.isEmpty { reasons.append(String(localized: "\(major.joined(separator: ", ")) won't fit well")) }
+        }
+        if standardChart { reasons.append(String(localized: "no size chart from the store")) }
+        return reasons
     }
 }

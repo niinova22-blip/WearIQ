@@ -19,6 +19,7 @@ enum AppTab: Hashable {
 
 struct MainTabView: View {
     @State private var selection: AppTab = .home
+    @Environment(AppContainer.self) private var container
 
     var body: some View {
         TabView(selection: $selection) {
@@ -44,6 +45,10 @@ struct MainTabView: View {
                 .tag(AppTab.profile)
         }
         .sensoryFeedback(.selection, trigger: selection)
+        // A link shared from a store app opens on the scan tab.
+        .onChange(of: container.pendingProductLink) { _, link in
+            if link != nil { selection = .scan }
+        }
         #if DEBUG
         .onAppear { if DemoMode.isActive { selection = DemoMode.initialTab } }
         #endif

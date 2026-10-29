@@ -23,6 +23,7 @@ struct ScanEntryView: View {
     @State private var basketError: String?
     @State private var bulkRoute: BulkCheckRoute?
 
+    @Environment(AppContainer.self) private var container
     private let productService: ProductDataServicing = ProductDataService()
     private let barcodeLookup: BarcodeLookupServicing = UPCItemDBLookup()
 
@@ -68,6 +69,7 @@ struct ScanEntryView: View {
             guard let item else { return }
             Task { await readPhoto(item) }
         }
+        .task(id: container.pendingProductLink) { await checkSharedLink() }
     }
 
     // MARK: Cards
@@ -227,6 +229,14 @@ struct ScanEntryView: View {
         case .female: .women
         case nil: nil
         }
+    }
+
+    /// A link shared from a store app: checked like a pasted one.
+    private func checkSharedLink() async {
+        guard let link = container.pendingProductLink else { return }
+        container.pendingProductLink = nil
+        linkText = link.absoluteString
+        await loadLink()
     }
 
     private func loadLink() async {

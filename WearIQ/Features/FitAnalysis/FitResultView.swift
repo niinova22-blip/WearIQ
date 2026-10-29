@@ -17,6 +17,8 @@ struct FitResultView: View {
     var tagSize: String?
     /// False for "insufficient data" results, which are shown but neither saved nor charged.
     let isSaved: Bool
+    /// The garment's size chart, for comparing with the wardrobe.
+    var spec: GarmentSpec?
 
     @State private var selectedLabel: String?
     @State private var addingToWardrobe = false
@@ -27,11 +29,13 @@ struct FitResultView: View {
     init(saved: SavedAnalysis) {
         self.init(productName: saved.productName, brand: saved.brand, imageURL: saved.imageURL,
                   pageURL: saved.pageURL, analysis: saved.analysis ?? FitAnalysis(recommendation: .insufficientData(missing: []), sizes: []),
-                  isSaved: true, category: saved.spec?.category, fitStyle: saved.spec?.fitStyle)
+                  isSaved: true, category: saved.spec?.category, fitStyle: saved.spec?.fitStyle, spec: saved.spec)
     }
 
     init(productName: String?, brand: String?, imageURL: URL?, pageURL: URL?, analysis: FitAnalysis, isSaved: Bool,
-         category: GarmentCategory? = nil, fitStyle: FitStyle? = nil, chartNote: String? = nil, tagSize: String? = nil) {
+         category: GarmentCategory? = nil, fitStyle: FitStyle? = nil, chartNote: String? = nil, tagSize: String? = nil,
+         spec: GarmentSpec? = nil) {
+        self.spec = spec
         self.chartNote = chartNote
         self.tagSize = tagSize
         self.isSaved = isSaved
@@ -54,9 +58,16 @@ struct FitResultView: View {
             VStack(spacing: Theme.Spacing.m) {
                 header
                 recommendationCard
+                BrandNoteView(brand: brand, category: category, recommended: analysis.recommendedSize?.label)
                 if analysis.sizes.count > 1 { sizePicker }
                 if let selected { regionsCard(selected) }
+                WardrobeComparisonCard(category: category, spec: spec, sizeLabel: selectedLabel)
                 actions
+                if isSaved, let label = selectedLabel {
+                    PurchaseFeedbackCard(brand: brand, productName: productName, category: category,
+                                         sizes: analysis.sizes.map(\.label), size: label)
+                        .id(label)
+                }
             }
             .padding(Theme.Spacing.m)
         }
@@ -67,7 +78,9 @@ struct FitResultView: View {
             WardrobeItemEditor(prefill: .init(
                 name: productName, brand: brand, size: selected?.label,
                 category: category.map { WardrobeCategory($0) }, fitStyle: fitStyle,
-                fitScore: selected?.fitScore, imageURL: imageURL))
+                fitScore: selected?.fitScore, imageURL: imageURL,
+                measurements: spec?.chartKind == .garment
+                    ? spec?.sizes.first(where: { $0.label == selected?.label })?.values.mapValues(\.cm) : nil))
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
     }
@@ -210,6 +223,8 @@ struct FitResultView: View {
                     .buttonStyle(.primary)
             }
             if isSaved {
+                TrackProductButton(pageURL: pageURL, productName: productName, imageURL: imageURL, size: selectedLabel)
+                    .padding(.top, Theme.Spacing.s)
                 Button {
                     if container.isPremium { addingToWardrobe = true } else { showPaywall = true }
                 } label: {

@@ -46,6 +46,20 @@ import WearIQCore
         #expect(info.stretch == nil) // no composition published
     }
 
+    @Test func readsPriceAndStockPerSize() {
+        let html = #"""
+        <script type="application/ld+json">{"@type":"ProductGroup","name":"Basic Tişört","hasVariant":[
+          {"@type":"Product","size":"S","offers":{"@type":"Offer","price":"299.99","priceCurrency":"TRY","availability":"https://schema.org/InStock"}},
+          {"@type":"Product","size":"M","offers":{"@type":"Offer","price":"299.99","priceCurrency":"TRY","availability":"https://schema.org/OutOfStock"}},
+          {"@type":"Product","size":"L","offers":{"@type":"Offer","price":"1.249,90","priceCurrency":"TRY","availability":"http://schema.org/LimitedAvailability"}}
+        ]}</script>
+        """#
+        let info = ProductPageParser().parse(html: html, pageURL: nil)
+        #expect(info.price == 299.99)
+        #expect(info.currency == "TRY")
+        #expect(info.sizeStock == ["S": true, "M": false, "L": true])
+    }
+
     @Test func fallsBackToOpenGraph() {
         let html = """
         <meta property="og:title" content="Basic Oversize T-Shirt">

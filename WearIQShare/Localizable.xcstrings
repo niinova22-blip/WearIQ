@@ -1,0 +1,26 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Opening WearIQ…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ açılıyor…"
+          }
+        }
+      }
+    },
+    "The link is copied. Open WearIQ and paste it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link kopyalandı. WearIQ'yu açıp yapıştır."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

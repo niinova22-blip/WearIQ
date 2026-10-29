@@ -21,7 +21,8 @@ final class StoredBodyProfile {
 
 enum PersistenceController {
     static func makeContainer(inMemory: Bool) -> ModelContainer {
-        let schema = Schema([StoredBodyProfile.self, SavedAnalysis.self, WardrobeEntry.self])
+        let schema = Schema([StoredBodyProfile.self, SavedAnalysis.self, WardrobeEntry.self,
+                             PurchaseRecord.self, TrackedProduct.self])
         let config: ModelConfiguration
         if inMemory {
             config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)

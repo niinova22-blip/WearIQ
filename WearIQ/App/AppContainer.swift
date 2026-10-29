@@ -17,6 +17,16 @@ final class AppContainer {
     let ads = AdvertisingService()
     /// Mirrors the StoreKit entitlement; drives quota, ads and premium features.
     private(set) var isPremium = false
+    /// A product link handed over by the share extension, for the scan tab to check.
+    var pendingProductLink: URL?
+
+    /// weariq://check?url=https://… → the product link.
+    func handle(_ url: URL) {
+        guard url.scheme == "weariq", url.host == "check",
+              let value = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "url" })?.value,
+              let link = URL(string: value), link.scheme?.hasPrefix("http") == true else { return }
+        pendingProductLink = link
+    }
 
     var onboardingCompleted = UserDefaults.standard.bool(forKey: AppContainer.onboardingKey) {
         didSet { UserDefaults.standard.set(onboardingCompleted, forKey: Self.onboardingKey) }

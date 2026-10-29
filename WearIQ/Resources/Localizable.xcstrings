@@ -5420,6 +5420,326 @@
           }
         }
       }
+    },
+    "tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dar"
+          }
+        }
+      }
+    },
+    "just right": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tam"
+          }
+        }
+      }
+    },
+    "loose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bol"
+          }
+        }
+      }
+    },
+    "You bought %@ from %@ and it was %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$@ markasından %1$@ almıştın ve %3$@ gelmişti."
+          }
+        }
+      }
+    },
+    "This brand tends to come out small on you; consider one size up.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu marka sana dar geliyor; bir büyük bedene bak."
+          }
+        }
+      }
+    },
+    "This brand tends to come out large on you; consider one size down.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu marka sana bol geliyor; bir küçük bedene bak."
+          }
+        }
+      }
+    },
+    "Compare with %@ if you liked that fit.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O kalıbı sevdiysen %@ bedenle karşılaştır."
+          }
+        }
+      }
+    },
+    "Bought it? Tell us how it fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aldın mı? Nasıl oldu, söyle"
+          }
+        }
+      }
+    },
+    "WearIQ remembers how %@ fits you and adjusts future advice for this brand.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ, %@ markasının sana nasıl oturduğunu hatırlar ve bu markadaki önerilerini buna göre ayarlar."
+          }
+        }
+      }
+    },
+    "Size you took": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aldığın beden"
+          }
+        }
+      }
+    },
+    "Saved: %@, %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydedildi: %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Just right": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam"
+          }
+        }
+      }
+    },
+    "Compared with your own clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kendi kıyafetlerinle karşılaştırma"
+          }
+        }
+      }
+    },
+    "%@ the same": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ aynı"
+          }
+        }
+      }
+    },
+    "%@ %lld cm longer": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$lld cm daha uzun"
+          }
+        }
+      }
+    },
+    "%@ %lld cm shorter": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$lld cm daha kısa"
+          }
+        }
+      }
+    },
+    "%@ %lld cm wider": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$lld cm daha geniş"
+          }
+        }
+      }
+    },
+    "%@ %lld cm narrower": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$lld cm daha dar"
+          }
+        }
+      }
+    },
+    "Following price and size %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fiyat ve %@ beden takip ediliyor"
+          }
+        }
+      }
+    },
+    "Tell me when the price drops or %@ is back": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fiyat düşünce ya da %@ stoğa girince haber ver"
+          }
+        }
+      }
+    },
+    "my size": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bedenim"
+          }
+        }
+      }
+    },
+    "A product you follow": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takip ettiğin bir ürün"
+          }
+        }
+      }
+    },
+    "Price dropped from %@ to %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fiyat %1$@ yerine %2$@ oldu."
+          }
+        }
+      }
+    },
+    "Your size %@ is back in stock.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bedenin yeniden stokta."
+          }
+        }
+      }
+    },
+    "Its measurements (optional)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüleri (isteğe bağlı)"
+          }
+        }
+      }
+    },
+    "Lay it flat and measure. Chest, waist and hip: double the flat width. New products are compared with clothes you like.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düz serip ölç. Göğüs, bel ve kalça için düz genişliğin iki katını yaz. Yeni ürünler sevdiğin kıyafetlerle karşılaştırılır."
+          }
+        }
+      }
+    },
+    "between %@ and %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ile %2$@ arasında"
+          }
+        }
+      }
+    },
+    "low confidence": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "düşük güven"
+          }
+        }
+      }
+    },
+    "%@ won't fit well": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ iyi oturmayabilir"
+          }
+        }
+      }
+    },
+    "no size chart from the store": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mağazanın beden tablosu yok"
+          }
+        }
+      }
+    },
+    "Return risk: %lld of %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İade riski: %2$lld üründen %1$lld"
+          }
+        }
+      }
+    },
+    "Check these against the store's size chart or your own clothes before ordering.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sipariş vermeden önce bunları mağazanın beden tablosu ya da kendi kıyafetlerinle karşılaştır."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

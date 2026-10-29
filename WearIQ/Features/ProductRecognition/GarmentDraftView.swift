@@ -56,7 +56,7 @@ struct GarmentDraftView: View {
             FitResultView(productName: draft.info.name, brand: draft.info.brand, imageURL: draft.info.imageURL,
                           pageURL: draft.info.pageURL, analysis: route.analysis, isSaved: route.saved,
                           category: draft.category, fitStyle: draft.fitStyle, chartNote: chartNote,
-                          tagSize: draft.preferredLabel)
+                          tagSize: draft.preferredLabel, spec: draft.spec)
                 // Ads only ever appear after a result, never before a scan.
                 .onDisappear { container.ads.showInterstitialIfDue(isPremium: container.isPremium) }
         }

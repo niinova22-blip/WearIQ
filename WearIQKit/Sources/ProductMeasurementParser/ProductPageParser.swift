@@ -26,6 +26,11 @@ public struct ProductInfo: Equatable, Sendable {
     public var audience: GarmentAudience?
     /// The model's measurements and worn size, if the page states them.
     public var modelFit: ModelFit?
+    /// Lowest price the page offers, and its currency (schema.org offers).
+    public var price: Double?
+    public var currency: String?
+    /// Whether each size is in stock, for the sizes whose offer says so.
+    public var sizeStock: [String: Bool] = [:]
 
     public init() {}
 
@@ -160,16 +165,53 @@ public struct ProductPageParser: Sendable {
             guard let s, !s.isEmpty, !sizes.contains(s) else { return }
             sizes.append(s)
         }
+        func offers(_ v: Any?) -> [[String: Any]] {
+            (v as? [[String: Any]]) ?? ((v as? [String: Any]).map { [$0] } ?? [])
+        }
+        func read(_ offer: [String: Any], size: String?) {
+            if let price = number(offer["price"] ?? offer["lowPrice"]), price > 0 {
+                info.price = min(info.price ?? price, price)
+            }
+            if info.currency == nil { info.currency = string(offer["priceCurrency"]) }
+            if let size, let availability = string(offer["availability"])?.lowercased() {
+                let available = availability.contains("instock") || availability.contains("limitedavailability")
+                info.sizeStock[size] = (info.sizeStock[size] ?? false) || available
+            }
+        }
+        func label(_ raw: String?) -> String? {
+            raw.map { $0.components(separatedBy: " (").first ?? $0 }?.trimmingCharacters(in: .whitespaces)
+        }
         if let s = p["size"] as? [Any] { s.forEach { add(string($0)) } } else { add(string(p["size"])) }
         for variant in (p["hasVariant"] as? [[String: Any]]) ?? [] {
-            add(string(variant["size"]))
+            let size = string(variant["size"])
+            add(size)
             if info.gtin == nil { info.gtin = string(variant["gtin13"]) ?? string(variant["gtin"]) }
+            offers(variant["offers"]).forEach { read($0, size: label(size)) }
         }
-        let offers: [[String: Any]] = (p["offers"] as? [[String: Any]]) ?? ((p["offers"] as? [String: Any]).map { [$0] } ?? [])
-        for offer in offers {
-            add(string(offer["size"]) ?? string((offer["itemOffered"] as? [String: Any])?["size"]))
+        for offer in offers(p["offers"]) {
+            let size = string(offer["size"]) ?? string((offer["itemOffered"] as? [String: Any])?["size"])
+            add(size)
+            read(offer, size: label(size))
         }
         info.availableSizes = sizes
+    }
+
+    /// "1.299,90", "1299.90", 1299.9 → 1299.9.
+    private static func number(_ v: Any?) -> Double? {
+        switch v {
+        case let n as NSNumber: return n.doubleValue
+        case let s as String:
+            var t = s.trimmingCharacters(in: .whitespaces).filter { $0.isNumber || $0 == "." || $0 == "," }
+            if t.contains(","), t.contains(".") {
+                // The later separator is the decimal one.
+                if t.lastIndex(of: ",")! > t.lastIndex(of: ".")! { t = t.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".") }
+                else { t = t.replacingOccurrences(of: ",", with: "") }
+            } else {
+                t = t.replacingOccurrences(of: ",", with: ".")
+            }
+            return Double(t)
+        default: return nil
+        }
     }
 
     private static func string(_ v: Any?) -> String? {

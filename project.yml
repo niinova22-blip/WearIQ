@@ -52,6 +52,8 @@ targets:
         product: OutfitRecommendationEngine
       - package: GoogleMobileAds
       - package: GoogleUserMessagingPlatform
+      - target: WearIQShare
+        embed: true
     info:
       path: WearIQ/Info.plist
       properties:
@@ -62,6 +64,13 @@ targets:
         SKAdNetworkItems:
           - SKAdNetworkIdentifier: cstr6suwn9.skadnetwork
         UILaunchScreen: {}
+        # Followed products are re-checked in the background (price drop, size back in stock).
+        BGTaskSchedulerPermittedIdentifiers: [com.niinova.weariq.track]
+        UIBackgroundModes: [fetch]
+        # weariq://check?url=… opens a product from the share extension.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.niinova.weariq
+            CFBundleURLSchemes: [weariq]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
     settings:
       base:
@@ -81,6 +90,32 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "WearIQ reads size chart screenshots and garment photos you choose. They are processed on your device."
         INFOPLIST_KEY_NSUserTrackingUsageDescription: "Allowing tracking lets us show more relevant ads. Your body measurements are never shared with advertisers."
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        CODE_SIGN_STYLE: Automatic
+
+  # "Share → WearIQ" from a store app or Safari.
+  WearIQShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: WearIQShare
+    info:
+      path: WearIQShare/Info.plist
+      properties:
+        CFBundleDisplayName: WearIQ
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsText: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.niinova.weariq.share
+        PRODUCT_NAME: WearIQShare
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: WearIQ
         CODE_SIGN_STYLE: Automatic
 
   WearIQTests:

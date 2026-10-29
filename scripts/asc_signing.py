@@ -7,8 +7,12 @@ So the release workflow signs manually: this script creates a distribution certi
 and an App Store profile for one run, and `cleanup` revokes both afterwards.
 
 Usage:
-  asc_signing.py create <csr.pem> <out_dir> <bundle_id> <profile_name>
+  asc_signing.py create <csr.pem> <out_dir> <bundle_id[,extension_bundle_id…]> <profile_name>
   asc_signing.py cleanup <out_dir>
+
+One certificate, and an App Store profile per bundle ID: the first is the app
+(app.mobileprovision), the others its extensions (<last id component>.mobileprovision,
+e.g. share.mobileprovision). Extension bundle IDs that aren't registered yet are.
 
 Environment: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH (path to the .p8 file).
 """
@@ -70,24 +74,34 @@ def create(csr_path: str, out_dir: str, bundle_id: str, profile_name: str) -> No
     with open(os.path.join(out_dir, "dist.cer"), "wb") as f:
         f.write(base64.b64decode(cert["attributes"]["certificateContent"]))
 
-    query = urllib.parse.urlencode({"filter[identifier]": bundle_id, "filter[platform]": "IOS"})
-    bundles = [b for b in call("GET", f"/bundleIds?{query}")["data"] if b["attributes"]["identifier"] == bundle_id]
-    if not bundles:
-        sys.exit(f"::error::Bundle ID {bundle_id} is not registered in the developer account")
+    ids = bundle_id.split(",")
+    profile_ids = []
+    for index, identifier in enumerate(ids):
+        query = urllib.parse.urlencode({"filter[identifier]": identifier, "filter[platform]": "IOS"})
+        bundles = [b for b in call("GET", f"/bundleIds?{query}")["data"] if b["attributes"]["identifier"] == identifier]
+        if not bundles and index > 0:
+            bundles = [call("POST", "/bundleIds", {"data": {"type": "bundleIds", "attributes": {
+                "identifier": identifier, "name": "WearIQ " + identifier.split(".")[-1], "platform": "IOS"}}})["data"]]
+            print(f"Registered bundle ID {identifier}")
+        if not bundles:
+            sys.exit(f"::error::Bundle ID {identifier} is not registered in the developer account")
 
-    profile = call("POST", "/profiles", {"data": {
-        "type": "profiles",
-        "attributes": {"name": profile_name, "profileType": "IOS_APP_STORE"},
-        "relationships": {
-            "bundleId": {"data": {"type": "bundleIds", "id": bundles[0]["id"]}},
-            "certificates": {"data": [{"type": "certificates", "id": cert_id}]},
-        },
-    }})["data"]
+        profile = call("POST", "/profiles", {"data": {
+            "type": "profiles",
+            "attributes": {"name": f"{profile_name} {identifier.split('.')[-1]}" if index else profile_name,
+                           "profileType": "IOS_APP_STORE"},
+            "relationships": {
+                "bundleId": {"data": {"type": "bundleIds", "id": bundles[0]["id"]}},
+                "certificates": {"data": [{"type": "certificates", "id": cert_id}]},
+            },
+        }})["data"]
+        profile_ids.append(profile["id"])
+        name = "app" if index == 0 else identifier.split(".")[-1]
+        with open(os.path.join(out_dir, f"{name}.mobileprovision"), "wb") as f:
+            f.write(base64.b64decode(profile["attributes"]["profileContent"]))
     with open(os.path.join(out_dir, "profile_id"), "w") as f:
-        f.write(profile["id"])
-    with open(os.path.join(out_dir, "app.mobileprovision"), "wb") as f:
-        f.write(base64.b64decode(profile["attributes"]["profileContent"]))
-    print(f"Created certificate {cert_id} and profile {profile['id']}")
+        f.write("\n".join(profile_ids))
+    print(f"Created certificate {cert_id} and profiles {', '.join(profile_ids)}")
 
 
 def cleanup(out_dir: str) -> None:
@@ -96,9 +110,10 @@ def cleanup(out_dir: str) -> None:
         file = os.path.join(out_dir, name)
         if os.path.exists(file):
             with open(file) as f:
-                ident = f.read().strip()
-            call("DELETE", path + ident)
-            print(f"Revoked {name[:-3]} {ident}")
+                idents = [line.strip() for line in f if line.strip()]
+            for ident in idents:
+                call("DELETE", path + ident)
+                print(f"Revoked {name[:-3]} {ident}")
 
 
 if __name__ == "__main__":

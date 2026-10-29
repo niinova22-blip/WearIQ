@@ -107,6 +107,12 @@ struct ProductDataService: ProductDataServicing {
         return nil
     }
 
+    /// The page's structured data only (a plain request): enough to follow price and
+    /// stock, and safe to run in the background.
+    func structuredInfo(at url: URL) async throws -> ProductInfo {
+        try await fetchDirect(url)
+    }
+
     private func fetchDirect(_ url: URL) async throws -> ProductInfo {
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")

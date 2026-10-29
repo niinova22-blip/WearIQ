@@ -131,7 +131,7 @@ jobs:
           /usr/bin/openssl genrsa -out "$SIGN_DIR/dist.key" 2048
           /usr/bin/openssl req -new -key "$SIGN_DIR/dist.key" -out "$SIGN_DIR/dist.csr" -subj "/CN=WearIQ CI/C=TR"
           ASC_KEY_PATH="$SIGN_DIR/AuthKey.p8" "$RUNNER_TEMP/venv/bin/python" scripts/asc_signing.py \
-            create "$SIGN_DIR/dist.csr" "$SIGN_DIR" "$BUNDLE_ID" "WearIQ CI ${{ github.run_id }}"
+            create "$SIGN_DIR/dist.csr" "$SIGN_DIR" "$BUNDLE_ID,$BUNDLE_ID.share" "WearIQ CI ${{ github.run_id }}"
 
           /usr/bin/openssl x509 -inform DER -in "$SIGN_DIR/dist.cer" -out "$SIGN_DIR/dist.pem"
           P12_PASS="$(openssl rand -hex 12)"
@@ -188,6 +188,15 @@ jobs:
               [ -e "$lib" ] || continue
               codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" "$lib"
             done
+          fi
+          # The share extension, with its own profile and identifier.
+          APPEX="$APP/PlugIns/WearIQShare.appex"
+          if [ -d "$APPEX" ]; then
+            cp "$SIGN_DIR/share.mobileprovision" "$APPEX/embedded.mobileprovision"
+            sed "s/$TEAM.$BUNDLE_ID</$TEAM.$BUNDLE_ID.share</" "$SIGN_DIR/entitlements.plist" > "$SIGN_DIR/share-entitlements.plist"
+            codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" \
+              --entitlements "$SIGN_DIR/share-entitlements.plist" \
+              --requirements "$(requirement "$BUNDLE_ID.share")" "$APPEX"
           fi
           codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" \
             --entitlements "$SIGN_DIR/entitlements.plist" \

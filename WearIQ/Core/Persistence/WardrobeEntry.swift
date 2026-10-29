@@ -19,6 +19,8 @@ final class WardrobeEntry {
     var stylesRaw: [String]
     var fitScore: Double?
     @Attribute(.externalStorage) var photo: Data?
+    /// The garment's own measurements, JSON [GarmentDimension raw value: cm]; see `measurements`.
+    var measurementsData: Data?
 
     init(name: String, category: WardrobeCategory, color: ColorFamily, brand: String? = nil, size: String? = nil,
          fitStyle: FitStyle? = nil, seasons: Set<Season> = Set(Season.allCases), styles: Set<StyleTag> = [.casual],
