@@ -71,6 +71,9 @@ public struct BodyProfile: Codable, Hashable, Sendable {
     /// Scan readings so far from what height and weight allow that an estimate was used
     /// instead, kept so the review can show what the scan saw.
     public var rejectedScans: [BodyDimension: Double]?
+    /// Stature in skeleton pixels over stature in mask pixels on the front photo; 1 when
+    /// the joints and the outline agree. Kept to trace scale problems.
+    public var skeletonToMaskRatio: Double?
 
     public init(values: [BodyDimension: MeasuredValue] = [:], createdAt: Date = Date(),
                 weightKg: Double? = nil, sex: BodySex? = nil) {

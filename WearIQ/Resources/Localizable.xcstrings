@@ -5070,6 +5070,16 @@
           }
         }
       }
+    },
+    "Scan check: skeleton/outline scale %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarama kontrolü: iskelet/silüet ölçeği %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

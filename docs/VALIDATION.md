@@ -78,3 +78,31 @@ dayanıklılığını doğrular; kamera, segmentasyon ve kıyafet kaynaklı hata
 1–3. bölümlerdeki gerçek kişili protokol gerekir. Amazon'un BodyM veri seti (önden ve yandan
 silüet + ölçü, 2.505 kişi) bu açığı kısmen kapatabilir, ancak lisansı (CC BY-NC 4.0 / CC BY 4.0
 belirsizliği) ticari kullanım için netleşmeden kullanılmamalıdır.
+
+### Yöntem karşılaştırması (ANSUR II, her üç kişiden biri, aynı simülasyon)
+
+| Yöntem | Göğüs MAE | Bel MAE | Kalça MAE |
+|---|---|---|---|
+| 8 durak (kullanılan) | %0,99 | %1,03 | %1,09 |
+| 4 durak (yalnızca 180°) | %1,27 | %1,43 | %1,51 |
+| Önden + yandan genişlikten regresyon (boy, kilo, cinsiyet ile; çapraz doğrulamalı) | %1,51 | %1,22 | %1,09 |
+
+Silüet genişliği karşıdan aynı göründüğü için 4 durak teoride yeterlidir, ancak durak
+hatalarının ortalaması daha az alındığından ~%40 daha hatalıdır. 8 durak tutuldu.
+
+### İskeletten ölçek (`JointHeights`)
+
+Vision eklemlerinin boy oranları ANSUR II işaret noktası yüksekliklerinden alınmıştır: ayak bileği
+0,040 (lateral malleol), diz 0,279 (femur epikondili), kalça eklemi 0,52 (trokanterin biraz
+üstü), omuz eklemi 0,80 (akromiyonun ~%2 altı), boyun 0,818 (suprasternale). Bu oranlar
+kişiler arasında boyun yaklaşık %1'i kadar değişir. Eklemlere oturtulan doğru, boyu ve zemini
+piksel cinsinden verir. Eklemler arasındaki uzunluklar (omuz, kol, gövde, iç/dış bacak) bu
+ölçekle hesaplanır; maskenin saç, gölge ya da bol kıyafet yüzünden taşması onları bozamaz.
+
+**Doğrulama:** Her kişinin eklemleri kendi ANSUR yüksekliklerine (1 cm algılama gürültüsüyle)
+yerleştirildiğinde iskeletten bulunan boy: bias −%0,14, ortalama mutlak hata %1,01, %95'lik
+hata %2,45 (6.068 kişi).
+
+Göğüs, bel ve kalça seviyeleri de iskeletten konur: ANSUR'un nüfus yükseklikleri (göğüs 0,728,
+göbek 0,601, kalça 0,507), kişinin kendi kalça ve omuz eklemleri arasına gerilerek.
+

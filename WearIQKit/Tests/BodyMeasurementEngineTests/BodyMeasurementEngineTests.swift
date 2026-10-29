@@ -3,15 +3,18 @@ import Testing
 @testable import BodyMeasurementEngine
 import WearIQCore
 
-/// Synthetic person: 1 px = 0.1 cm, 180 cm tall (1800 px), floor at y = 1900.
+/// Synthetic person: 1 px = 0.1 cm, 180 cm tall (1800 px), floor at y = 1900, joints at
+/// the stature fractions JointHeights expects (neck 0.818, shoulders 0.80, hips 0.52,
+/// ankles 0.04).
 private let front = ScanObservation(
     personHeightPx: 1800, floorY: 1900,
     joints: [
-        .neck: Point2D(500, 380),
-        .leftShoulder: Point2D(300, 400), .rightShoulder: Point2D(700, 400),  // 40 cm joint distance
-        .leftElbow: Point2D(280, 700), .rightElbow: Point2D(720, 700),
-        .leftWrist: Point2D(280, 960), .rightWrist: Point2D(720, 960),
-        .root: Point2D(500, 1000), .leftAnkle: Point2D(450, 1850), .rightAnkle: Point2D(550, 1850),
+        .neck: Point2D(500, 427.6),
+        .leftShoulder: Point2D(300, 460), .rightShoulder: Point2D(700, 460),  // 40 cm joint distance
+        .leftElbow: Point2D(280, 760), .rightElbow: Point2D(720, 760),
+        .leftWrist: Point2D(280, 1020), .rightWrist: Point2D(720, 1020),
+        .root: Point2D(500, 964), .leftHip: Point2D(450, 964), .rightHip: Point2D(550, 964),
+        .leftAnkle: Point2D(450, 1828), .rightAnkle: Point2D(550, 1828),
     ],
     levels: [
         .chest: LevelSample(y: 550, extentPx: 330),
@@ -38,10 +41,22 @@ private let side = ScanObservation(
     @Test func lengthsScaleWithHeight() throws {
         let p = try engine.measure(heightCm: 180, front: front, side: side)
         #expect(abs(p[.shoulderWidth]!.cm - 44) < 0.01)          // 40 cm × 1.10
-        #expect(abs(p[.armLength]!.cm - (sqrt(904.0) + 26)) < 0.01)
+        #expect(abs(p[.armLength]!.cm - (sqrt(904.0) + 26) * 1.05) < 0.01)
         #expect(abs(p[.inseam]!.cm - 82) < 0.01)
-        #expect(abs(p[.outseam]!.cm - 104) < 0.01)
-        #expect(abs(p[.torsoLength]!.cm - 48) < 0.01)
+        #expect(abs(p[.outseam]!.cm - 93.6 * 1.157) < 0.01)
+        #expect(abs(p[.torsoLength]!.cm - 53.64 * 0.87) < 0.01)
+    }
+
+    /// A mask that reaches 30% too far (a shadow under the feet) must not shrink lengths
+    /// measured between joints.
+    @Test func jointLengthsIgnoreAnOversizedMask() throws {
+        var f = front
+        f.personHeightPx = 1800 * 1.3
+        f.floorY = 1900 + 1800 * 0.3
+        let p = try engine.measure(heightCm: 180, front: f, side: side)
+        #expect(abs(p[.shoulderWidth]!.cm - 44) < 0.01)
+        #expect(abs(p[.armLength]!.cm - (sqrt(904.0) + 26) * 1.05) < 0.01)
+        #expect(abs(BodyMeasurementEngine.skeletonToMaskRatio(f)! - 1 / 1.3) < 0.001)
         #expect(p[.height]?.source == .userProvided)
     }
 

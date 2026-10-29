@@ -455,13 +455,21 @@ final class BodyScanViewModel {
         profile.sex = basics.sex
         // A reading far from anything this height and weight allows is a failed detection:
         // the height/weight estimate takes its place, and the reading is kept for the review.
-        // Values the photos couldn't show at all are estimated the same way.
+        // Lengths and the shoulder width combine both (inverse-variance weighting): the
+        // statistics predict them to ±2 cm, as good as a photo can measure them. Girths
+        // stay as measured. Values the photos couldn't show at all are estimated.
         let prior = basics.prior()
+        let fusion = MeasurementFusion.fuse(scan: profile, prior: prior)
         var rejectedScans: [BodyDimension: Double] = [:]
-        for d in MeasurementFusion.fuse(scan: profile, prior: prior).rejected {
+        for d in fusion.rejected {
             rejectedScans[d] = profile[d]?.cm
             profile[d] = prior[d]
         }
+        for d in [BodyDimension.shoulderWidth, .armLength, .torsoLength, .inseam, .outseam, .thigh]
+        where !fusion.rejected.contains(d) && profile[d] != nil {
+            profile[d] = fusion.profile[d]
+        }
+        profile.skeletonToMaskRatio = BodyMeasurementEngine.skeletonToMaskRatio(front.observation)
         for (d, estimate) in prior where profile[d] == nil { profile[d] = estimate }
         profile.rejectedScans = rejectedScans.isEmpty ? nil : rejectedScans
         return profile
@@ -490,13 +498,27 @@ final class BodyScanViewModel {
 private struct FrontAnalysis: Sendable {
     let observation: ScanObservation
     /// Height of each level below the top of the head, as a fraction of body height.
-    let fractions: [BodyLevel: Double]
+    var fractions: [BodyLevel: Double] = [:]
 
     init(_ image: CGImage) throws {
         let f = try VisionBodyAnalyzer().analyze(image)
         let front = try SilhouetteAnalyzer().analyzeFront(mask: f.mask, joints: f.joints)
         let top = front.floorY - front.personHeightPx
         observation = front
+        let hips = [front.joints[.leftHip], front.joints[.rightHip], front.joints[.root]].compactMap { $0?.y }
+        let shoulders = [front.joints[.leftShoulder], front.joints[.rightShoulder]].compactMap { $0?.y }
+        if let skeleton = JointHeights.fit(front.joints), !hips.isEmpty, !shoulders.isEmpty {
+            let hip = hips.reduce(0, +) / Double(hips.count)
+            let shoulder = shoulders.reduce(0, +) / Double(shoulders.count)
+            // Levels from the skeleton: ANSUR's population heights, stretched between this
+            // person's own hip and shoulder joints. Loose clothes and the mask's reach
+            // can't move them.
+            let hipRatio = skeleton.ratio(ofRow: hip), shoulderRatio = skeleton.ratio(ofRow: shoulder)
+            fractions = JointHeights.levelRatios.mapValues { level in
+                1 - (hipRatio + (level - 0.52) / (0.80 - 0.52) * (shoulderRatio - hipRatio))
+            }
+            return
+        }
         var fractions = front.levels.mapValues { ($0.y - top) / front.personHeightPx }
         // Arms against the chest make its front width unusable, and the level is dropped;
         // the turn still needs to know where the chest is.

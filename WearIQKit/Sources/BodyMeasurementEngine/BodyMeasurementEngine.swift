@@ -64,6 +64,17 @@ public struct BodyMeasurementEngine: Sendable {
     public struct Calibration: Sendable {
         /// Vision shoulder joints sit inside the acromion; bi-acromial width is wider.
         public var shoulderJointToBiacromial = 1.10
+        /// Vision's shoulder joint is the joint centre, a few cm below and inside the
+        /// acromion where a sleeve is measured from; ANSUR's arm (acromion–wrist, 0.3375 of
+        /// stature) over the joint-centre-to-wrist span (about 0.32) gives this factor.
+        public var armJointToAcromion = 1.05
+        /// ANSUR II, as fractions of the span from the neck joint (suprasternale, 0.818)
+        /// down to the hip joint (0.52): torso length = cervicale − navel height,
+        /// 0.260 of stature → 0.87 of that span.
+        public var torsoOfNeckToHip = 0.87
+        /// Crotch height 0.481 and navel height 0.601 of stature, over the hip joint's 0.52.
+        public var inseamOfHipHeight = 0.926
+        public var outseamOfHipHeight = 1.157
         /// Torso cross sections are closer to rounded rectangles than ellipses, so a pure
         /// ellipse underestimates the perimeter.
         public var girthShapeFactor: [BodyLevel: Double] = [.chest: 1.06, .waist: 1.02, .hip: 1.03, .thigh: 1.0]
@@ -89,7 +100,12 @@ public struct BodyMeasurementEngine: Sendable {
         guard front.personHeightPx > 0, front.joints[.leftAnkle] != nil || front.joints[.rightAnkle] != nil else {
             throw BodyMeasurementError.personNotFullyVisible
         }
+        // Widths across the person mask use the mask's own extent as the ruler. Lengths
+        // between joints use the skeleton's (see JointHeights), so a mask that reaches too
+        // far (hair, shadow, loose clothes) can't shrink or stretch them.
         let scale = heightCm / front.personHeightPx
+        let skeleton = JointHeights.fit(front.joints)
+        let jointScale = skeleton.map { heightCm / $0.staturePx } ?? scale
         let heightRel = heightUncertaintyCm / heightCm
         var p = BodyProfile()
         p[.height] = MeasuredValue(cm: heightCm, uncertaintyCm: heightUncertaintyCm, source: .userProvided)
@@ -102,7 +118,7 @@ public struct BodyMeasurementEngine: Sendable {
 
         let j = front.joints
         if let l = j[.leftShoulder], let r = j[.rightShoulder] {
-            p[.shoulderWidth] = value(l.distance(to: r) * scale * calibration.shoulderJointToBiacromial, calibration.widthRelError)
+            p[.shoulderWidth] = value(l.distance(to: r) * jointScale * calibration.shoulderJointToBiacromial, calibration.widthRelError)
         }
 
         let arms = [(BodyJoint.leftShoulder, BodyJoint.leftElbow, BodyJoint.leftWrist), (.rightShoulder, .rightElbow, .rightWrist)]
@@ -114,22 +130,27 @@ public struct BodyMeasurementEngine: Sendable {
             // Left/right disagreement is extra evidence of error.
             let mean = arms.reduce(0, +) / Double(arms.count)
             let spread = arms.count == 2 ? abs(arms[0] - arms[1]) / mean / 2 : calibration.lengthRelError
-            p[.armLength] = value(mean * scale, max(calibration.lengthRelError, spread))
+            p[.armLength] = value(mean * jointScale * calibration.armJointToAcromion,
+                                  max(calibration.lengthRelError * 1.5, spread))
         }
 
-        if let waist = front.levels[.waist] {
-            if let neck = j[.neck] {
-                p[.torsoLength] = value((waist.y - neck.y) * scale, calibration.lengthRelError * 1.5)
+        let hipY = [j[.leftHip], j[.rightHip]].compactMap { $0?.y }.average ?? j[.root]?.y
+        if let hipY, let neck = j[.neck] {
+            p[.torsoLength] = value((hipY - neck.y) * jointScale * calibration.torsoOfNeckToHip, calibration.lengthRelError * 1.5)
+        }
+        if let hipY, let skeleton {
+            let hipHeight = (skeleton.floorY - hipY) * jointScale
+            p[.outseam] = value(hipHeight * calibration.outseamOfHipHeight, calibration.lengthRelError * 1.5)
+            if front.crotchY == nil {
+                p[.inseam] = value(hipHeight * calibration.inseamOfHipHeight, calibration.lengthRelError * 2)
             }
+        } else if let waist = front.levels[.waist] {
             p[.outseam] = value((front.floorY - waist.y) * scale, calibration.lengthRelError)
         }
-
         if let crotch = front.crotchY {
             p[.inseam] = value((front.floorY - crotch) * scale, calibration.lengthRelError)
-        } else if let root = j[.root] {
-            // The hip joint centre sits at about 53% of stature and the crotch at about
-            // 47% (ANSUR II crotch height), so crotch height ≈ 0.9 × hip joint height.
-            p[.inseam] = value((front.floorY - root.y) * scale * 0.9, calibration.lengthRelError * 3)
+        } else if p[.inseam] == nil, let root = j[.root] {
+            p[.inseam] = value((front.floorY - root.y) * scale * calibration.inseamOfHipHeight, calibration.lengthRelError * 3)
         }
 
         let sideScale = side.map { heightCm / $0.personHeightPx }
@@ -157,9 +178,19 @@ public struct BodyMeasurementEngine: Sendable {
         return p
     }
 
+    /// Pixels per centimetre of the skeleton relative to the mask: 1 when both agree.
+    /// Shown with the scan so a disagreement can be traced.
+    public static func skeletonToMaskRatio(_ front: ScanObservation) -> Double? {
+        JointHeights.fit(front.joints).map { $0.staturePx / front.personHeightPx }
+    }
+
     /// Ramanujan's second approximation; error < 0.01% for body-like ellipses.
     static func ellipsePerimeter(a: Double, b: Double) -> Double {
         let h = ((a - b) * (a - b)) / ((a + b) * (a + b))
         return Double.pi * (a + b) * (1 + 3 * h / (10 + (4 - 3 * h).squareRoot()))
     }
+}
+
+private extension Array where Element == Double {
+    var average: Double? { isEmpty ? nil : reduce(0, +) / Double(count) }
 }

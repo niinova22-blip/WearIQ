@@ -172,6 +172,36 @@ import WearIQCore
         }
     }
 
+    /// Stature from the skeleton alone: joints placed at each subject's ANSUR landmark
+    /// heights (with 1 cm detection noise) must give back their stature.
+    @Test func skeletonGivesStature() {
+        var noise = Noise(state: 3)
+        var errors = Errors()
+        for s in Self.subjects {
+            func h(_ key: String) -> Double? { s.mm[key].map { $0 / 10 } }
+            guard let ankle = h("lateralmalleolusheight"), let knee = h("lateralfemoralepicondyleheight"),
+                  let troch = h("trochanterionheight"), let acromion = h("acromialheight"),
+                  let sternum = h("suprasternaleheight") else { continue }
+            // Joint centres relative to the surface landmarks: hip joint a little above the
+            // trochanter, shoulder joint centre about 2% of stature below the acromion.
+            let heights: [BodyJoint: Double] = [
+                .leftAnkle: ankle, .rightAnkle: ankle, .leftKnee: knee, .rightKnee: knee,
+                .leftHip: troch + 0.007 * s.heightCm, .rightHip: troch + 0.007 * s.heightCm,
+                .leftShoulder: acromion - 0.02 * s.heightCm, .rightShoulder: acromion - 0.02 * s.heightCm,
+                .neck: sternum,
+            ]
+            // Image rows at 10 px per cm, floor at row 3000.
+            let joints = heights.mapValues { Point2D(0, 3000 - 10 * ($0 + noise.gaussian())) }
+            guard let fit = JointHeights.fit(joints) else { continue }
+            errors.relative.append(fit.staturePx / 10 / s.heightCm - 1)
+        }
+        print(String(format: "Skeleton stature: n=%d  bias %+.2f%%  mean |error| %.2f%%  95th pct %.2f%%",
+                     errors.relative.count, errors.mean * 100, errors.meanAbsolute * 100, errors.p95 * 100))
+        #expect(errors.relative.count > 6000)
+        #expect(abs(errors.mean) < 0.01)
+        #expect(errors.p95 < 0.04)
+    }
+
     /// How often the height/weight check would throw away a correct reading. A scan
     /// reading with 3% error should almost never be rejected for a real body.
     @Test func plausibilityCheckRarelyRejectsRealBodies() {

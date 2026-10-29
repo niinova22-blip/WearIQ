@@ -38,7 +38,15 @@ struct MeasurementReviewView: View {
                         .foregroundStyle(.primary)
                 }
             } footer: {
-                Text("Photo-based values are estimates. Tap any value to replace it with your own measurement.")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Photo-based values are estimates. Tap any value to replace it with your own measurement.")
+                    if let ratio = model.profile.skeletonToMaskRatio {
+                        // Diagnostic: 1.00 when the joints and the outline give the same scale.
+                        Text("Scan check: skeleton/outline scale \(ratio, format: .number.precision(.fractionLength(2)))")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
             }
         }
         .navigationTitle("Your measurements")
