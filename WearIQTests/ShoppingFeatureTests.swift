@@ -1,3 +1,4 @@
+import FitEngine
 import Foundation
 import ProductMeasurementParser
 import Testing
