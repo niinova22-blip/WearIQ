@@ -35,7 +35,8 @@ public struct Fabric: Equatable, Sendable {
         let total = fibres.values.reduce(0, +)
         var drape: Float = 0.55
         if total > 0 {
-            drape = fibres.reduce(Float(0)) { sum, f in sum + (drapeOf[f.key] ?? 0.55) * Float(f.value / total) }
+            drape = 0
+            for (fibre, percent) in fibres { drape += (drapeOf[fibre] ?? 0.55) * Float(percent / total) }
         }
         let elastane = Float(fibres["elastane"] ?? 0)
         self.init(stretchLimit: (knit ? 0.12 : 0.035) + 0.04 * min(elastane, 10),
@@ -151,19 +152,24 @@ struct ClothPiece {
         guard n > 0 else { return }
         let (stretch, bend) = links(fabric: fabric)
         let thickness: Float = 0.0025
-        let dt: Float = 1.0 / 60, gravity = Vec3(0, -9.81, 0) * (dt * dt)
+        let dt: Float = 1.0 / 60
+        let gravity = Vec3(0, -9.81 * dt * dt, 0)
         var velocity = [Vec3](repeating: Vec3(0, 0, 0), count: positions.count)
-        let fixed = positions.indices.map { pinned.contains($0 / n) }
-        // Each particle's tether: the nearest held ring's particle in the same column.
-        let tethers: [(anchor: Int, length: Float)?] = positions.indices.map { a in
-            guard !fixed[a], let ring = pinned.min(by: { abs($0 - a / n) < abs($1 - a / n) }) else { return nil }
-            // The length down the column, not the straight line: the fabric may fall
-            // straight but never get longer.
+        var fixed = [Bool](repeating: false, count: positions.count)
+        for i in positions.indices { fixed[i] = pinned.contains(i / n) }
+        // Each particle's tether: the nearest held ring's particle in the same column, at
+        // the length down the column, not the straight line: the fabric may fall straight
+        // but never get longer.
+        var tethers = [(anchor: Int, length: Float)?](repeating: nil, count: positions.count)
+        for a in positions.indices where !fixed[a] {
             let r = a / n, column = a % n
-            let path = stride(from: min(r, ring), to: max(r, ring), by: 1).reduce(Float(0)) { sum, k in
-                sum + (rest[(k + 1) * n + column] - rest[k * n + column]).length
+            guard let ring = pinned.min(by: { abs($0 - r) < abs($1 - r) }) else { continue }
+            var path: Float = 0
+            for k in min(r, ring)..<max(r, ring) {
+                let step: Vec3 = rest[(k + 1) * n + column] - rest[k * n + column]
+                path += step.length
             }
-            return (ring * n + column, path)
+            tethers[a] = (ring * n + column, path)
         }
         var touching = [Bool](repeating: false, count: positions.count)
         func project() {
@@ -210,7 +216,8 @@ struct ClothPiece {
         strainMap = strain(fabric: fabric)
         for r in 0..<ringCount {
             let ring = positions[(r * n)..<((r + 1) * n)]
-            let sum = ring.reduce(Vec3(0, 0, 0), +)
+            var sum = Vec3(0, 0, 0)
+            for p in ring { sum = sum + p }
             centers[r] = sum * (1 / Float(n))
         }
     }
