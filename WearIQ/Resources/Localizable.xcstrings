@@ -5740,6 +5740,76 @@
           }
         }
       }
+    },
+    "Try it on live": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Canlı dene"
+          }
+        }
+      }
+    },
+    "The product photo couldn't be loaded.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün fotoğrafı yüklenemedi."
+          }
+        }
+      }
+    },
+    "No person was found in the product photo, so the garment can't be lifted out of it. Try a product whose photo shows it worn.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün fotoğrafında kişi bulunamadı, bu yüzden kıyafet fotoğraftan ayrılamadı. Fotoğrafında giyilmiş hâli görünen bir ürünle dene."
+          }
+        }
+      }
+    },
+    "Step back until your hips and ankles are in view.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalçan ve ayak bileklerin görünene kadar geri git."
+          }
+        }
+      }
+    },
+    "Step back until your shoulders and hips are in view.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuzların ve kalçan görünene kadar geri git."
+          }
+        }
+      }
+    },
+    "Preparing the garment…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet hazırlanıyor…"
+          }
+        }
+      }
+    },
+    "Preview: the product photo laid over you. It shows look and proportions, not how the fabric drapes. The camera image stays on this phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önizleme: ürün fotoğrafı üzerine yerleştirilir. Görünüşü ve oranları gösterir, kumaşın nasıl düştüğünü göstermez. Kamera görüntüsü bu telefonda kalır."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

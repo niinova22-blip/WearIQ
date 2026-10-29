@@ -22,6 +22,7 @@ struct FitResultView: View {
 
     @State private var selectedLabel: String?
     @State private var addingToWardrobe = false
+    @State private var tryingOn = false
     @State private var showPaywall = false
     @Environment(AppContainer.self) private var container
     @Environment(\.openURL) private var openURL
@@ -83,6 +84,13 @@ struct FitResultView: View {
                     ? spec?.sizes.first(where: { $0.label == selected?.label })?.values.mapValues(\.cm) : nil))
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
+        .fullScreenCover(isPresented: $tryingOn) {
+            if let imageURL, let category {
+                LiveTryOnView(imageURL: imageURL, category: category,
+                              sizes: LiveTryOnView.widthScales(spec: spec, reference: analysis.recommendedSize?.label),
+                              selectedSize: selectedLabel)
+            }
+        }
     }
 
     private var header: some View {
@@ -218,6 +226,14 @@ struct FitResultView: View {
 
     private var actions: some View {
         VStack(spacing: Theme.Spacing.s) {
+            if imageURL != nil, category != nil {
+                Button {
+                    tryingOn = true
+                } label: {
+                    Label("Try it on live", systemImage: "person.and.background.dotted")
+                }
+                .buttonStyle(.primary)
+            }
             if let pageURL {
                 Button("Open product page") { openURL(pageURL) }
                     .buttonStyle(.primary)
