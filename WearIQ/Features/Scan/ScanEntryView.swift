@@ -135,7 +135,7 @@ struct ScanEntryView: View {
             } label: {
                 tile("Scan a barcode", symbol: "barcode.viewfinder", busy: lookingUpBarcode)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.pressable)
             .foregroundStyle(.tint)
         }
     }

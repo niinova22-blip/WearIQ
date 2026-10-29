@@ -36,7 +36,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stil Asistanı"
+            "value": "Tarz"
           }
         }
       }
@@ -2891,16 +2891,6 @@
         }
       }
     },
-    "%lld items": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld parça"
-          }
-        }
-      }
-    },
     "Add photo": {
       "localizations": {
         "tr": {
@@ -5577,6 +5567,716 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bu ölçüleri kullan"
+          }
+        }
+      }
+    },
+    "Fabric: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumaş: %@"
+          }
+        }
+      }
+    },
+    "This size is already close-fitting and the fabric can shrink: consider one size up, or wash cold and dry flat.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu beden zaten dar oturuyor ve kumaş çekebilir: bir büyüğünü düşün ya da soğuk yıkayıp serip kurut."
+          }
+        }
+      }
+    },
+    "No elastane: it won't give. If a size feels tight, it stays tight.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elastan yok: esnemez. Dar gelen beden açılmaz."
+          }
+        }
+      }
+    },
+    "Mostly cotton: can shrink 3–5% in a warm wash or the dryer. Wash cold, dry hanging.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çoğunlukla pamuk: ılık yıkamada ya da kurutmada %3–5 çekebilir. Soğuk yıka, asarak kurut."
+          }
+        }
+      }
+    },
+    "Viscose: drapes softly but can shrink and lose shape. Wash cool and gently.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viskon: yumuşak düşer ama çekebilir ve şeklini kaybedebilir. Serin ve hassas yıka."
+          }
+        }
+      }
+    },
+    "Wool: shrinks and felts if washed warm. Use the wool programme or hand wash.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yün: ılık yıkamada çeker ve keçeleşir. Yün programında ya da elde yıka."
+          }
+        }
+      }
+    },
+    "Linen: breathes well and creases easily; it softens and relaxes a little with wear.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keten: iyi nefes alır, kolay kırışır; giydikçe yumuşar ve biraz açılır."
+          }
+        }
+      }
+    },
+    "Mostly synthetic: keeps its size and shape and dries fast, but breathes less.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çoğunlukla sentetik: bedenini ve şeklini korur, çabuk kurur ama daha az nefes alır."
+          }
+        }
+      }
+    },
+    "Rigid cotton denim: loosens a little at the waist (1–2 cm) as you wear it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esnemeyen pamuklu denim: giydikçe belde biraz (1–2 cm) açılır."
+          }
+        }
+      }
+    },
+    "Your style": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stilin"
+          }
+        }
+      }
+    },
+    "Change": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değiştir"
+          }
+        }
+      }
+    },
+    "Keep away from your face: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yüzüne yakın kullanma: %@"
+          }
+        }
+      }
+    },
+    "Find your colours and cuts": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sana yakışan renkleri ve kesimleri bul"
+          }
+        }
+      }
+    },
+    "Three quick questions about your skin tone and style. With your measurements, WearIQ suggests the colours, cuts and pieces that suit you.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cilt tonun ve tarzın hakkında üç kısa soru. Ölçülerinle birlikte WearIQ sana yakışan renkleri, kesimleri ve parçaları önerir."
+          }
+        }
+      }
+    },
+    "Start": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başla"
+          }
+        }
+      }
+    },
+    "Skin tone": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cilt tonu"
+          }
+        }
+      }
+    },
+    "Undertone": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alt ton"
+          }
+        }
+      }
+    },
+    "Look at the veins on your wrist in daylight: greenish means warm, bluish or purple means cool, both means neutral. If gold jewellery suits you better it's warm, silver is cool.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gün ışığında bileğindeki damarlara bak: yeşilimsi ise sıcak, mavimsi ya da morumsu ise soğuk, ikisi de ise nötr. Altın takı daha çok yakışıyorsa sıcak, gümüş yakışıyorsa soğuk."
+          }
+        }
+      }
+    },
+    "Light": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açık"
+          }
+        }
+      }
+    },
+    "Tan": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buğday"
+          }
+        }
+      }
+    },
+    "Deep": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koyu"
+          }
+        }
+      }
+    },
+    "Warm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sıcak"
+          }
+        }
+      }
+    },
+    "Cool": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soğuk"
+          }
+        }
+      }
+    },
+    "Neutral": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nötr"
+          }
+        }
+      }
+    },
+    "Classic and smart": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klasik ve şık"
+          }
+        }
+      }
+    },
+    "Casual and sporty": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rahat ve sportif"
+          }
+        }
+      }
+    },
+    "Minimal": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimal"
+          }
+        }
+      }
+    },
+    "Bold and trendy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cesur ve trend"
+          }
+        }
+      }
+    },
+    "Oxford shirts, chinos, a navy blazer, fine knits and leather shoes or loafers.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oxford gömlek, chino pantolon, lacivert blazer, ince triko ve deri ayakkabı ya da loafer."
+          }
+        }
+      }
+    },
+    "Good basic T-shirts, straight jeans, sweatshirts, an overshirt and clean sneakers.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaliteli basic tişörtler, düz kesim jean, sweatshirt, overshirt ve sade sneaker."
+          }
+        }
+      }
+    },
+    "Solid colours in neutral tones, clean lines, few but well-fitting pieces; no big logos.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nötr tonlarda düz renkler, sade çizgiler, az ama iyi oturan parçalar; büyük logo yok."
+          }
+        }
+      }
+    },
+    "One statement piece per outfit: a patterned shirt, a strong colour or an unusual cut, with calm basics around it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her kombinde tek bir dikkat çeken parça: desenli gömlek, güçlü bir renk ya da farklı bir kesim; çevresinde sakin basicler."
+          }
+        }
+      }
+    },
+    "Your colours: spring (warm and light)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renklerin: ilkbahar (sıcak ve açık)"
+          }
+        }
+      }
+    },
+    "Your colours: summer (cool and soft)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renklerin: yaz (soğuk ve yumuşak)"
+          }
+        }
+      }
+    },
+    "Your colours: autumn (warm and deep)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renklerin: sonbahar (sıcak ve derin)"
+          }
+        }
+      }
+    },
+    "Your colours: winter (cool and clear)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renklerin: kış (soğuk ve net)"
+          }
+        }
+      }
+    },
+    "Warm, fresh colours light up your face: camel, coral, warm green, sky blue.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sıcak, canlı renkler yüzünü aydınlatır: deve tüyü, mercan, sıcak yeşil, gök mavisi."
+          }
+        }
+      }
+    },
+    "Soft, cool colours suit you: navy, grey-blue, lavender, dusty pink.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yumuşak, soğuk renkler yakışır: lacivert, gri-mavi, lavanta, toz pembe."
+          }
+        }
+      }
+    },
+    "Rich, earthy colours suit you: olive, rust, brown, burgundy, mustard.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zengin, toprak renkleri yakışır: haki, kiremit, kahverengi, bordo, hardal."
+          }
+        }
+      }
+    },
+    "Clear, strong contrasts suit you: black and white, navy, true red, deep purple.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net, güçlü kontrastlar yakışır: siyah-beyaz, lacivert, saf kırmızı, koyu mor."
+          }
+        }
+      }
+    },
+    "Body shape: inverted triangle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tipi: ters üçgen"
+          }
+        }
+      }
+    },
+    "Body shape: rectangle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tipi: dikdörtgen"
+          }
+        }
+      }
+    },
+    "Body shape: hourglass": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tipi: kum saati"
+          }
+        }
+      }
+    },
+    "Body shape: pear": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tipi: armut"
+          }
+        }
+      }
+    },
+    "Body shape: apple": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tipi: elma"
+          }
+        }
+      }
+    },
+    "Body shape: triangle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tipi: üçgen"
+          }
+        }
+      }
+    },
+    "Body shape: oval": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut tipi: oval"
+          }
+        }
+      }
+    },
+    "Balance the shoulders: V-necks, straight or relaxed trousers, lighter colours below; skip shoulder padding and horizontal stripes on top.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuzları dengele: V yaka, düz ya da rahat kesim pantolon, altta açık renkler; vatkadan ve üstte yatay çizgiden kaçın."
+          }
+        }
+      }
+    },
+    "Add shape with layers (shirt over T-shirt, jacket), structured shoulders and straight or slightly tapered trousers.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Katmanlarla şekil kat (tişört üstü gömlek, ceket), yapılı omuzlar ve düz ya da hafif daralan paçalı pantolon."
+          }
+        }
+      }
+    },
+    "Show the waist: wrap and belted pieces, high-waisted trousers, fitted rather than boxy tops.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beli göster: kruvaze ve kemerli parçalar, yüksek bel pantolon, kutu yerine oturan üstler."
+          }
+        }
+      }
+    },
+    "Draw the eye up: details and light colours on top, boat or wide necklines, darker A-line or wide-leg bottoms.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikkati yukarı çek: üstte detay ve açık renk, kayık ya da geniş yaka, altta koyu A kesim ya da geniş paça."
+          }
+        }
+      }
+    },
+    "Long vertical lines and flowing fabrics: V-necks, empire waists, open jackets; avoid tight waistbands.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uzun dikey çizgiler ve dökümlü kumaşlar: V yaka, göğüs altı kesim, önü açık ceket; dar bel bantlarından kaçın."
+          }
+        }
+      }
+    },
+    "Broaden the shoulders: structured jackets, horizontal stripes or details on top, darker straight trousers.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuzları genişlet: yapılı ceketler, üstte yatay çizgi ya da detay, koyu düz kesim pantolon."
+          }
+        }
+      }
+    },
+    "Long lines: darker single-colour tops, open jackets, straight cuts that skim rather than cling or balloon.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uzun çizgiler: koyu tek renk üstler, önü açık ceketler, yapışmayan ve şişirmeyen düz kesimler."
+          }
+        }
+      }
+    },
+    "Sort": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sırala"
+          }
+        }
+      }
+    },
+    "Newest": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En yeni"
+          }
+        }
+      }
+    },
+    "Most worn": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En çok giyilen"
+          }
+        }
+      }
+    },
+    "Not worn for a while": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uzun süredir giyilmeyen"
+          }
+        }
+      }
+    },
+    "Wore it today": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün giydim"
+          }
+        }
+      }
+    },
+    "%lld items · swipe right on an item when you wear it": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld parça · giydiğinde parçayı sağa kaydır"
+          }
+        }
+      }
+    },
+    "Search your clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafetlerinde ara"
+          }
+        }
+      }
+    },
+    "Worn %lld× · last %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kez giyildi · son %@"
+          }
+        }
+      }
+    },
+    "Your sizes by brand": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markalara göre bedenlerin"
+          }
+        }
+      }
+    },
+    "From the purchases you told WearIQ about; advice for these brands is adjusted.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ'ya bildirdiğin alışverişlerden; bu markalardaki öneriler buna göre ayarlanır."
+          }
+        }
+      }
+    },
+    "Sounds and reminders": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesler ve hatırlatmalar"
+          }
+        }
+      }
+    },
+    "Interface sounds": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arayüz sesleri"
+          }
+        }
+      }
+    },
+    "Morning outfit reminder": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sabah kombin hatırlatması"
+          }
+        }
+      }
+    },
+    "What to wear today?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bugün ne giysen?"
+          }
+        }
+      }
+    },
+    "Your outfit of the day is ready in the Style tab.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günün kombini Stil sekmesinde hazır."
+          }
+        }
+      }
+    },
+    "%@ elastane: gives a little as you move and keeps its shape.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ elastan: hareket ettikçe biraz esner ve şeklini korur."
+          }
+        }
+      }
+    },
+    "%@ elastane: stretches clearly, so a snug size stays comfortable.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ elastan: belirgin esner, dar beden de rahat olur."
           }
         }
       }

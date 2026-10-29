@@ -14,9 +14,12 @@ final class SavedAnalysis {
     var pageURLString: String?
     var specData: Data
     var analysisData: Data
+    /// Fabric composition from the product page, e.g. "%98 Pamuk %2 Elastan".
+    var material: String?
 
     init(productKey: String, productName: String?, brand: String?, imageURL: URL?, pageURL: URL?,
-         spec: GarmentSpec, analysis: FitAnalysis, createdAt: Date = Date()) throws {
+         spec: GarmentSpec, analysis: FitAnalysis, material: String? = nil, createdAt: Date = Date()) throws {
+        self.material = material
         self.productKey = productKey
         self.createdAt = createdAt
         self.productName = productName

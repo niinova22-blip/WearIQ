@@ -75,6 +75,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
             .sensoryFeedback(.impact(weight: .light), trigger: configuration.isPressed) { _, pressed in pressed }
+            .onChange(of: configuration.isPressed) { _, pressed in if pressed { AppSounds.shared.play(.tick) } }
     }
 }
 

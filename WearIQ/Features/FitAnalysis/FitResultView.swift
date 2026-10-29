@@ -19,6 +19,9 @@ struct FitResultView: View {
     let isSaved: Bool
     /// The garment's size chart, for comparing with the wardrobe.
     var spec: GarmentSpec?
+    /// Fabric composition, for the fabric notes.
+    var material: String?
+    @State private var revealed = false
 
     @State private var selectedLabel: String?
     @State private var addingToWardrobe = false
@@ -29,13 +32,15 @@ struct FitResultView: View {
     init(saved: SavedAnalysis) {
         self.init(productName: saved.productName, brand: saved.brand, imageURL: saved.imageURL,
                   pageURL: saved.pageURL, analysis: saved.analysis ?? FitAnalysis(recommendation: .insufficientData(missing: []), sizes: []),
-                  isSaved: true, category: saved.spec?.category, fitStyle: saved.spec?.fitStyle, spec: saved.spec)
+                  isSaved: true, category: saved.spec?.category, fitStyle: saved.spec?.fitStyle, spec: saved.spec,
+                  material: saved.material)
     }
 
     init(productName: String?, brand: String?, imageURL: URL?, pageURL: URL?, analysis: FitAnalysis, isSaved: Bool,
          category: GarmentCategory? = nil, fitStyle: FitStyle? = nil, chartNote: String? = nil, tagSize: String? = nil,
-         spec: GarmentSpec? = nil) {
+         spec: GarmentSpec? = nil, material: String? = nil) {
         self.spec = spec
+        self.material = material
         self.chartNote = chartNote
         self.tagSize = tagSize
         self.isSaved = isSaved
@@ -61,6 +66,7 @@ struct FitResultView: View {
                 BrandNoteView(brand: brand, category: category, recommended: analysis.recommendedSize?.label)
                 if analysis.sizes.count > 1 { sizePicker }
                 if let selected { regionsCard(selected) }
+                FabricCard(material: material, category: category, productName: productName, selected: selected)
                 WardrobeComparisonCard(category: category, spec: spec, sizeLabel: selectedLabel)
                 actions
                 if isSaved, let label = selectedLabel {
@@ -72,6 +78,12 @@ struct FitResultView: View {
             .padding(Theme.Spacing.m)
         }
         .background(Theme.screenBackground)
+        .onAppear {
+            guard !revealed else { return }
+            revealed = true
+            if case .size = analysis.recommendation { AppSounds.shared.play(.success) }
+        }
+        .sensoryFeedback(.success, trigger: revealed) { _, now in now && analysis.recommendedSize != nil }
         .navigationTitle("Fit analysis")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $addingToWardrobe) {
@@ -111,6 +123,9 @@ struct FitResultView: View {
                 if case let .size(label, _) = analysis.recommendation {
                     Text(label)
                         .font(.system(size: 44, weight: .bold, design: .rounded))
+                        .scaleEffect(revealed ? 1 : 0.6)
+                        .opacity(revealed ? 1 : 0)
+                        .animation(.spring(response: 0.45, dampingFraction: 0.6), value: revealed)
                         .minimumScaleFactor(0.5)
                         .foregroundStyle(.white)
                         .frame(width: 92, height: 92)

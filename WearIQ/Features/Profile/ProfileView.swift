@@ -10,6 +10,15 @@ struct ProfileView: View {
     @State private var showRescan = false
     @State private var editing: BodyProfile?
     @State private var showPaywall = false
+    @Query(sort: \PurchaseRecord.createdAt, order: .reverse) private var purchases: [PurchaseRecord]
+    @AppStorage("soundsEnabled") private var soundsEnabled = true
+    @AppStorage("outfitReminder") private var outfitReminder = false
+
+    /// The latest purchase per brand.
+    private var brandSizes: [PurchaseRecord] {
+        var seen = Set<String>()
+        return purchases.filter { seen.insert($0.brand.lowercased()).inserted }
+    }
 
     var body: some View {
         List {
@@ -33,6 +42,22 @@ struct ProfileView: View {
                 if let date = profiles.first?.createdAt {
                     Text("Last updated \(date.formatted(date: .abbreviated, time: .omitted))")
                 }
+            }
+            if !brandSizes.isEmpty {
+                Section {
+                    ForEach(brandSizes) { record in
+                        LabeledContent(record.brand, value: "\(record.size) · \(record.feel.title)")
+                    }
+                } header: {
+                    Text("Your sizes by brand")
+                } footer: {
+                    Text("From the purchases you told WearIQ about; advice for these brands is adjusted.")
+                }
+            }
+            Section("Sounds and reminders") {
+                Toggle("Interface sounds", isOn: $soundsEnabled)
+                Toggle("Morning outfit reminder", isOn: $outfitReminder)
+                    .onChange(of: outfitReminder) { _, on in Task { await OutfitReminder.set(on) } }
             }
             Section("Subscription") {
                 if container.isPremium {

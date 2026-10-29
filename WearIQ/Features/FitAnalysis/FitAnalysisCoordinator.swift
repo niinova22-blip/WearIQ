@@ -40,7 +40,7 @@ struct FitAnalysisCoordinator {
         try context.fetch(existing).forEach(context.delete)
         let saved = try SavedAnalysis(productKey: key, productName: draft.info.name, brand: draft.info.brand,
                                       imageURL: draft.info.imageURL, pageURL: draft.info.pageURL,
-                                      spec: spec, analysis: analysis)
+                                      spec: spec, analysis: analysis, material: draft.info.material)
         context.insert(saved)
         try context.save()
         return .analyzed(saved)

@@ -71,7 +71,9 @@ public struct ProductPageParser: Sendable {
         if info.availableSizes.isEmpty { info.availableSizes = Self.embeddedSizes(in: html) }
         info.sizeChartImageURLs = Self.sizeChartImages(in: html, base: pageURL)
         info.sizeChartSections = HTMLSizeTables.sections(in: html)
-        info.modelFit = ModelFitParser.parse(Self.visibleText(html))
+        let visible = Self.visibleText(html)
+        info.modelFit = ModelFitParser.parse(visible)
+        if info.material == nil { info.material = FabricAdvice.compositionText(in: visible) }
 
         let text = [info.name, info.categoryText].compactMap { $0 }.joined(separator: " ")
         // The brand isn't the garment: "Tommy Jeans … Shirt" is a shirt.

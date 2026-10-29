@@ -81,6 +81,7 @@ struct ProductDataService: ProductDataServicing {
             if let page {
                 var rendered = parser.parse(html: page.html, pageURL: page.url)
                 if rendered.modelFit == nil { rendered.modelFit = ModelFitParser.parse(page.text) }
+                if rendered.material == nil { rendered.material = FabricAdvice.compositionText(in: page.text) }
                 if !rendered.isEmpty { info = info.map { Self.merge($0, rendered) } ?? rendered }
                 renderedPage = page
             }
@@ -149,6 +150,7 @@ struct ProductDataService: ProductDataServicing {
         m.sku = a.sku ?? b.sku
         m.categoryText = a.categoryText ?? b.categoryText
         m.material = a.material ?? b.material
+        if m.stretch == nil { m.stretch = m.material.flatMap(GarmentClassifier.stretch(fromComposition:)) }
         if a.availableSizes.isEmpty { m.availableSizes = b.availableSizes }
         if a.sizeChartImageURLs.isEmpty { m.sizeChartImageURLs = b.sizeChartImageURLs }
         if a.sizeChartSections.isEmpty { m.sizeChartSections = b.sizeChartSections }

@@ -10,12 +10,30 @@ struct WardrobeView: View {
     @State private var seasonFilter: Season?
     @State private var editing: WardrobeEntry?
     @State private var adding = false
+    @State private var search = ""
+    @State private var order: Order = .newest
+
+    enum Order: Hashable { case newest, mostWorn, leastWorn }
 
     private var filtered: [WardrobeEntry] {
-        entries.filter { e in
+        let q = search.trimmingCharacters(in: .whitespaces).lowercased()
+        let list = entries.filter { e in
             (categoryFilter == nil || e.category == categoryFilter)
                 && (seasonFilter.map { e.seasons.contains($0) } ?? true)
+                && (q.isEmpty || e.name.lowercased().contains(q) || (e.brand?.lowercased().contains(q) ?? false))
         }
+        switch order {
+        case .newest: return list
+        case .mostWorn: return list.sorted { ($0.wornCount ?? 0) > ($1.wornCount ?? 0) }
+        case .leastWorn: return list.sorted { ($0.lastWornAt ?? .distantPast) < ($1.lastWornAt ?? .distantPast) }
+        }
+    }
+
+    private func woreToday(_ entry: WardrobeEntry) {
+        entry.wornCount = (entry.wornCount ?? 0) + 1
+        entry.lastWornAt = Date()
+        try? modelContext.save()
+        AppSounds.shared.play(.saved)
     }
 
     var body: some View {
@@ -65,11 +83,20 @@ struct WardrobeView: View {
                     Text("All seasons").tag(Season?.none)
                     ForEach(Season.allCases, id: \.self) { Text($0.title).tag(Season?.some($0)) }
                 }
+                Picker("Sort", selection: $order) {
+                    Text("Newest").tag(Order.newest)
+                    Text("Most worn").tag(Order.mostWorn)
+                    Text("Not worn for a while").tag(Order.leastWorn)
+                }
             }
             Section {
                 ForEach(filtered) { entry in
                     Button { editing = entry } label: { WardrobeRow(entry: entry) }
                         .foregroundStyle(.primary)
+                        .swipeActions(edge: .leading) {
+                            Button { woreToday(entry) } label: { Label("Wore it today", systemImage: "checkmark") }
+                                .tint(.green)
+                        }
                 }
                 .onDelete { offsets in
                     let items = filtered
@@ -77,9 +104,10 @@ struct WardrobeView: View {
                     try? modelContext.save()
                 }
             } footer: {
-                Text("\(filtered.count) items")
+                Text("\(filtered.count) items · swipe right on an item when you wear it")
             }
         }
+        .searchable(text: $search, prompt: Text("Search your clothes"))
     }
 }
 
@@ -102,6 +130,10 @@ struct WardrobeRow: View {
                 Text(entry.name).font(.headline)
                 Text([entry.brand, entry.size, entry.color.title].compactMap { $0 }.joined(separator: " · "))
                     .font(.subheadline).foregroundStyle(.secondary)
+                if let count = entry.wornCount, count > 0, let last = entry.lastWornAt {
+                    Text("Worn \(count)× · last \(last.formatted(.relative(presentation: .named)))")
+                        .font(.caption).foregroundStyle(.tertiary)
+                }
             }
         }
         .accessibilityElement(children: .combine)
@@ -122,7 +154,7 @@ struct FilterChip: View {
                 .background(selected ? Color.accentColor : Theme.screenBackground, in: Capsule())
                 .foregroundStyle(selected ? .white : .primary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

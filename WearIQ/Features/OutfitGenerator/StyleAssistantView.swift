@@ -28,10 +28,17 @@ struct StyleAssistantView: View {
     var body: some View {
         Group {
             if !container.isPremium {
-                PremiumFeaturePlaceholder(
-                    title: "Style assistant",
-                    detail: "Outfit suggestions from your own wardrobe for daily, work, formal, sport and evening occasions.",
-                    symbol: "sparkles")
+                ScrollView {
+                    VStack(spacing: Theme.Spacing.l) {
+                        StyleProfileCard()
+                        PremiumFeaturePlaceholder(
+                            title: "Style assistant",
+                            detail: "Outfit suggestions from your own wardrobe for daily, work, formal, sport and evening occasions.",
+                            symbol: "sparkles")
+                    }
+                    .padding(.vertical, Theme.Spacing.m)
+                }
+                .background(Theme.screenBackground)
             } else {
                 content
             }
@@ -60,6 +67,7 @@ struct StyleAssistantView: View {
         let all = outfits(entries.map(\.item))
         return ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.l) {
+                StyleProfileCard()
                 occasionChips
                 if all.isEmpty {
                     emptyState

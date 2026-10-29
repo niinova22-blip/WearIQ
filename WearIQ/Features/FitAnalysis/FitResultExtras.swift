@@ -1,4 +1,5 @@
 import FitEngine
+import ProductMeasurementParser
 import OutfitRecommendationEngine
 import SwiftData
 import SwiftUI
@@ -167,6 +168,77 @@ extension WardrobeEntry {
         set {
             let raw = Dictionary(uniqueKeysWithValues: newValue.map { ($0.key.rawValue, $0.value) })
             measurementsData = raw.isEmpty ? nil : try? JSONEncoder().encode(raw)
+        }
+    }
+}
+
+/// What the fabric means for stretch and care, tied to the chosen size.
+struct FabricCard: View {
+    let material: String?
+    let category: GarmentCategory?
+    let productName: String?
+    let selected: SizeFit?
+
+    var body: some View {
+        if let material {
+            let notes = FabricAdvice.notes(composition: material, category: category, productName: productName)
+            if !notes.isEmpty {
+                Card {
+                    Label("Fabric: \(material)", systemImage: "scissors")
+                        .font(.headline)
+                    ForEach(Array(notes.enumerated()), id: \.offset) { _, note in
+                        Label(note.text, systemImage: note.symbol)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    if FabricAdvice.shrinkRisk(notes), let selected, Self.isSnug(selected) {
+                        Label("This size is already close-fitting and the fabric can shrink: consider one size up, or wash cold and dry flat.",
+                              systemImage: "exclamationmark.triangle.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.orange)
+                    }
+                }
+            }
+        }
+    }
+
+    private static func isSnug(_ size: SizeFit) -> Bool {
+        size.regions.contains { [.tight, .slightlyTight, .short].contains($0.verdict) }
+    }
+}
+
+extension FabricAdvice.Note {
+    var text: String {
+        switch self {
+        case let .someStretch(p):
+            String(localized: "\((p / 100).formatted(.percent)) elastane: gives a little as you move and keeps its shape.")
+        case let .highStretch(p):
+            String(localized: "\((p / 100).formatted(.percent)) elastane: stretches clearly, so a snug size stays comfortable.")
+        case .noStretch:
+            String(localized: "No elastane: it won't give. If a size feels tight, it stays tight.")
+        case .cottonShrinks:
+            String(localized: "Mostly cotton: can shrink 3–5% in a warm wash or the dryer. Wash cold, dry hanging.")
+        case .viscoseShrinks:
+            String(localized: "Viscose: drapes softly but can shrink and lose shape. Wash cool and gently.")
+        case .woolShrinks:
+            String(localized: "Wool: shrinks and felts if washed warm. Use the wool programme or hand wash.")
+        case .linenWrinkles:
+            String(localized: "Linen: breathes well and creases easily; it softens and relaxes a little with wear.")
+        case .syntheticStable:
+            String(localized: "Mostly synthetic: keeps its size and shape and dries fast, but breathes less.")
+        case .denimGives:
+            String(localized: "Rigid cotton denim: loosens a little at the waist (1–2 cm) as you wear it.")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .someStretch, .highStretch: "arrow.left.and.right"
+        case .noStretch: "lock"
+        case .cottonShrinks, .viscoseShrinks, .woolShrinks: "arrow.down.right.and.arrow.up.left"
+        case .linenWrinkles: "wind"
+        case .syntheticStable: "checkmark.shield"
+        case .denimGives: "arrow.up.left.and.arrow.down.right"
         }
     }
 }
