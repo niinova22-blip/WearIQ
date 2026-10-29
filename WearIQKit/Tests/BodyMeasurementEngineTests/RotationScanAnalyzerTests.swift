@@ -21,7 +21,7 @@ import WearIQCore
         return Double.pi * (a + b) * (1 + 3 * h / (10 + (4 - 3 * h).squareRoot()))
     }
 
-    private func frame(angle: Double, scale: Double = 1, armAtChest: Bool = false, t: Double) -> RotationFrame {
+    private func frame(angle: Double, scale: Double = 1, armAtChest: Bool = false, t: Double, withAxis: Bool = false) -> RotationFrame {
         let heightPx = Int(heightCm * pxPerCm * scale)
         let width = 800, height = heightPx + 100, top = 40
         var bits = [Bool](repeating: false, count: width * height)
@@ -50,7 +50,9 @@ import WearIQCore
             if armAtChest, abs(f - 0.28) < 0.02 { halfWidth += 9 }  // arm against the body
             fill(y, halfWidth)
         }
-        return RotationFrame(mask: BinaryMask(width: width, height: height, bits: bits), centerX: Double(width / 2), time: t)
+        let axis = atan2(abs(sin(angle)), abs(cos(angle))) * 180 / .pi
+        return RotationFrame(mask: BinaryMask(width: width, height: height, bits: bits), centerX: Double(width / 2), time: t,
+                             axisAngle: withAxis ? axis : nil)
     }
 
     private var fractions: [BodyLevel: Double] { levels.mapValues(\.0) }
@@ -81,6 +83,35 @@ import WearIQCore
         let girths = try RotationScanAnalyzer().girths(frames: frames, heightCm: heightCm, levelFractions: fractions)
         let expected = ellipsePerimeter(17, 12)
         #expect(abs(try #require(girths[.chest]).cm - expected) / expected < 0.02)
+    }
+
+    @Test func unevenTurningSpeedIsBalancedByAngle() throws {
+        // Lingers facing the camera and back (wide views), rushes through the sides.
+        var angles: [Double] = []
+        var a = 0.0
+        while a < 2 * .pi {
+            angles.append(a)
+            a += abs(sin(a)) > 0.7 ? 0.25 : 0.05
+        }
+        let balanced = try RotationScanAnalyzer().girths(
+            frames: angles.enumerated().map { frame(angle: $1, t: Double($0) / 6, withAxis: true) },
+            heightCm: heightCm, levelFractions: fractions)
+        let plain = try RotationScanAnalyzer().girths(
+            frames: angles.enumerated().map { frame(angle: $1, t: Double($0) / 6) },
+            heightCm: heightCm, levelFractions: fractions)
+        let expected = ellipsePerimeter(15, 11)
+        let balancedError = abs(try #require(balanced[.waist]).cm - expected) / expected
+        let plainError = abs(try #require(plain[.waist]).cm - expected) / expected
+        #expect(balancedError < 0.02, "balanced \(balancedError)")
+        #expect(balancedError < plainError)
+    }
+
+    @Test func readingLocatesLevels() throws {
+        let reading = try #require(RotationScanAnalyzer().reading(frame(angle: 0, t: 0), heightCm: heightCm, levelFractions: fractions))
+        let waist = try #require(reading.levels[.waist])
+        #expect(abs(waist.widthCm - 30) < 0.5)
+        #expect(abs(reading.centerX - 0.5) < 0.01)
+        #expect(waist.y > reading.top && waist.y < reading.floor)
     }
 
     @Test func standingStillIsNotATurn() {

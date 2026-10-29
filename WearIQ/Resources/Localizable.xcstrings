@@ -4640,6 +4640,66 @@
           }
         }
       }
+    },
+    "A little slower, please.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz daha yavaş lütfen."
+          }
+        }
+      }
+    },
+    "Almost there. Turn once more, slowly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Az kaldı. Yavaşça bir tur daha dön."
+          }
+        }
+      }
+    },
+    "Chest done.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs tamam."
+          }
+        }
+      }
+    },
+    "Waist done.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel tamam."
+          }
+        }
+      }
+    },
+    "Hips done.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalça tamam."
+          }
+        }
+      }
+    },
+    "Thigh done.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyluk tamam."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

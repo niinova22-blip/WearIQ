@@ -18,6 +18,12 @@ struct BodyScanView: View {
             CameraPreview(session: model.camera.session)
                 .ignoresSafeArea()
                 .accessibilityHidden(true)
+            if case .turning = model.stage {
+                TurnGuideOverlay(state: model.turn)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
             VStack {
                 header
                 Spacer()
@@ -43,6 +49,8 @@ struct BodyScanView: View {
             if stage == .finished, let profile = model.result { onFinished(profile) }
         }
         .sensoryFeedback(.success, trigger: model.pose)
+        .sensoryFeedback(.impact(weight: .light), trigger: model.turn.sectors)
+        .sensoryFeedback(.success, trigger: model.turn.measured.count)
     }
 
     // Text on this screen is read from 2–3 m away, so it is much larger than usual.
@@ -79,24 +87,25 @@ struct BodyScanView: View {
                 .accessibilityLabel(Text("Taking photo in \(n)"))
         case let .turning(progress):
             VStack(spacing: Theme.Spacing.m) {
-                ZStack {
-                    Circle().stroke(.white.opacity(0.25), lineWidth: 14)
-                    Circle()
-                        .trim(from: 0, to: progress)
-                        .stroke(Theme.accentGradient, style: StrokeStyle(lineWidth: 14, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 0.2), value: progress)
-                    Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90")
-                        .font(.system(size: 52, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-                .frame(width: 170, height: 170)
-                Text("Turn slowly")
-                    .font(.system(size: 36, weight: .heavy, design: .rounded))
+                Text(model.turn.hint ?? String(localized: "Turn slowly"))
+                    .font(.system(size: 34, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .contentTransition(.opacity)
+                HStack(spacing: Theme.Spacing.s) {
+                    ForEach([BodyLevel.chest, .waist, .hip], id: \.self) { level in
+                        regionChip(level, done: model.turn.measured.contains(level))
+                    }
+                }
+                ProgressView(value: progress)
+                    .tint(.green)
+                    .animation(.easeOut(duration: 0.3), value: progress)
             }
             .padding(Theme.Spacing.l)
             .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .animation(.easeInOut(duration: 0.25), value: model.turn.hint)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text("Turning, \(Int(progress * 100)) percent"))
         case .analyzing:
@@ -141,6 +150,21 @@ struct BodyScanView: View {
         }
     }
 
+    private func regionChip(_ level: BodyLevel, done: Bool) -> some View {
+        Label {
+            Text(level.title)
+        } icon: {
+            Image(systemName: done ? "checkmark.circle.fill" : "circle.dotted")
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .font(.system(size: 20, weight: .bold, design: .rounded))
+        .foregroundStyle(done ? Color.black : .white)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(done ? Color.green : .white.opacity(0.18), in: Capsule())
+        .animation(.spring(duration: 0.35), value: done)
+    }
+
     private func instructionCard(_ text: String, symbol: String, tint: Color) -> some View {
         VStack(spacing: Theme.Spacing.s) {
             Image(systemName: symbol)
@@ -157,5 +181,92 @@ struct BodyScanView: View {
         .background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: Theme.cornerRadius))
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.updatesFrequently)
+    }
+}
+
+/// Guidance drawn over the camera during the turn, anchored to the person: a ring on the
+/// floor whose sectors fill as the user turns, and a band across the chest, waist and
+/// hips that turns green once that region has been seen from every direction.
+private struct TurnGuideOverlay: View {
+    let state: BodyScanViewModel.TurnState
+    /// Camera frames are portrait 9:16, shown aspect-fit.
+    private let frameAspect = 9.0 / 16.0
+
+    var body: some View {
+        GeometryReader { proxy in
+            let rect = imageRect(in: proxy.size)
+            if let reading = state.reading {
+                ZStack {
+                    floorRing(reading, in: rect)
+                    ForEach([BodyLevel.chest, .waist, .hip], id: \.self) { level in
+                        if let band = reading.levels[level] {
+                            bandView(level, band, in: rect)
+                        }
+                    }
+                }
+                .animation(.easeOut(duration: 0.18), value: reading)
+            }
+        }
+    }
+
+    private func imageRect(in size: CGSize) -> CGRect {
+        let width = min(size.width, size.height * frameAspect)
+        let height = width / frameAspect
+        return CGRect(x: (size.width - width) / 2, y: (size.height - height) / 2, width: width, height: height)
+    }
+
+    private func point(_ x: Double, _ y: Double, in rect: CGRect) -> CGPoint {
+        CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
+    }
+
+    private func bandView(_ level: BodyLevel, _ band: LevelReading, in rect: CGRect) -> some View {
+        let done = state.measured.contains(level)
+        let pad = 0.03
+        let start = point(band.left - pad, band.y, in: rect)
+        let end = point(band.right + pad, band.y, in: rect)
+        let color: Color = done ? .green : .white
+        return ZStack {
+            Path { p in
+                p.move(to: start)
+                p.addLine(to: end)
+            }
+            .stroke(color.opacity(done ? 1 : 0.85),
+                    style: StrokeStyle(lineWidth: done ? 6 : 4, lineCap: .round, dash: done ? [] : [10, 8]))
+            .shadow(color: color.opacity(done ? 0.9 : 0.4), radius: done ? 8 : 3)
+            Image(systemName: done ? "checkmark.circle.fill" : "circle.dotted")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundStyle(color)
+                .shadow(color: .black.opacity(0.6), radius: 4)
+                .position(x: end.x + 22, y: end.y)
+        }
+        .animation(.spring(duration: 0.4), value: done)
+    }
+
+    /// An ellipse on the floor around the feet, split into sectors starting nearest the camera.
+    private func floorRing(_ reading: FrameReading, in rect: CGRect) -> some View {
+        let center = point(reading.centerX, reading.floor, in: rect)
+        let hipWidth = reading.levels[.hip].map { ($0.right - $0.left) * rect.width } ?? rect.width * 0.2
+        let rx = max(hipWidth * 1.6, rect.width * 0.24)
+        let ry = rx * 0.28
+        let count = TurnTracker.sectorCount
+        let gap = 0.06
+        return ZStack {
+            ForEach(0..<count, id: \.self) { i in
+                let done = i < state.sectors
+                Path { p in
+                    let a0 = Double.pi / 2 + (Double(i) + gap) / Double(count) * 2 * .pi
+                    let a1 = Double.pi / 2 + (Double(i + 1) - gap) / Double(count) * 2 * .pi
+                    let steps = 10
+                    for s in 0...steps {
+                        let a = a0 + (a1 - a0) * Double(s) / Double(steps)
+                        let pt = CGPoint(x: center.x + rx * cos(a), y: center.y + ry * sin(a))
+                        if s == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+                    }
+                }
+                .stroke(done ? Color.green : .white.opacity(0.35), style: StrokeStyle(lineWidth: done ? 9 : 6, lineCap: .round))
+                .shadow(color: done ? .green.opacity(0.8) : .clear, radius: 6)
+                .animation(.spring(duration: 0.35), value: done)
+            }
+        }
     }
 }

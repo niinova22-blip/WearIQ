@@ -7,12 +7,34 @@ public struct RotationFrame: Sendable {
     /// Body centre column (root joint), if Vision found it in this frame.
     public var centerX: Double?
     public var time: Double
+    /// Angle between the body's left–right axis and the image plane, 0° facing (or
+    /// backing onto) the camera, 90° side-on. Folded this way it doesn't depend on
+    /// which way the user turns or on front/back confusions of the pose model.
+    public var axisAngle: Double?
 
-    public init(mask: BinaryMask, centerX: Double?, time: Double) {
+    public init(mask: BinaryMask, centerX: Double?, time: Double, axisAngle: Double? = nil) {
         self.mask = mask
         self.centerX = centerX
         self.time = time
+        self.axisAngle = axisAngle
     }
+}
+
+/// Where a body level lies in one turn frame, in normalised image coordinates (y down).
+public struct LevelReading: Sendable, Equatable {
+    public var y: Double
+    public var left: Double
+    public var right: Double
+    /// Silhouette width in cm, scaled by the person's height in this frame.
+    public var widthCm: Double
+}
+
+/// The person's outline in one turn frame, for live guidance and overlays.
+public struct FrameReading: Sendable, Equatable {
+    public var top: Double
+    public var floor: Double
+    public var centerX: Double
+    public var levels: [BodyLevel: LevelReading]
 }
 
 public enum RotationScanError: Error, Equatable {
@@ -30,7 +52,14 @@ public enum RotationScanError: Error, Equatable {
 ///
 /// Each frame is scaled by the person's height in that frame (the user's typed height
 /// is the ruler), so stepping slightly closer or further during the turn doesn't matter.
+///
+/// When frames carry the body's axis angle, widths are averaged per angle bin first, so
+/// turning faster through some directions than others doesn't bias the mean. A body is
+/// close to mirror-symmetric, so its widths at θ, −θ and θ+180° match and 0–90° covers
+/// every distinct view.
 public struct RotationScanAnalyzer: Sendable {
+    /// Angle bins over 0–90° used to balance the mean width.
+    public static let angleBins = 6
     public var minRowPixels = 3
     /// Minimum frames for a turn.
     public var minimumFrames = 24
@@ -53,36 +82,79 @@ public struct RotationScanAnalyzer: Sendable {
 
         var result: [BodyLevel: MeasuredValue] = [:]
         for (level, fraction) in levelFractions where level != .thigh {
-            var widths: [Double] = []
+            var samples: [(width: Double, angle: Double?)] = []
             for (frame, top, height) in usable {
-                let y = top + Int((fraction * Double(height)).rounded())
-                let center = Int((frame.centerX ?? Double(rowCenter(frame.mask, y: y) ?? -1)).rounded())
-                guard center >= 0, let run = frame.mask.run(inRow: y, containing: center) ?? nearestRun(frame.mask, y: y, to: center),
-                      run.count >= minRowPixels else { continue }
-                widths.append(Double(run.count) * heightCm / Double(height))
+                guard let reading = levelReading(frame, top: top, height: height, fraction: fraction, heightCm: heightCm) else { continue }
+                samples.append((reading.widthCm, frame.axisAngle))
             }
-            let clean = removeSpikes(widths)
+            let clean = keptIndices(samples.map(\.width)).map { samples[$0] }
+            let widths = clean.map(\.width)
             // A real turn shows both the wide (front/back) and narrow (side) views.
-            guard clean.count >= minimumFrames / 2, let lo = clean.min(), let hi = clean.max(), lo < 0.88 * hi else { continue }
-            let mean = clean.reduce(0, +) / Double(clean.count)
-            let sd = (clean.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(clean.count)).squareRoot()
+            guard widths.count >= minimumFrames / 2, let lo = widths.min(), let hi = widths.max(), lo < 0.88 * hi else { continue }
+            let mean = Self.angleBalancedMean(clean) ?? widths.reduce(0, +) / Double(widths.count)
+            let sd = (widths.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(widths.count)).squareRoot()
             let girth = Double.pi * mean
             // Statistical error of the mean plus 2% for segmentation edges and uneven turning speed.
-            let uncertainty = ((Double.pi * sd / Double(clean.count).squareRoot()).squared + (0.02 * girth).squared).squareRoot()
+            let uncertainty = ((Double.pi * sd / Double(widths.count).squareRoot()).squared + (0.02 * girth).squared).squareRoot()
             result[level] = MeasuredValue(cm: girth, uncertaintyCm: uncertainty, source: .scan)
         }
         guard !result.isEmpty else { throw RotationScanError.incompleteTurn }
         return result
     }
 
+    /// Outline of the person and the width at each level in a single frame, for live
+    /// guidance. `nil` when no person is visible.
+    public func reading(_ frame: RotationFrame, heightCm: Double, levelFractions: [BodyLevel: Double]) -> FrameReading? {
+        guard let (top, floor) = verticalExtent(frame.mask), floor - top > frame.mask.height / 4 else { return nil }
+        let w = Double(frame.mask.width), h = Double(frame.mask.height)
+        var levels: [BodyLevel: LevelReading] = [:]
+        for (level, fraction) in levelFractions where level != .thigh {
+            levels[level] = levelReading(frame, top: top, height: floor - top, fraction: fraction, heightCm: heightCm)
+        }
+        let center = frame.centerX ?? levels[.hip].map { ($0.left + $0.right) / 2 * w } ?? w / 2
+        return FrameReading(top: Double(top) / h, floor: Double(floor) / h, centerX: center / w, levels: levels)
+    }
+
+    /// Mean over angle bins, each bin weighted equally. `nil` when the turn covered too
+    /// few directions to balance; the caller then uses the plain mean.
+    static func angleBalancedMean(_ samples: [(width: Double, angle: Double?)]) -> Double? {
+        var bins = [[Double]](repeating: [], count: angleBins)
+        for sample in samples {
+            guard let angle = sample.angle else { continue }
+            bins[angleBin(angle)].append(sample.width)
+        }
+        let means = bins.filter { !$0.isEmpty }.map { $0.reduce(0, +) / Double($0.count) }
+        guard means.count >= angleBins - 1 else { return nil }
+        return means.reduce(0, +) / Double(means.count)
+    }
+
+    public static func angleBin(_ angle: Double) -> Int {
+        min(angleBins - 1, max(0, Int(angle / 90 * Double(angleBins))))
+    }
+
+    private func levelReading(_ frame: RotationFrame, top: Int, height: Int, fraction: Double, heightCm: Double) -> LevelReading? {
+        let mask = frame.mask
+        let y = top + Int((fraction * Double(height)).rounded())
+        let center = Int((frame.centerX ?? Double(rowCenter(mask, y: y) ?? -1)).rounded())
+        guard center >= 0, let run = mask.run(inRow: y, containing: center) ?? nearestRun(mask, y: y, to: center),
+              run.count >= minRowPixels else { return nil }
+        let w = Double(mask.width)
+        return LevelReading(y: Double(y) / Double(mask.height), left: Double(run.lowerBound) / w,
+                            right: Double(run.upperBound) / w, widthCm: Double(run.count) * heightCm / Double(height))
+    }
+
     /// Drops widths well above their neighbours (an arm touching the body for a few frames).
     func removeSpikes(_ widths: [Double]) -> [Double] {
-        guard widths.count >= 5 else { return widths }
-        return widths.enumerated().compactMap { i, w in
+        keptIndices(widths).map { widths[$0] }
+    }
+
+    private func keptIndices(_ widths: [Double]) -> [Int] {
+        guard widths.count >= 5 else { return Array(widths.indices) }
+        return widths.indices.filter { i in
             let lo = max(0, i - 6), hi = min(widths.count - 1, i + 6)
             let neighbourhood = widths[lo...hi].sorted()
             let median = neighbourhood[neighbourhood.count / 2]
-            return w > spikeFactor * median ? nil : w
+            return widths[i] <= spikeFactor * median
         }
     }
 

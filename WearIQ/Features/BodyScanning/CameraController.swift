@@ -72,6 +72,8 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
         defer { session.commitConfiguration() }
         session.inputs.forEach(session.removeInput)
         session.sessionPreset = .hd1920x1080
+        // No microphone is used; leave the audio session to the voice guidance.
+        session.automaticallyConfiguresApplicationAudioSession = false
 
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position) else {
             throw CameraError.unavailable
