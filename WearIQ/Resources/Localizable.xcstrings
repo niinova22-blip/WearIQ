@@ -6841,16 +6841,6 @@
         }
       }
     },
-    "One more look at %lld position(s). %@:": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld duruşa bir kez daha bakalım. %@:"
-          }
-        }
-      }
-    },
     "Belly": {
       "localizations": {
         "tr": {
@@ -7007,6 +6997,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kumaş fiziğiyle giydirilir: kıyafet beden tablosuna göre kesilir, kendi ağırlığıyla vücuduna oturur ve gereken yerde, lifleri izin verdiği kadar esner. Kesikli çizgiler dikiş ve paça/etek yerleridir. Ürünün kendi kalıp ve kumaş verisi olmadan bu, gerçek ürünün değil bir modelinin simülasyonudur."
+          }
+        }
+      }
+    },
+    "One more look at %lld position(s).": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld duruşa bir kez daha bakalım."
+          }
+        }
+      }
+    },
+    "Barefoot, with long hair tied up: your height sets the scale, and shoes or volume on top make every measurement come out smaller.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalınayak ol, uzun saçını topla: ölçeği boyun belirler; ayakkabı ya da kabarık saç tüm ölçüleri küçük çıkarır."
+          }
+        }
+      }
+    },
+    "Replay": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekrar oynat"
           }
         }
       }

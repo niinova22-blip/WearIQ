@@ -281,33 +281,56 @@ private func point(_ x: Double, _ y: Double, in rect: CGRect) -> CGPoint {
     CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
 }
 
-/// The person's own silhouette, drawn live from the segmentation, so the user sees what
-/// the scan sees: whether the arms are out and whether head and feet are in the picture.
-/// Each row's stretches of body are filled and softened, so the gaps between arms and
-/// body and between the legs stay open, as in the picture.
+/// The person's own silhouette, drawn live from the segmentation as just its outline, so
+/// the user sees what the scan sees (whether the arms are out, whether head and feet are
+/// in the picture) without the camera image being covered.
+///
+/// Each row's stretches of body are joined to the overlapping stretches of the next row
+/// by slanted quads, so the edge runs smoothly instead of in steps; the gaps between arms
+/// and body and between the legs stay open. The pieces are merged into one region and
+/// only its boundary is stroked.
 private struct LiveOutline: View {
     let outline: [OutlineRow]
     let rect: CGRect
     let tint: Color
 
     var body: some View {
-        let shape = Path { p in
-            for (i, row) in outline.enumerated() {
-                let next = i + 1 < outline.count ? outline[i + 1].y : row.y + (i > 0 ? row.y - outline[i - 1].y : 0.01)
-                let top = rect.minY + row.y * rect.height, bottom = rect.minY + next * rect.height
-                let spans = row.spans.isEmpty ? [OutlineSpan(left: row.left, right: row.right)] : row.spans
-                for span in spans {
-                    p.addRect(CGRect(x: rect.minX + span.left * rect.width, y: top,
-                                     width: (span.right - span.left) * rect.width, height: max(1, bottom - top + 0.5)))
-                }
-            }
-        }
+        let contour = Self.region(outline, in: rect).normalized(eoFill: false)
         ZStack {
-            shape.fill(tint.opacity(0.32)).blur(radius: 7)
-            shape.fill(tint.opacity(0.2)).blur(radius: 1.5)
+            contour.stroke(tint.opacity(0.45), style: StrokeStyle(lineWidth: 6, lineJoin: .round)).blur(radius: 5)
+            contour.stroke(tint.opacity(0.95), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
         }
         .compositingGroup()
         .animation(.easeOut(duration: 0.15), value: outline)
+    }
+
+    static func region(_ outline: [OutlineRow], in rect: CGRect) -> Path {
+        func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height) }
+        func spans(_ row: OutlineRow) -> [OutlineSpan] {
+            row.spans.isEmpty ? [OutlineSpan(left: row.left, right: row.right)] : row.spans
+        }
+        var p = Path()
+        for (i, row) in outline.enumerated() {
+            let next = i + 1 < outline.count ? outline[i + 1] : nil
+            for span in spans(row) {
+                let partners = next.map { spans($0).filter { $0.right > span.left && $0.left < span.right } } ?? []
+                if let next, !partners.isEmpty {
+                    for t in partners {
+                        p.move(to: pt(span.left, row.y))
+                        p.addLine(to: pt(span.right, row.y))
+                        p.addLine(to: pt(t.right, next.y))
+                        p.addLine(to: pt(t.left, next.y))
+                        p.closeSubpath()
+                    }
+                } else {
+                    // An end (top of the head, a hand, the feet): a thin cap.
+                    let height = next.map { $0.y - row.y } ?? 0.004
+                    p.addRect(CGRect(origin: pt(span.left, row.y),
+                                     size: CGSize(width: (span.right - span.left) * rect.width, height: max(1, height * rect.height))))
+                }
+            }
+        }
+        return p
     }
 }
 
@@ -348,7 +371,7 @@ private struct PositioningOverlay: View {
     }
 }
 
-/// A soft see-through human figure showing where and how to stand: in the middle of
+/// A dashed human outline showing where and how to stand: in the middle of
 /// the picture at a good distance. For the front photo the arms hang slightly away from
 /// the body; during the turn they are held straight out and the figure is turned
 /// clockwise by 45° per stop. It turns green while the user matches it.
@@ -426,9 +449,9 @@ private struct TargetFigure: View {
         }
         let figure = parts.dropFirst().reduce(parts[0]) { $0.union($1) }
         let color: Color = matched ? .silhouetteMatched : .white
+        // Only the figure's outline, so it guides without covering the picture.
         return ZStack {
-            figure.fill(color.opacity(matched ? 0.22 : 0.12))
-            figure.stroke(color.opacity(0.55), style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+            figure.stroke(color.opacity(matched ? 0.8 : 0.55), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
                 .blur(radius: 0.6)
                 .shadow(color: color.opacity(0.35), radius: 6)
         }

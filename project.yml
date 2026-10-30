@@ -137,6 +137,8 @@ targets:
         product: FitEngine
       - package: WearIQKit
         product: ProductMeasurementParser
+      - package: WearIQKit
+        product: BodyMeasurementEngine
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

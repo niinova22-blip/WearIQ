@@ -184,7 +184,14 @@ public struct ClothingAwareReconstruction: Sendable {
         var regionCover: [ClothingRegion: [ClothingCover: Double]] = [:]
         for d in [BodyDimension.chest, .waist, .hip, .thigh] {
             guard let measured = profile[d], measured.source == .scan, let region = ClothingRegion(d) else { continue }
-            let statistics = expected[d]
+            var statistics = expected[d]
+            if d == .thigh {
+                // The thigh goes with the hips and waist beyond what height and weight say;
+                // the torso girths just found narrow its estimate (see GirthCorrelations).
+                let torso = out.values.filter { [.chest, .waist, .hip].contains($0.key) && $0.value.source != .estimated }
+                statistics = AnthropometricPrior.conditioned([.thigh], estimates: expected, observed: torso,
+                                                             sex: profile.sex)[.thigh] ?? statistics
+            }
             let earlier = previous.flatMap { Self.carriedForward(d, from: $0, weightKg: profile.weightKg,
                                                                 heightCm: heightCm ?? profile[.height]?.cm, now: now) }
             guard let reference = earlier ?? statistics else { continue }
@@ -195,6 +202,11 @@ public struct ClothingAwareReconstruction: Sendable {
             assessments[d] = estimate.assessment
             regionCover[region] = estimate.cover
         }
+        // Girths too small to see come from the statistics, narrowed by the measured ones.
+        let measured = out.values.filter { [.chest, .waist, .hip, .thigh].contains($0.key) && $0.value.source != .estimated }
+        let details = BodyDimension.details.filter { out[$0] == nil && expected[$0] != nil }
+        let conditioned = AnthropometricPrior.conditioned(details, estimates: expected, observed: measured, sex: profile.sex)
+        for d in details { out[d] = conditioned[d] ?? expected[d] }
         // Regions without an outline girth keep what was said and checked.
         for region in ClothingRegion.allCases where regionCover[region] == nil {
             regionCover[region] = Self.applying(findings, to: Self.coverPrior(attire: attire, region: region), region: region)

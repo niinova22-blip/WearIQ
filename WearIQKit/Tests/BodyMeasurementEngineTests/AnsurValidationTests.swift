@@ -280,3 +280,40 @@ import WearIQCore
         }
     }
 }
+
+@Suite struct GirthConditioningTests {
+    /// Hips and waist measured to ±1.5%, the thigh estimated from height and weight alone
+    /// or also from them. Over all of ANSUR II the conditioned estimate should be closer.
+    @Test func measuredHipsAndWaistSharpenTheThigh() {
+        var noise = AnsurValidationTests.Noise(state: 11)
+        var plain = 0.0, sharpened = 0.0, details = 0.0, detailsPlain = 0.0, n = 0.0
+        for s in AnsurValidationTests.subjects {
+            guard let thigh = s.mm["thighcircumference"].map({ $0 / 10 }), let hip = s.mm["buttockcircumference"].map({ $0 / 10 }),
+                  let waist = s.mm["waistcircumference"].map({ $0 / 10 }), let calf = s.mm["calfcircumference"].map({ $0 / 10 }) else { continue }
+            let prior = AnthropometricPrior().estimate(heightCm: s.heightCm, weightKg: s.weightKg, sex: s.sex)
+            guard let estimate = prior[.thigh], let calfEstimate = prior[.calf] else { continue }
+            func observed(_ v: Double) -> MeasuredValue {
+                MeasuredValue(cm: v * (1 + 0.015 * noise.gaussian()), uncertaintyCm: 0.015 * v, source: .scan)
+            }
+            let observations = [BodyDimension.hip: observed(hip), .waist: observed(waist)]
+            let c = AnthropometricPrior.conditioned([.thigh, .calf], estimates: prior, observed: observations, sex: s.sex)
+            plain += abs(estimate.cm - thigh)
+            sharpened += abs(c[.thigh]!.cm - thigh)
+            detailsPlain += abs(calfEstimate.cm - calf)
+            details += abs(c[.calf]!.cm - calf)
+            n += 1
+        }
+        print(String(format: "thigh MAE %.2f -> %.2f cm, calf %.2f -> %.2f cm (n=%.0f)",
+                     plain / n, sharpened / n, detailsPlain / n, details / n, n))
+        #expect(sharpened < 0.9 * plain)
+        #expect(details <= detailsPlain * 1.01)
+    }
+
+    @Test func nothingObservedChangesNothing() {
+        let prior = AnthropometricPrior().estimate(heightCm: 175, weightKg: 75, sex: .male)
+        #expect(AnthropometricPrior.conditioned([.thigh], estimates: prior, observed: [:], sex: .male).isEmpty)
+        let same = AnthropometricPrior.conditioned([.thigh], estimates: prior, observed: [.hip: prior[.hip]!], sex: .male)
+        #expect(abs(same[.thigh]!.cm - prior[.thigh]!.cm) < 1e-9)
+        #expect(same[.thigh]!.uncertaintyCm < prior[.thigh]!.uncertaintyCm)
+    }
+}

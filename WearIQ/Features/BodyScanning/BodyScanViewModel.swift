@@ -374,21 +374,36 @@ final class BodyScanViewModel {
         capturePrecise(fallback: widths)
     }
 
-    /// Re-measures the stop on a still at the best segmentation quality; the live frames'
-    /// faster masks have softer edges. Falls back to the live widths if that fails.
+    /// Re-measures the stop on stills at the best segmentation quality; the live frames'
+    /// faster masks have softer edges. Three stills 150 ms apart (different camera
+    /// frames) are measured and the median width per level kept, so one frame's
+    /// segmentation slip doesn't decide the stop. Falls back to the live widths if
+    /// none can be measured.
     private func capturePrecise(fallback: [BodyLevel: Double]) {
         guard !capturing else { return }
         capturing = true
         let station = turn.station
-        let image = camera.captureStill()
         let heightCm = basics.heightCm
         let fractions = levelFractions
         Task {
+            var images: [CGImage] = []
+            for k in 0..<3 {
+                if k > 0 { try? await Task.sleep(for: .milliseconds(150)) }
+                if let image = camera.captureStill() { images.append(image) }
+            }
+            let stills = images
             let precise = await Task.detached(priority: .userInitiated) { () -> [BodyLevel: Double]? in
-                guard let image, let frame = VisionBodyAnalyzer().turnFrame(image, time: 0),
-                      let reading = RotationScanAnalyzer().reading(frame, heightCm: heightCm, levelFractions: fractions),
-                      StopGuide.fullyVisible(reading) else { return nil }
-                let widths = reading.levels.mapValues(\.widthCm)
+                let readings: [[BodyLevel: Double]] = stills.compactMap { image in
+                    guard let frame = VisionBodyAnalyzer().turnFrame(image, time: 0),
+                          let reading = RotationScanAnalyzer().reading(frame, heightCm: heightCm, levelFractions: fractions),
+                          StopGuide.fullyVisible(reading) else { return nil }
+                    return reading.levels.mapValues(\.widthCm)
+                }
+                var widths: [BodyLevel: Double] = [:]
+                for level in BodyLevel.allCases {
+                    let values = readings.compactMap { $0[level] }.sorted()
+                    if !values.isEmpty { widths[level] = values[values.count / 2] }
+                }
                 return widths[.waist] != nil || widths[.hip] != nil ? widths : nil
             }.value
             capturing = false
@@ -485,8 +500,8 @@ final class BodyScanViewModel {
                 stationStart = Date()
                 stillness.reset()
                 audio.play(.problem)
-                say(String(localized: "One more look at \(retake.count) position(s). \(StationGuide.title(retake[0])):") + " "
-                    + StationGuide.instruction(retake[0]))
+                // The instruction says where to turn; the screen shows the position's name.
+                say(String(localized: "One more look at \(retake.count) position(s).") + " " + StationGuide.instruction(retake[0]))
                 return
             }
         }

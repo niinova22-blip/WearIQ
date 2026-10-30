@@ -16,6 +16,8 @@ import WearIQCore
 struct AvatarSceneView: UIViewRepresentable {
     let avatar: Avatar
     var fitMap = false
+    /// While the dressing plays: which of `avatar.garmentFrames` to show.
+    var frame: Int?
     /// Text for each body point; nil leaves it unlabelled.
     var labels: [Avatar.Landmark.Kind: String] = [:]
     @ObservedObject var labelModel: LandmarkLabels
@@ -30,12 +32,12 @@ struct AvatarSceneView: UIViewRepresentable {
         view.defaultCameraController.interactionMode = .orbitTurntable
         view.scene = context.coordinator.scene
         view.delegate = context.coordinator
-        context.coordinator.update(avatar, fitMap: fitMap, labels: labels, model: labelModel, in: view)
+        context.coordinator.update(avatar, fitMap: fitMap, frame: frame, labels: labels, model: labelModel, in: view)
         return view
     }
 
     func updateUIView(_ view: SCNView, context: Context) {
-        context.coordinator.update(avatar, fitMap: fitMap, labels: labels, model: labelModel, in: view)
+        context.coordinator.update(avatar, fitMap: fitMap, frame: frame, labels: labels, model: labelModel, in: view)
     }
 
     final class Coordinator: NSObject, SCNSceneRendererDelegate {
@@ -44,7 +46,7 @@ struct AvatarSceneView: UIViewRepresentable {
         private let garmentNode = SCNNode()
         private let seamNode = SCNNode()
         private var placedCamera = false
-        private var shownMesh: (Int, Int, Bool)?
+        private var shownMesh: (Int, Int, Bool, Int)?
         // Read on the render thread.
         private let lock = NSLock()
         private var landmarks: [(Avatar.Landmark, String)] = []
@@ -91,18 +93,24 @@ struct AvatarSceneView: UIViewRepresentable {
         }
 
         @MainActor
-        func update(_ avatar: Avatar, fitMap: Bool, labels: [Avatar.Landmark.Kind: String], model: LandmarkLabels, in view: SCNView) {
+        func update(_ avatar: Avatar, fitMap: Bool, frame: Int?, labels: [Avatar.Landmark.Kind: String],
+                    model: LandmarkLabels, in view: SCNView) {
             self.model = model
-            let key = (avatar.body.positions.count, avatar.garment?.positions.count ?? 0, fitMap)
+            let key = (avatar.body.positions.count, avatar.garment?.positions.count ?? 0, fitMap, frame ?? -1)
             if shownMesh.map({ $0 != key }) ?? true {
+                let bodyChanged = shownMesh.map { $0.0 != key.0 } ?? true
                 shownMesh = key
-                bodyNode.geometry = Self.geometry(avatar.body, color: UIColor(red: 0.8, green: 0.81, blue: 0.83, alpha: 1), roughness: 0.92)
-                garmentNode.geometry = avatar.garment.map {
+                if bodyChanged {
+                    bodyNode.geometry = Self.geometry(avatar.body, color: UIColor(red: 0.8, green: 0.81, blue: 0.83, alpha: 1), roughness: 0.92)
+                }
+                let garment = frame.flatMap { avatar.garmentMesh(frame: $0) } ?? avatar.garment
+                garmentNode.geometry = garment.map {
                     fitMap
                         ? Self.geometry($0, color: .white, roughness: 0.9, doubleSided: true, colors: $0.strain.map(Self.fitColor))
                         : Self.geometry($0, color: UIColor(red: 0.24, green: 0.3, blue: 0.44, alpha: 1), roughness: 0.88, doubleSided: true)
                 }
-                seamNode.geometry = Self.stitches(avatar.seams)
+                // Seams belong to the settled garment; they appear when it has come to rest.
+                seamNode.geometry = frame == nil ? Self.stitches(avatar.seams) : nil
             }
             lock.lock()
             landmarks = avatar.landmarks.compactMap { l in labels[l.kind].map { (l, $0) } }
@@ -372,6 +380,8 @@ struct AvatarFitView: View {
     @State private var showFitMap = false
     @State private var showLabels = true
     @State private var avatar: Avatar?
+    /// The frame of the dressing being shown, nil once it has settled.
+    @State private var frame: Int?
     @StateObject private var labelModel = LandmarkLabels()
     /// Every size draped, on the body as measured and at the ends of its ranges.
     @State private var comparison: [SizeDrape]?
@@ -386,7 +396,8 @@ struct AvatarFitView: View {
                     VStack(spacing: 0) {
                         ZStack {
                             if let avatar {
-                                AvatarSceneView(avatar: avatar, fitMap: showFitMap, labels: showLabels ? labels(regions) : [:],
+                                AvatarSceneView(avatar: avatar, fitMap: showFitMap, frame: frame,
+                                                labels: showLabels && frame == nil ? labels(regions) : [:],
                                                 labelModel: labelModel)
                                 LandmarkOverlay(model: labelModel)
                             } else {
@@ -412,9 +423,26 @@ struct AvatarFitView: View {
                     }
                     .accessibilityLabel(Text("Labels"))
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { Task { await play() } } label: { Image(systemName: "play.circle") }
+                        .accessibilityLabel(Text("Replay"))
+                        .disabled(avatar?.garmentFrames.isEmpty ?? true || frame != nil)
+                }
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
+    }
+
+    /// Plays the garment being put on: dropped onto the body, falling and settling, at
+    /// the 30 frames a second it was simulated at.
+    private func play() async {
+        guard let frames = avatar?.garmentFrames, !frames.isEmpty else { return }
+        for k in frames.indices {
+            guard !Task.isCancelled else { break }
+            frame = k
+            try? await Task.sleep(for: .milliseconds(33))
+        }
+        frame = nil
     }
 
     /// Body points named, with the verdict of the region each one belongs to.
@@ -444,9 +472,17 @@ struct AvatarFitView: View {
         guard let m = Avatar.Measurements(body), let size = spec.sizes.first(where: { $0.label == sizeLabel }) else { return }
         var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body)
         fit.fabric = AvatarFitMapper.fabric(spec: spec, material: material)
-        let draped = await Task.detached(priority: .userInitiated) { Avatar(m, garment: fit) }.value
+        // The body straight away, then the garment put on it under gravity.
+        if avatar == nil {
+            let bare = await Task.detached(priority: .userInitiated) { Avatar(m) }.value
+            guard !Task.isCancelled else { return }
+            avatar = bare
+        }
+        let draped = await Task.detached(priority: .userInitiated) { Avatar(m, garment: fit, detail: .animated) }.value
         guard !Task.isCancelled else { return }
-        withAnimation(.easeOut(duration: 0.2)) { avatar = draped }
+        frame = draped.garmentFrames.isEmpty ? nil : 0
+        avatar = draped
+        await play()
     }
 
     private func panel(_ regions: [RegionFit]) -> some View {

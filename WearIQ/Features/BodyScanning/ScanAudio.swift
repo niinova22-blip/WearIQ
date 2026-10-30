@@ -1,9 +1,14 @@
 import AVFoundation
+import CryptoKit
 
 /// Voice and sound cues for the hands-free scan.
 ///
-/// Speech is rendered with `AVSpeechSynthesizer.write` and played through our own
-/// `AVAudioEngine`, together with the cue tones. Letting the synthesizer play by itself
+/// Every fixed line the scan says is a recorded clip bundled with the app (see
+/// `ScanVoice` and scripts/generate_voice.py), played gaplessly through our own
+/// `AVAudioEngine`: synthesising on the phone came out choppy. Text without clips (an
+/// error's own description) falls back to the system synthesizer:
+/// it is rendered with `AVSpeechSynthesizer.write` and played through the same engine,
+/// together with the cue tones. Letting the synthesizer play by itself
 /// proved unreliable: stopping and restarting it a few times a second (live pose
 /// feedback) silently drops utterances, and on some iOS 17 builds it stops producing
 /// sound altogether. If rendering yields nothing, the synthesizer's own playback is
@@ -34,6 +39,7 @@ final class ScanAudio {
 
     private let engine = AVAudioEngine()
     private let speechPlayer = AVAudioPlayerNode()
+    private let clipPlayer = AVAudioPlayerNode()
     private let tonePlayer = AVAudioPlayerNode()
     private let speechFormat = AVAudioFormat(standardFormatWithSampleRate: 22_050, channels: 1)!
     private let toneFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
@@ -49,8 +55,10 @@ final class ScanAudio {
 
     init() {
         engine.attach(speechPlayer)
+        engine.attach(clipPlayer)
         engine.attach(tonePlayer)
         engine.connect(speechPlayer, to: engine.mainMixerNode, format: speechFormat)
+        engine.connect(clipPlayer, to: engine.mainMixerNode, format: ScanVoice.format)
         engine.connect(tonePlayer, to: engine.mainMixerNode, format: toneFormat)
         renderer.usesApplicationAudioSession = true
         fallback.usesApplicationAudioSession = true
@@ -91,6 +99,16 @@ final class ScanAudio {
         if priority == .normal, isSpeaking { return }
         ensureRunning()
         silenceSpeech()
+        if let clips = ScanVoice.clips(for: text) {
+            var seconds = 0.0
+            for clip in clips {
+                clipPlayer.scheduleFile(clip, at: nil, completionHandler: nil)
+                seconds += Double(clip.length) / clip.processingFormat.sampleRate
+            }
+            clipPlayer.play()
+            speakingUntil = Date().addingTimeInterval(seconds + 0.1)
+            return
+        }
         generation += 1
         let token = generation
         // Rough length so normal-priority lines don't talk over this one before it renders.
@@ -133,6 +151,7 @@ final class ScanAudio {
         renderer.stopSpeaking(at: .immediate)
         fallback.stopSpeaking(at: .immediate)
         speechPlayer.stop()
+        clipPlayer.stop()
         speakingUntil = .distantPast
     }
 
@@ -235,5 +254,52 @@ final class ScanAudio {
             }
         }
         return buffer
+    }
+}
+
+/// The recorded voice: one clip per sentence, named by a hash of its text.
+enum ScanVoice {
+    /// The clips' format after decoding (24 kHz mono, see scripts/generate_voice.py).
+    static let format = AVAudioFormat(standardFormatWithSampleRate: 24_000, channels: 1)!
+
+    /// Clips for every sentence of `text`, in order, or nil if any sentence has none.
+    static func clips(for text: String) -> [AVAudioFile]? {
+        let parts = sentences(text)
+        guard !parts.isEmpty else { return nil }
+        var files: [AVAudioFile] = []
+        for part in parts {
+            guard let url = Bundle.main.url(forResource: name(part), withExtension: "m4a"),
+                  let file = try? AVAudioFile(forReading: url),
+                  file.processingFormat.sampleRate == format.sampleRate,
+                  file.processingFormat.channelCount == 1 else { return nil }
+            files.append(file)
+        }
+        return files
+    }
+
+    /// Split after . ! ? : followed by whitespace, as the generator splits.
+    static func sentences(_ text: String) -> [String] {
+        var out: [String] = []
+        var current = ""
+        var previous: Character?
+        for c in text.trimmingCharacters(in: .whitespacesAndNewlines) {
+            if c.isWhitespace, let p = previous, ".!?:".contains(p) {
+                if !current.isEmpty { out.append(current) }
+                current = ""
+            } else if !(c.isWhitespace && current.isEmpty) {
+                current.append(c)
+            }
+            previous = c
+        }
+        if !current.isEmpty { out.append(current) }
+        return out
+    }
+
+    /// "voice_" and the first 16 hex digits of the SHA-256 of the NFC sentence with
+    /// whitespace collapsed.
+    static func name(_ sentence: String) -> String {
+        let collapsed = sentence.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        let digest = SHA256.hash(data: Data(collapsed.precomposedStringWithCanonicalMapping.utf8))
+        return "voice_" + digest.prefix(8).map { String(format: "%02x", $0) }.joined()
     }
 }

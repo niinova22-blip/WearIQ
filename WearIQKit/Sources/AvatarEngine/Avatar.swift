@@ -38,6 +38,10 @@ public struct Avatar: Sendable {
 
     public var body: Mesh
     public var garment: Mesh?
+    /// The garment's vertex positions as it is put on: dropped onto the body, falling
+    /// under gravity and settling, at 30 frames a second; the last is `garment`. Empty
+    /// unless the detail asks for it.
+    public var garmentFrames: [[Vec3]] = []
     /// Stitch lines on the garment (hems, cuffs, side and shoulder seams), as dash
     /// segments: pairs of points.
     public var seams: [Vec3] = []
@@ -106,8 +110,12 @@ public struct Avatar: Sendable {
     public struct Detail: Sendable {
         public var body: Float
         public var garment: Float
+        /// Simulate the garment being put on and keep the frames (slower).
+        public var animated = false
         public static let standard = Detail(body: 0.011, garment: 0.014)
         public static let preview = Detail(body: 0.02, garment: 0.022)
+        /// Standard resolution, with the dressing animation.
+        public static let animated = Detail(body: 0.011, garment: 0.014, animated: true)
     }
 
     // MARK: Building
@@ -118,14 +126,25 @@ public struct Avatar: Sendable {
         anchors = model.bodyAnchors
         var cover: ((Vec3) -> Float)?
         if let fit {
-            let dressed = model.dress(fit, cell: detail.garment)
+            let dressed = model.dress(fit, cell: detail.garment, animated: detail.animated)
             garment = dressed.mesh
+            garmentFrames = dressed.frames
             seams = dressed.seams
             anchors.merge(dressed.anchors) { _, new in new }
             fitReport = dressed.report
             cover = dressed.cut
         }
         landmarks = model.landmarks(covering: cover)
+    }
+
+    /// The garment as it was at one frame of `garmentFrames`, for playing the dressing
+    /// back; the finished garment when there is no such frame.
+    public func garmentMesh(frame: Int) -> Mesh? {
+        guard var mesh = garment, garmentFrames.indices.contains(frame),
+              garmentFrames[frame].count == mesh.positions.count else { return garment }
+        mesh.positions = garmentFrames[frame]
+        mesh.computeNormals()
+        return mesh
     }
 }
 
@@ -356,9 +375,10 @@ extension BodyModel {
         /// The garment as cut, as a distance field.
         var cut: (Vec3) -> Float
         var report: [FitZone: ZoneReport]
+        var frames: [[Vec3]] = []
     }
 
-    func dress(_ fit: Avatar.GarmentFit, cell: Float) -> Dressed {
+    func dress(_ fit: Avatar.GarmentFit, cell: Float, animated: Bool = false) -> Dressed {
         let fabric = fit.resolvedFabric
         func cm(_ v: Double) -> Float { Float(v / 100) }
         var parts: [GarmentPart] = []
@@ -506,7 +526,7 @@ extension BodyModel {
         // Drape it.
         var cloth = TriangleCloth(mesh)
         let pinned = mesh.positions.map { $0.y >= pinnedAbove }
-        cloth.drape(body: { distance($0) }, fabric: fabric, pinned: pinned)
+        cloth.drape(body: { distance($0) }, fabric: fabric, pinned: pinned, motion: animated ? .dressing : .settle)
         mesh.positions = cloth.positions
         mesh.strain = fitValues(stretch: cloth.stretch, contact: cloth.contact, fabric: fabric, neighbours: neighbours)
         let report = self.report(cloth, tags: tags, fit: fit, fabric: fabric)
@@ -537,11 +557,23 @@ extension BodyModel {
         }
         mesh.computeNormals()
 
+        // The animation ends on the finished garment: the fold detail added after the
+        // simulation fades in over its frames.
+        var frames = cloth.frames
+        if frames.count > 1 {
+            let simulated = cloth.positions
+            for (k, frame) in frames.enumerated() {
+                let f = Float(k) / Float(frames.count - 1)
+                let blend = f * f
+                frames[k] = frame.indices.map { i in frame[i] + (mesh.positions[i] - simulated[i]) * blend }
+            }
+        }
+
         let seams = stitches(fit, mesh: mesh, tags: tags)
         if case .trousers = fit.kind, let lowest = mesh.positions.filter({ $0.x > 0 }).min(by: { $0.y < $1.y }) {
             anchors[.hem] = Vec3(anchors[.hem]?.x ?? lowest.x, lowest.y, 0)
         }
-        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: cut, report: report)
+        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: cut, report: report, frames: frames)
     }
 
     /// Stitch lines where the garment has them, as dash segments slightly off the

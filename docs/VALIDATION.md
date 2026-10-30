@@ -136,3 +136,31 @@ Günlük kıyafetle tarama `ClothingAwareReconstruction` ile yapılır: silüet 
 - **Çözücü:** `TriangleCloth`, XPBD ile çalışır. Kenarlar esneme uyumluluğuyla, bükülme kumaşın dökümünden gelen uyumlulukla çözülür. Her köşe kumaş ağırlığından kütle alır. Vücuda çarpışmada sürtünme uygulanır ve kumaşın kendi kendisiyle çarpışması uzamsal bir hash ile ayrılır.
 - **Testler (`FitReportTests`):** Bölgeler drapeden hesaplanır. Aynı tişörtün S, M ve L bedenleri farklı gerilim verir (S göğüste çok dar, M rahat, L bol). Esnek kumaş aynı kesimi daha rahat taşır. Belirsiz bel, bel bölgesinde bir sonuç aralığı üretir.
 - **Doğrulanmamış:** Gerilme eşikleri (konforlu esnemenin %30, %60 ve %100'ü) gerçek deneme sonuçlarıyla karşılaştırılmadı. Beden önerisi doğrulaması (bölüm 4) simülasyon için de yapılmalıdır: aynı kişi M ve L bedeni gerçekten dener ve simülasyon kararıyla karşılaştırılır.
+
+## 8. Ölçüm iyileştirmeleri (2026-10-30)
+
+- **Duruş başına üç kare:** Her durakta 150 ms arayla üç fotoğraf ölçülür ve seviye başına ortanca genişlik alınır. Tek karedeki segmentasyon kayması sonucu belirlemez. Cihazda henüz ölçülmedi.
+- **Ölçüler arası ilişki** (`GirthCorrelations`, `scripts/fit_correlations.py`): Boy, kilo ve BMI'dan sonra kalan farklar ölçüler arasında kısmen ortaktır. Uyluk ve detay çevreleri, ölçülen göğüs/bel/kalçaya göre koşullanır. ANSUR II'de (6.068 kişi, kalça ve bel %1,5 gürültüyle ölçülmüş varsayımıyla) uyluk ortalama mutlak hatası 1,77'den 1,49 cm'ye, baldır 1,29'dan 1,22 cm'ye düşer. Bel için kazanç küçüktür (3,5 → 3,4 cm), bu yüzden belde kullanılmaz.
+- **Yalınayak uyarısı:** Ölçek girilen boydan gelir. Ayakkabı veya kabarık saç silüet yüksekliğini artırır ve tüm genişlikleri küçültür (örneğin 3 cm ayakkabı ≈ %1,7). Tarama rehberi yalınayak ve saç toplu taramayı ister.
+- **Araştırılıp uygulanmayanlar:**
+  - LiDAR/derinlik: kullanıcının iPhone 11'inde yok.
+  - SMPL: ticari lisans doğrulanmadı.
+  - Yumuşak maske ile alt-piksel kenar: `BinaryMask` boru hattının cihazda yeniden doğrulanmasını gerektirir.
+  - Öğrenilmiş görüntüden-ölçü modeli: eğitim verisi yok.
+
+## 9. Kumaşın giydirilmesi (animasyon)
+
+- **Yöntem:** Kıyafet 8 cm yukarıdan bırakılır. Tutma noktaları (omuz, bel bandı) 0,4 s içinde yerine iner. Kumaş yerçekimiyle düşer, sallanır ve oturur: 2 s, adım başına 0,985 hız korunur. Kareler 30 fps kaydedilir ve avatar ekranında oynatılır.
+- **Testler (`DressingTests`):**
+  - Kıyafet en az 5 cm aşağı iner.
+  - İlk karelerdeki hareket, son karelerdekinin 5 katından fazladır.
+  - Son kare bitmiş kıyafettir ve vücudun içine girmez.
+- **Süre:** Masaüstü CPU'da, release derlemede tam çözünürlükte 1,9 s (animasyonsuz 0,6 s). iPhone süresi ölçülmedi.
+
+## 10. Sesli yönlendirme
+
+Taramanın sabit cümleleri önceden kaydedilmiş seslerdir (`WearIQ/Resources/Voice`, `scripts/generate_voice.py`).
+
+- **Motor:** Chatterbox Multilingual (Resemble AI, MIT lisansı). Çıktılarında Resemble'ın duyulmaz Perth filigranı vardır.
+- **Kontrol:** Her klip Whisper large-v3-turbo ile geri yazıya çevrilerek denetlendi. 107 klibin tamamı %12 karakter hatasının altında (bkz. `scripts/voice_manifest.json`).
+- **Yedek:** Klibi olmayan metin (hata ayrıntısı gibi) sistem sentezleyicisiyle okunur.

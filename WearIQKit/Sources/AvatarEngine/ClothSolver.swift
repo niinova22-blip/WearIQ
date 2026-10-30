@@ -22,6 +22,28 @@ struct TriangleCloth {
     private(set) var contact: [Bool] = []
     /// Per vertex after draping: distance from the skin, metres (0 where touching).
     private(set) var gap: [Float] = []
+    /// Positions while it falls and settles, when asked for (`Motion.recordEvery`).
+    private(set) var frames: [[Vec3]] = []
+
+    /// How the garment is put on.
+    struct Motion {
+        /// Raised this far above where it ends up, then let go: it falls onto the body
+        /// under gravity, swings and settles. 0 settles it in place.
+        var lift: Float = 0
+        /// Simulated steps of 1/60 s.
+        var steps = 18
+        /// Velocity kept per step. Air drag on a garment is small; the heavy default
+        /// settles quickly without showing the motion.
+        var damping: Float = 0.6
+        /// Steps over which the held parts (shoulders, waistband) are lowered into place.
+        var lowering = 0
+        /// Keep every n-th step's positions in `frames`; 0 keeps none.
+        var recordEvery = 0
+
+        static let settle = Motion()
+        /// Dropped from 8 cm up, over two seconds, recorded at 30 frames a second.
+        static let dressing = Motion(lift: 0.08, steps: 120, damping: 0.985, lowering: 24, recordEvery: 2)
+    }
 
     private struct Link { let a: Int, b: Int, length: Float }
     private let edges: [Link]
@@ -70,7 +92,8 @@ struct TriangleCloth {
 
     /// Settles the cloth on the body. `pinned` vertices don't fall or get pulled, but are
     /// still pushed out of the body.
-    mutating func drape(body: (Vec3) -> Float, fabric: Fabric, pinned: [Bool], steps: Int = 18, iterations: Int = 4) {
+    mutating func drape(body: (Vec3) -> Float, fabric: Fabric, pinned: [Bool], motion: Motion = .settle, iterations: Int = 4) {
+        let steps = motion.steps
         let thickness = fabric.thickness
         let dt: Float = 1.0 / 60
         let gravity = Vec3(0, -9.81 * dt * dt, 0)
@@ -188,9 +211,19 @@ struct TriangleCloth {
             for k in bendLambda.indices { bendLambda[k] = 0 }
         }
 
+        // Raised to start with; the held parts come down with the hands putting it on.
+        let lift = Vec3(0, motion.lift, 0)
+        if motion.lift > 0 { positions = positions.map { $0 + lift } }
+        frames = []
         collide()
-        for _ in 0..<steps {
+        if motion.recordEvery > 0 { frames.append(positions) }
+        for step in 0..<steps {
             let start = positions
+            if motion.lift > 0 {
+                let f = motion.lowering > 0 ? min(1, Float(step + 1) / Float(motion.lowering)) : 1
+                let eased = f * f * (3 - 2 * f)
+                for i in positions.indices where pinned[i] { positions[i] = rest[i] + lift * (1 - eased) }
+            }
             touching = [Bool](repeating: false, count: positions.count)
             resetLambdas()
             for i in positions.indices where !pinned[i] {
@@ -209,13 +242,15 @@ struct TriangleCloth {
                     let along = v - n * normalSpeed
                     v = along * max(0, 1 - 2 * fabric.friction) + n * max(0, normalSpeed)
                 }
-                velocity[i] = v * 0.6
+                velocity[i] = v * motion.damping
             }
+            if motion.recordEvery > 0, (step + 1) % motion.recordEvery == 0 { frames.append(positions) }
         }
         // At rest: let the constraints settle what the last steps' weight left unresolved.
         touching = [Bool](repeating: false, count: positions.count)
         resetLambdas()
         for _ in 0..<(iterations * 8) { project() }
+        if motion.recordEvery > 0 { frames.append(positions) }
         contact = touching
         gap = positions.indices.map { touching[$0] ? 0 : max(0, body(positions[$0]) - thickness) }
 
