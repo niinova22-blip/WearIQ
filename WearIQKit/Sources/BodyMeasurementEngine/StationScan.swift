@@ -145,6 +145,8 @@ public enum StopFit: Equatable, Sendable {
     case openArms
     /// Head or feet outside the picture: the height, which sets the scale, can't be seen.
     case stepBack
+    /// A hand runs off the side of the picture: the arm span, which tells the turn, is cut.
+    case handsOutOfFrame
     /// Too small in the picture to measure well.
     case comeCloser
     /// Too far to one side.
@@ -161,11 +163,33 @@ public enum StopGuide {
     ///   - shoulderRatio: shoulder separation relative to the front stop's, when the
     ///     shoulders are detected. Lets dropped arms be told apart from a side view.
     /// Below this fraction of the picture's height the outline is too coarse to measure.
-    public static let minimumBodySpan = 0.42
+    /// Arms held straight out span about the body's height, and a portrait picture is
+    /// only 9/16 as wide as it is tall, so a body taller than about half the picture
+    /// can't fit its hands in: the user stands where the body fills 36–50% of it.
+    public static let minimumBodySpan = 0.36
 
     /// Whether the whole body, head to feet, is inside the picture.
     public static func fullyVisible(_ reading: FrameReading) -> Bool {
         reading.top > 0.01 && reading.floor < 0.99
+    }
+
+    /// Which edges of the picture the person touches, so the screen can show where they're cut off.
+    public struct Edges: OptionSet, Sendable, Equatable {
+        public let rawValue: Int
+        public init(rawValue: Int) { self.rawValue = rawValue }
+        public static let top = Edges(rawValue: 1)
+        public static let bottom = Edges(rawValue: 2)
+        public static let left = Edges(rawValue: 4)
+        public static let right = Edges(rawValue: 8)
+    }
+
+    public static func cutEdges(_ reading: FrameReading) -> Edges {
+        var edges: Edges = []
+        if reading.top <= 0.01 { edges.insert(.top) }
+        if reading.floor >= 0.99 { edges.insert(.bottom) }
+        if reading.outline.contains(where: { $0.left <= 0.006 }) { edges.insert(.left) }
+        if reading.outline.contains(where: { $0.right >= 0.994 }) { edges.insert(.right) }
+        return edges
     }
 
     /// Whether an arm has come down from shoulder height, from the pose: held out, the

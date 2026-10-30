@@ -72,7 +72,9 @@ struct TriangleCloth {
         var edges: [Link] = [], bends: [Link] = []
         var ring = [Set<Int>](repeating: [], count: mesh.positions.count)
         let rest = mesh.positions, indices = mesh.indices
-        for (key, triangles) in edgeTriangles {
+        // In a fixed order: dictionary order changes from run to run, and the order the
+        // constraints are solved in moves the result a little.
+        for (key, triangles) in edgeTriangles.sorted(by: { $0.key < $1.key }) {
             let a = key >> 32, b = key & 0xFFFF_FFFF
             edges.append(Link(a: a, b: b, length: (rest[a] - rest[b]).length))
             ring[a].insert(b); ring[b].insert(a)

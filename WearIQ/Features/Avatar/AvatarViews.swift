@@ -6,268 +6,6 @@ import SwiftData
 import SwiftUI
 import WearIQCore
 
-/// Renders an `Avatar` with SceneKit: drag to turn it, pinch to zoom. A matte grey body
-/// under a soft key light with ambient occlusion and a contact shadow on the floor, the
-/// garment's stitch lines as faint dashes, and labelled body points (see
-/// `LandmarkLabels`) that follow the avatar as it turns. Body and garment geometry are
-/// swapped in place, so the camera stays where the user put it. With `fitMap` the
-/// garment is coloured by how it sits: blue loose, green resting on the body, yellow
-/// slightly tight, orange tight, red pulling past what the fabric gives.
-struct AvatarSceneView: UIViewRepresentable {
-    let avatar: Avatar
-    var fitMap = false
-    /// While the dressing plays: which of `avatar.garmentFrames` to show.
-    var frame: Int?
-    /// Text for each body point; nil leaves it unlabelled.
-    var labels: [Avatar.Landmark.Kind: String] = [:]
-    @ObservedObject var labelModel: LandmarkLabels
-
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    func makeUIView(context: Context) -> SCNView {
-        let view = SCNView()
-        view.backgroundColor = .clear
-        view.antialiasingMode = .multisampling4X
-        view.allowsCameraControl = true
-        view.defaultCameraController.interactionMode = .orbitTurntable
-        view.scene = context.coordinator.scene
-        view.delegate = context.coordinator
-        context.coordinator.update(avatar, fitMap: fitMap, frame: frame, labels: labels, model: labelModel, in: view)
-        return view
-    }
-
-    func updateUIView(_ view: SCNView, context: Context) {
-        context.coordinator.update(avatar, fitMap: fitMap, frame: frame, labels: labels, model: labelModel, in: view)
-    }
-
-    final class Coordinator: NSObject, SCNSceneRendererDelegate {
-        let scene = SCNScene()
-        private let bodyNode = SCNNode()
-        private let garmentNode = SCNNode()
-        private let seamNode = SCNNode()
-        private var placedCamera = false
-        private var shownMesh: (Int, Int, Bool, Int)?
-        // Read on the render thread.
-        private let lock = NSLock()
-        private var landmarks: [(Avatar.Landmark, String)] = []
-        private weak var model: LandmarkLabels?
-
-        override init() {
-            super.init()
-            scene.rootNode.addChildNode(bodyNode)
-            scene.rootNode.addChildNode(garmentNode)
-            scene.rootNode.addChildNode(seamNode)
-            // Soft key light from the front left, casting a blurred shadow.
-            let key = SCNNode()
-            key.light = SCNLight()
-            key.light?.type = .directional
-            key.light?.intensity = 800
-            key.light?.castsShadow = true
-            key.light?.shadowMode = .deferred
-            key.light?.shadowSampleCount = 16
-            key.light?.shadowRadius = 10
-            key.light?.shadowColor = UIColor(white: 0, alpha: 0.28)
-            key.light?.orthographicScale = 1.4
-            key.eulerAngles = SCNVector3(-1.0, 0.45, 0)
-            scene.rootNode.addChildNode(key)
-            // Rim light from behind, so the outline reads against the background.
-            let rim = SCNNode()
-            rim.light = SCNLight()
-            rim.light?.type = .directional
-            rim.light?.intensity = 420
-            rim.eulerAngles = SCNVector3(-0.35, .pi * 0.85, 0)
-            scene.rootNode.addChildNode(rim)
-            let fill = SCNNode()
-            fill.light = SCNLight()
-            fill.light?.type = .ambient
-            fill.light?.intensity = 380
-            fill.light?.color = UIColor(red: 0.93, green: 0.95, blue: 1, alpha: 1)
-            scene.rootNode.addChildNode(fill)
-            // A floor that only shows the shadow.
-            let floor = SCNFloor()
-            floor.reflectivity = 0
-            let floorMaterial = SCNMaterial()
-            floorMaterial.lightingModel = .shadowOnly
-            floor.materials = [floorMaterial]
-            scene.rootNode.addChildNode(SCNNode(geometry: floor))
-        }
-
-        @MainActor
-        func update(_ avatar: Avatar, fitMap: Bool, frame: Int?, labels: [Avatar.Landmark.Kind: String],
-                    model: LandmarkLabels, in view: SCNView) {
-            self.model = model
-            let key = (avatar.body.positions.count, avatar.garment?.positions.count ?? 0, fitMap, frame ?? -1)
-            if shownMesh.map({ $0 != key }) ?? true {
-                let bodyChanged = shownMesh.map { $0.0 != key.0 } ?? true
-                shownMesh = key
-                if bodyChanged {
-                    bodyNode.geometry = Self.geometry(avatar.body, color: UIColor(red: 0.8, green: 0.81, blue: 0.83, alpha: 1), roughness: 0.92)
-                }
-                let garment = frame.flatMap { avatar.garmentMesh(frame: $0) } ?? avatar.garment
-                garmentNode.geometry = garment.map {
-                    fitMap
-                        ? Self.geometry($0, color: .white, roughness: 0.9, doubleSided: true, colors: $0.strain.map(Self.fitColor))
-                        : Self.geometry($0, color: UIColor(red: 0.24, green: 0.3, blue: 0.44, alpha: 1), roughness: 0.88, doubleSided: true)
-                }
-                // Seams belong to the settled garment; they appear when it has come to rest.
-                seamNode.geometry = frame == nil ? Self.stitches(avatar.seams) : nil
-            }
-            lock.lock()
-            landmarks = avatar.landmarks.compactMap { l in labels[l.kind].map { (l, $0) } }
-            lock.unlock()
-            if !placedCamera {
-                placedCamera = true
-                let height = avatar.body.maxY
-                let camera = SCNNode()
-                camera.camera = SCNCamera()
-                camera.camera?.fieldOfView = 34
-                camera.camera?.screenSpaceAmbientOcclusionIntensity = 0.9
-                camera.camera?.screenSpaceAmbientOcclusionRadius = 0.08
-                camera.position = SCNVector3(0, height * 0.55, height * 1.9)
-                camera.look(at: SCNVector3(0, height * 0.5, 0))
-                scene.rootNode.addChildNode(camera)
-                view.pointOfView = camera
-            }
-            view.setNeedsDisplay()
-        }
-
-        // Each frame: where the labelled points land on screen, and which face the camera.
-        func renderer(_ renderer: SCNSceneRenderer, didRenderScene scene: SCNScene, atTime time: TimeInterval) {
-            guard let camera = renderer.pointOfView?.presentation.worldPosition else { return }
-            lock.lock()
-            let points = landmarks
-            lock.unlock()
-            let items = points.compactMap { l, text -> LandmarkLabels.Item? in
-                let p = l.position
-                let toCamera = Vec3(camera.x - p.x, camera.y - p.y, camera.z - p.z)
-                guard l.normal.x * toCamera.x + l.normal.y * toCamera.y + l.normal.z * toCamera.z > 0 else { return nil }
-                let at = renderer.projectPoint(SCNVector3(p.x, p.y, p.z))
-                let towards = renderer.projectPoint(SCNVector3(p.x + l.side * 0.1, p.y, p.z))
-                guard at.z > 0, at.z < 1 else { return nil }
-                return LandmarkLabels.Item(id: l.kind.rawValue, point: CGPoint(x: CGFloat(at.x), y: CGFloat(at.y)),
-                                           rightward: towards.x >= at.x, text: text)
-            }
-            DispatchQueue.main.async { [weak self] in
-                guard let model = self?.model, model.items != items else { return }
-                model.items = items
-            }
-        }
-
-        /// Fit-map colour (see `fitValues`): blue loose, green resting on the body, yellow
-        /// from 0.3 of the fabric's comfortable stretch, orange from 0.6, red at the limit
-        /// (the same thresholds as `ZoneReport`).
-        static func fitColor(_ v: Float) -> SIMD4<Float> {
-            let stops: [(Float, SIMD4<Float>)] = [
-                (0, SIMD4(0.3, 0.55, 0.78, 1)), (0.35, SIMD4(0.36, 0.76, 0.6, 1)), (0.45, SIMD4(0.36, 0.76, 0.6, 1)),
-                (0.545, SIMD4(0.98, 0.84, 0.32, 1)), (0.74, SIMD4(0.97, 0.58, 0.24, 1)), (1.0, SIMD4(0.9, 0.3, 0.28, 1)),
-            ]
-            guard v > stops[0].0 else { return stops[0].1 }
-            for (a, b) in zip(stops, stops.dropFirst()) where v < b.0 {
-                return a.1 + (b.1 - a.1) * ((v - a.0) / (b.0 - a.0))
-            }
-            return stops[stops.count - 1].1
-        }
-
-        /// Faint dashed stitching from pairs of points.
-        static func stitches(_ points: [Vec3]) -> SCNGeometry? {
-            guard points.count >= 2 else { return nil }
-            let source = SCNGeometrySource(vertices: points.map { SCNVector3($0.x, $0.y, $0.z) })
-            let element = SCNGeometryElement(indices: (0..<UInt32(points.count)).map { $0 }, primitiveType: .line)
-            let geometry = SCNGeometry(sources: [source], elements: [element])
-            let material = SCNMaterial()
-            material.lightingModel = .constant
-            material.diffuse.contents = UIColor(white: 1, alpha: 0.6)
-            material.blendMode = .alpha
-            geometry.materials = [material]
-            return geometry
-        }
-
-        static func geometry(_ mesh: Mesh, color: UIColor, roughness: CGFloat, doubleSided: Bool = false,
-                             colors: [SIMD4<Float>]? = nil) -> SCNGeometry {
-            var sources = [
-                SCNGeometrySource(vertices: mesh.positions.map { SCNVector3($0.x, $0.y, $0.z) }),
-                SCNGeometrySource(normals: mesh.normals.map { SCNVector3($0.x, $0.y, $0.z) }),
-            ]
-            if let colors, colors.count == mesh.positions.count {
-                let data = colors.withUnsafeBufferPointer { Data(buffer: $0) }
-                sources.append(SCNGeometrySource(data: data, semantic: .color, vectorCount: colors.count, usesFloatComponents: true,
-                                                 componentsPerVector: 4, bytesPerComponent: 4, dataOffset: 0,
-                                                 dataStride: MemoryLayout<SIMD4<Float>>.stride))
-            }
-            let element = SCNGeometryElement(indices: mesh.indices, primitiveType: .triangles)
-            let geometry = SCNGeometry(sources: sources, elements: [element])
-            let material = SCNMaterial()
-            material.lightingModel = .physicallyBased
-            material.diffuse.contents = color
-            material.roughness.contents = roughness
-            material.metalness.contents = 0.0
-            material.isDoubleSided = doubleSided
-            geometry.materials = [material]
-            return geometry
-        }
-    }
-}
-
-/// Where the labelled body points are on screen, updated as the avatar turns.
-final class LandmarkLabels: ObservableObject {
-    struct Item: Equatable, Identifiable {
-        var id: String
-        var point: CGPoint
-        /// Whether the label goes to the right of its point.
-        var rightward: Bool
-        var text: String
-    }
-
-    @Published var items: [Item] = []
-}
-
-/// The labels themselves: a faint dotted ring on the point, a small jagged leader going
-/// outward, and the text.
-struct LandmarkOverlay: View {
-    @ObservedObject var model: LandmarkLabels
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(model.items) { item in
-                let sign: CGFloat = item.rightward ? 1 : -1
-                let end = CGPoint(x: item.point.x + sign * 40, y: item.point.y)
-                Circle()
-                    .stroke(.white.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
-                    .frame(width: 9, height: 9)
-                    .position(item.point)
-                Self.leader(from: CGPoint(x: item.point.x + sign * 5, y: item.point.y), to: end)
-                    .stroke(.white.opacity(0.65), style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
-                Text(item.text)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(.black.opacity(0.45), in: Capsule())
-                    .fixedSize()
-                    .alignmentGuide(.leading) { d in item.rightward ? 0 : d.width }
-                    .alignmentGuide(.top) { d in d.height / 2 }
-                    .offset(x: end.x + sign * 3, y: end.y)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .allowsHitTesting(false)
-    }
-
-    /// A zigzag with small teeth, then a short straight run.
-    static func leader(from a: CGPoint, to b: CGPoint) -> Path {
-        var p = Path()
-        p.move(to: a)
-        let length = b.x - a.x
-        let teeth = 6
-        for k in 1...teeth {
-            let x = a.x + length * 0.75 * CGFloat(k) / CGFloat(teeth)
-            p.addLine(to: CGPoint(x: x, y: a.y + (k % 2 == 0 ? 0 : (k % 4 == 1 ? -2.5 : 2.5))))
-        }
-        p.addLine(to: b)
-        return p
-    }
-}
-
 extension Avatar.Landmark.Kind {
     var title: String {
         switch self {
@@ -316,7 +54,10 @@ enum AvatarFitMapper {
             let lengthEase: Double = spec.category == .tshirt ? 18 : spec.category == .jacket ? 25 : 21
             if let d = diff(.bodyLength, .torsoLength) { fit.lengthDelta = spec.chartKind == .garment ? d - lengthEase : d }
             if let d = diff(.sleeveLength, .armLength) { fit.sleeveDelta = spec.chartKind == .garment ? d - 2.5 : d }
-            if let d = diff(.shoulderWidth, .shoulderWidth) {
+            // The chart's shoulder runs over the back; a scanned one is bone to bone.
+            let shoulder = body[.shoulderWidth].map(FitEngine.acrossBack)
+            if let gv = size.values[.shoulderWidth]?.cm, let bv = shoulder?.cm {
+                let d = gv - bv
                 fit.shoulderDelta = spec.chartKind == .garment ? d : d + (style == .oversized ? 7 : 0)
             } else if style == .oversized {
                 fit.shoulderDelta = 7
@@ -366,8 +107,12 @@ enum AvatarFitMapper {
     }
 }
 
-/// "See it on my avatar": the chosen size draped on the user's own 3D body, with the
-/// verdict for each region next to it, or the fit map of how the fabric sits.
+/// "See it on my avatar": the chosen size draped on the user's own 3D body, on one
+/// screen. The garment is coloured by how it sits (blue fits, yellow loose, red long,
+/// purple tight, orange short), with glowing lines where its shoulder seams, cuffs and
+/// hems fall and white dashes where they belong; labels say by how much. A second piece
+/// can be worn with it, a top with trousers, from the garments analysed before. The
+/// zone-by-zone simulation report and the size comparison are Premium.
 struct AvatarFitView: View {
     let analysis: FitAnalysis
     let spec: GarmentSpec
@@ -375,11 +120,11 @@ struct AvatarFitView: View {
     /// The fabric composition from the product page, when known.
     var material: String?
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
+    @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var saved: [SavedAnalysis]
     @Environment(\.dismiss) private var dismiss
     @Environment(AppContainer.self) private var container
-    @State private var showFitMap = false
-    @State private var showLabels = true
     @State private var avatar: Avatar?
+    @State private var revision = 0
     /// The frame of the dressing being shown, nil once it has settled.
     @State private var frame: Int?
     @StateObject private var labelModel = LandmarkLabels()
@@ -387,27 +132,51 @@ struct AvatarFitView: View {
     @State private var comparison: [SizeDrape]?
     @State private var comparing = false
     @State private var showPaywall = false
+    /// The other piece worn with this one.
+    @State private var companion: Companion?
+    @State private var choosingCompanion = false
+
+    /// A garment analysed earlier, worn together with this one.
+    struct Companion: Equatable {
+        var key: String
+        var name: String
+        var spec: GarmentSpec
+        var analysis: FitAnalysis
+        var material: String?
+        var size: String
+
+        static func == (a: Self, b: Self) -> Bool { a.key == b.key && a.size == b.size }
+    }
 
     var body: some View {
         NavigationStack {
             Group {
                 if let body = profiles.first?.profile, Avatar.Measurements(body) != nil {
-                    let regions = analysis.sizes.first { $0.label == sizeLabel }?.regions.filter { $0.verdict != .insufficientData } ?? []
                     VStack(spacing: 0) {
                         ZStack {
                             if let avatar {
-                                AvatarSceneView(avatar: avatar, fitMap: showFitMap, frame: frame,
-                                                labels: showLabels && frame == nil ? labels(regions) : [:],
-                                                labelModel: labelModel)
+                                AvatarSceneView(avatar: avatar, revision: revision, frame: frame,
+                                                labels: frame == nil ? labels(avatar) : [], labelModel: labelModel)
                                 LandmarkOverlay(model: labelModel)
                             } else {
                                 ProgressView("Draping the fabric…")
                             }
+                            VStack {
+                                legend
+                                Spacer()
+                                Label("Drag to turn", systemImage: "hand.draw")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.bottom, 6)
+                            }
+                            .allowsHitTesting(false)
                         }
                         .frame(maxHeight: .infinity)
-                        panel(regions)
+                        .background(RadialGradient(colors: [Color(white: 0.32), Color(white: 0.1)], center: .center,
+                                                   startRadius: 20, endRadius: 520))
+                        panel
                     }
-                    .task(id: sizeLabel) { await drape(body) }
+                    .task(id: drapeKey) { await drape(body) }
                 } else {
                     ContentUnavailableView("Scan or enter your measurements first", systemImage: "figure.stand")
                 }
@@ -416,28 +185,55 @@ struct AvatarFitView: View {
             .navigationTitle("On your avatar")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showPaywall) { PaywallView() }
+            .sheet(isPresented: $choosingCompanion) { companionPicker }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { showLabels.toggle() } label: {
-                        Image(systemName: showLabels ? "tag.fill" : "tag")
-                    }
-                    .accessibilityLabel(Text("Labels"))
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { Task { await play() } } label: { Image(systemName: "play.circle") }
-                        .accessibilityLabel(Text("Replay"))
-                        .disabled(avatar?.garmentFrames.isEmpty ?? true || frame != nil)
-                }
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
     }
 
-    /// Plays the garment being put on: dropped onto the body, falling and settling, at
-    /// the 30 frames a second it was simulated at.
+    private var drapeKey: String { sizeLabel + "|" + (companion.map { $0.key + "|" + $0.size } ?? "") }
+
+    private var regions: [RegionFit] {
+        analysis.sizes.first { $0.label == sizeLabel }?.regions.filter { $0.verdict != .insufficientData } ?? []
+    }
+
+    /// The colour key, over the top of the scene.
+    private var legend: some View {
+        HStack(spacing: 10) {
+            ForEach(FitTone.allCases, id: \.self) { tone in
+                HStack(spacing: 4) {
+                    Circle().fill(tone.color).frame(width: 9, height: 9)
+                    Text(tone.title).lineLimit(1)
+                }
+            }
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.black.opacity(0.45), in: Capsule())
+        .padding(.top, 8)
+    }
+
+    /// Each fit line that has something to say, labelled where it is.
+    private func labels(_ avatar: Avatar) -> [SceneLabel] {
+        avatar.layers.enumerated().flatMap { index, layer in
+            let trousers = layer.fit.kind == .trousers
+            return layer.fitLines.compactMap { line -> SceneLabel? in
+                guard let text = line.text(trousers: trousers) else { return nil }
+                return SceneLabel(id: "\(index)-\(line.kind.rawValue)", position: line.anchor, normal: line.normal,
+                                  side: line.anchor.x >= 0 ? 1 : -1, text: text, tone: line.tone)
+            }
+        }
+    }
+
+    /// Plays the garments being put on: dropped onto the body, falling and settling, at
+    /// the 30 frames a second they were simulated at.
     private func play() async {
-        guard let frames = avatar?.garmentFrames, !frames.isEmpty else { return }
-        for k in frames.indices {
+        let count = avatar?.layers.map(\.frames.count).max() ?? 0
+        guard count > 0 else { return }
+        for k in 0..<count {
             guard !Task.isCancelled else { break }
             frame = k
             try? await Task.sleep(for: .milliseconds(33))
@@ -445,95 +241,181 @@ struct AvatarFitView: View {
         frame = nil
     }
 
-    /// Body points named, with the verdict of the region each one belongs to.
-    private func labels(_ regions: [RegionFit]) -> [Avatar.Landmark.Kind: String] {
-        let trousers = spec.category == .pants
-        var regionOf: [Avatar.Landmark.Kind: FitRegion] = trousers
-            ? [.waist: .waist, .hip: .hip, .thigh: .thigh]
-            : [.shoulder: .shoulder, .chest: .chest, .waist: .waist, .wrist: .sleeve]
-        if trousers {
-            regionOf[.ankle] = regions.contains { $0.region == .inseam } ? .inseam : .outseam
-        } else {
-            regionOf[.hip] = .bodyLength
-        }
-        var out: [Avatar.Landmark.Kind: String] = [:]
-        for kind in Avatar.Landmark.Kind.allCases {
-            if let region = regionOf[kind], let r = regions.first(where: { $0.region == region }) {
-                out[kind] = kind.title + " · " + r.detailText
-            } else {
-                out[kind] = kind.title
-            }
-        }
-        return out
-    }
-
     /// Runs the cloth simulation off the main thread.
     private func drape(_ body: BodyProfile) async {
         guard let m = Avatar.Measurements(body), let size = spec.sizes.first(where: { $0.label == sizeLabel }) else { return }
+        var fits: [Avatar.GarmentFit] = []
         var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body)
         fit.fabric = AvatarFitMapper.fabric(spec: spec, material: material)
-        // The body straight away, then the garment put on it under gravity.
+        fits.append(fit)
+        if let companion, let size = companion.spec.sizes.first(where: { $0.label == companion.size }) {
+            var other = AvatarFitMapper.fit(spec: companion.spec, size: size, body: body)
+            other.fabric = AvatarFitMapper.fabric(spec: companion.spec, material: companion.material)
+            fits.append(other)
+        }
+        // The body straight away, then the garments put on it under gravity.
         if avatar == nil {
             let bare = await Task.detached(priority: .userInitiated) { Avatar(m) }.value
             guard !Task.isCancelled else { return }
-            avatar = bare
+            show(bare)
         }
-        let draped = await Task.detached(priority: .userInitiated) { Avatar(m, garment: fit, detail: .animated) }.value
+        let worn = fits
+        let draped = await Task.detached(priority: .userInitiated) { Avatar(m, garments: worn, detail: .animated) }.value
         guard !Task.isCancelled else { return }
-        frame = draped.garmentFrames.isEmpty ? nil : 0
-        avatar = draped
+        frame = draped.layers.contains { !$0.frames.isEmpty } ? 0 : nil
+        show(draped)
         await play()
     }
 
-    private func panel(_ regions: [RegionFit]) -> some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-            if spec.sizes.count > 1 {
-                Picker("Size", selection: $sizeLabel) {
-                    ForEach(spec.sizes, id: \.label) { Text($0.label).tag($0.label) }
-                }
-                .pickerStyle(.segmented)
-            }
-            Picker("View", selection: Binding(get: { showFitMap }, set: { wanted in
-                // The fit map and the zone analysis are Premium.
-                if wanted, !container.isPremium { showPaywall = true } else { showFitMap = wanted }
-            })) {
-                Text("Garment").tag(false)
-                Text(container.isPremium ? LocalizedStringKey("Fit map") : LocalizedStringKey("Fit map ★")).tag(true)
-            }
-            .pickerStyle(.segmented)
-            if showFitMap {
-                HStack(spacing: Theme.Spacing.s) {
-                    ForEach(ZoneTension.allCases, id: \.self) { t in legend(t.title, t.color) }
-                }
-                .font(.caption2)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-                        if let zones = avatar?.fitReport, !zones.isEmpty {
-                            zoneList(zones)
-                        }
-                        comparisonSection
+    private func show(_ new: Avatar) {
+        avatar = new
+        revision += 1
+    }
+
+    // MARK: Panel
+
+    private var panel: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+                if spec.sizes.count > 1 {
+                    Picker("Size", selection: $sizeLabel) {
+                        ForEach(spec.sizes, id: \.label) { Text($0.label).tag($0.label) }
                     }
+                    .pickerStyle(.segmented)
                 }
-                .frame(maxHeight: 240)
-            } else {
-                ForEach(regions, id: \.region) { r in
-                    HStack {
-                        Image(systemName: r.severity.symbol).foregroundStyle(r.severity.color)
-                        Text(r.region.title)
-                        Spacer()
-                        Text(r.detailText).foregroundStyle(.secondary)
-                    }
-                    .font(.subheadline)
-                }
+                regionRows(regions)
+                companionSection
+                details
+                Text("Blue fits, yellow is loose, red is long, purple is tight, orange is short. Glowing lines are where the seams and hems fall; white dashes are where they belong on your body. The garment is cut to the size chart and settles on your body under its own weight, as far as its fibres stretch. Without the product's own pattern this is a model of the garment, not the real one.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
-            Text("Draped with cloth physics: the garment is cut to the size chart, settles on your body under its own weight and stretches where it must, as far as its fibres allow. Dashed lines are its seams and hems. Without the product's own pattern and fabric data this is a model of the garment, not the real one.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            .padding(Theme.Spacing.m)
         }
-        .padding(Theme.Spacing.m)
+        .frame(maxHeight: 330)
         .background(.bar)
         .sensoryFeedback(.selection, trigger: sizeLabel)
-        .sensoryFeedback(.selection, trigger: showFitMap)
+    }
+
+    private func regionRows(_ regions: [RegionFit]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(regions, id: \.region) { r in
+                HStack(alignment: .firstTextBaseline) {
+                    Image(systemName: r.severity.symbol).foregroundStyle(r.severity.color)
+                    Text(r.region.title)
+                    Spacer()
+                    Text(r.detailText).foregroundStyle(.secondary).multilineTextAlignment(.trailing)
+                }
+                .font(.subheadline)
+            }
+        }
+    }
+
+    /// The second piece: a button to add one, or the one worn with its size and verdicts.
+    @ViewBuilder
+    private var companionSection: some View {
+        if let companion {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                HStack {
+                    Label(companion.name, systemImage: companion.spec.category.isTop ? "tshirt" : "figure.walk")
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                    Spacer()
+                    if companion.spec.sizes.count > 1 {
+                        Menu(companion.size) {
+                            ForEach(companion.spec.sizes, id: \.label) { size in
+                                Button(size.label) { self.companion?.size = size.label }
+                            }
+                        }
+                    }
+                    Button {
+                        self.companion = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .accessibilityLabel(Text("Take it off"))
+                }
+                regionRows(companion.analysis.sizes.first { $0.label == companion.size }?.regions
+                    .filter { $0.verdict != .insufficientData } ?? [])
+            }
+        } else {
+            Button {
+                choosingCompanion = true
+            } label: {
+                Label(spec.category.isTop ? LocalizedStringKey("Wear it with trousers") : LocalizedStringKey("Wear it with a top"), systemImage: "plus.circle")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    /// Garments analysed earlier that go with this one: trousers for a top, tops for trousers.
+    private var companionPicker: some View {
+        let wantTop = !spec.category.isTop
+        let candidates = saved.filter { $0.spec.map { $0.category.isTop == wantTop } ?? false }
+        return NavigationStack {
+            Group {
+                if candidates.isEmpty {
+                    ContentUnavailableView(wantTop ? LocalizedStringKey("No tops analysed yet") : LocalizedStringKey("No trousers analysed yet"),
+                                           systemImage: wantTop ? "tshirt" : "figure.walk",
+                                           description: Text("Check the fit of one and it will appear here."))
+                } else {
+                    List(candidates, id: \.productKey) { item in
+                        Button {
+                            pick(item)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    if let brand = item.brand { Text(brand).font(.caption).foregroundStyle(.secondary) }
+                                    Text(item.productName ?? String(localized: "Garment")).lineLimit(2)
+                                }
+                                Spacer()
+                                if let size = item.analysis?.recommendedSize?.label {
+                                    Text(size).font(.headline.monospaced())
+                                }
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                }
+            }
+            .navigationTitle(wantTop ? LocalizedStringKey("Add a top") : LocalizedStringKey("Add trousers"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { choosingCompanion = false } } }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func pick(_ item: SavedAnalysis) {
+        guard let spec = item.spec, let analysis = item.analysis else { return }
+        let size = analysis.recommendedSize?.label ?? analysis.ranked.first?.label ?? spec.sizes.first?.label
+        guard let size else { return }
+        companion = Companion(key: item.productKey, name: item.productName ?? String(localized: "Garment"), spec: spec,
+                              analysis: analysis, material: item.material, size: size)
+        choosingCompanion = false
+    }
+
+    // MARK: Premium details
+
+    @ViewBuilder
+    private var details: some View {
+        if container.isPremium {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                if let zones = avatar?.fitReport, !zones.isEmpty {
+                    Text("Zone by zone").font(.footnote.weight(.semibold))
+                    zoneList(zones)
+                }
+                comparisonSection
+            }
+        } else {
+            Button {
+                showPaywall = true
+            } label: {
+                Label("Zone by zone and all sizes compared ★", systemImage: "square.stack.3d.up")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        }
     }
 
     /// The simulated zones, tightest first.
@@ -630,13 +512,6 @@ struct AvatarFitView: View {
         guard !Task.isCancelled else { return }
         withAnimation { comparison = result }
     }
-
-    private func legend(_ title: String, _ color: Color) -> some View {
-        HStack(spacing: 4) {
-            Circle().fill(color).frame(width: 9, height: 9)
-            Text(title).lineLimit(1).minimumScaleFactor(0.8)
-        }
-    }
 }
 
 /// "My avatar": the body from the measurements, fine-tuned with sliders and saved back.
@@ -647,6 +522,7 @@ struct AvatarEditorView: View {
     @State private var values: [BodyDimension: Double] = [:]
     @State private var original: [BodyDimension: Double] = [:]
     @State private var avatar: Avatar?
+    @State private var revision = 0
     @StateObject private var labelModel = LandmarkLabels()
 
     private static let editable: [BodyDimension] = [.shoulderWidth, .chest, .waist, .hip, .thigh, .armLength, .inseam]
@@ -656,7 +532,8 @@ struct AvatarEditorView: View {
             if let base = profiles.first?.profile, let m = Avatar.Measurements(adjusted(base)) {
                 ZStack {
                     if let avatar {
-                        AvatarSceneView(avatar: avatar, labels: labels(m), labelModel: labelModel)
+                        AvatarSceneView(avatar: avatar, revision: revision, fitColors: false,
+                                        labels: Self.sceneLabels(avatar, labels(m)), labelModel: labelModel)
                         LandmarkOverlay(model: labelModel)
                     } else {
                         ProgressView()
@@ -667,13 +544,13 @@ struct AvatarEditorView: View {
                 .task(id: m) {
                     let quick = await Task.detached(priority: .userInitiated) { Avatar(m, detail: .preview) }.value
                     guard !Task.isCancelled else { return }
-                    if avatar == nil { avatar = quick }
+                    if avatar == nil { show(quick) }
                     try? await Task.sleep(for: .milliseconds(350))
                     guard !Task.isCancelled else { return }
-                    avatar = quick
+                    show(quick)
                     let full = await Task.detached(priority: .userInitiated) { Avatar(m) }.value
                     guard !Task.isCancelled else { return }
-                    avatar = full
+                    show(full)
                 }
                 ScrollView {
                     VStack(spacing: Theme.Spacing.s) {
@@ -710,6 +587,18 @@ struct AvatarEditorView: View {
             guard original.isEmpty, let base = profiles.first?.profile else { return }
             for d in Self.editable { if let v = base[d]?.cm { original[d] = v } }
             values = original
+        }
+    }
+
+    private func show(_ new: Avatar) {
+        avatar = new
+        revision += 1
+    }
+
+    /// The named body points as labels.
+    static func sceneLabels(_ avatar: Avatar, _ texts: [Avatar.Landmark.Kind: String]) -> [SceneLabel] {
+        avatar.landmarks.compactMap { l in
+            texts[l.kind].map { SceneLabel(id: l.kind.rawValue, position: l.position, normal: l.normal, side: l.side, text: $0) }
         }
     }
 

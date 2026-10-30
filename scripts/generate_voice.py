@@ -7,9 +7,10 @@ position name), so each sentence is rendered once here and played as a file.
 
 Engine: Chatterbox Multilingual (Resemble AI, MIT licence, code and weights), which
 speaks Turkish and English. Its outputs carry Resemble's imperceptible Perth watermark.
-Each clip is checked by transcribing it back with Whisper (large-v3-turbo); a clip whose
-transcript differs from the text by more than 12% of its characters is rendered again
-(up to four tries, the best kept). Silence is trimmed, loudness is normalised to −18
+Each line is rendered three times and each take transcribed back with Whisper
+(large-v3-turbo); the take whose transcript is closest to the text is kept (short lines
+get up to twelve tries). Numbers are spoken as words, and Turkish is rendered a little
+slower and calmer than the model's default (`SETTINGS`). Silence is trimmed, loudness is normalised to −18
 LUFS, and the clip is encoded as 48 kbit/s mono AAC.
 
 Clip names: voice_<first 16 hex digits of SHA-256 of the NFC sentence>.m4a, the same
@@ -20,8 +21,8 @@ Keep LINES in step with what BodyScanViewModel says (its say/audio.say calls,
 PoseIssue.instruction, StationGuide). A line without a clip still plays, through the
 system synthesizer.
 
-Usage: generate_voice.py <venv python is this one> — run with the TTS virtualenv:
-    tts-venv/Scripts/python scripts/generate_voice.py
+Usage: run with the TTS virtualenv; --fresh renders every clip again:
+    tts-venv/Scripts/python scripts/generate_voice.py [--fresh]
 Needs chatterbox-tts, torch (CUDA), transformers, librosa, soundfile, pyloudnorm and
 ffmpeg on the PATH.
 """
@@ -46,8 +47,8 @@ OUT = os.path.join(ROOT, "WearIQ", "Resources", "Voice")
 
 # English source strings, as in the code.
 LINES = [
-    "Stand facing the phone, arms slightly away from your body.",
-    "Great. Now we'll measure you from eight sides. Hold your arms straight out to the sides at shoulder height, in one straight line, and keep them there. You'll always turn clockwise, to your right, and stop when I tell you.",
+    "Stand about three steps back from the phone, facing it, arms slightly away from your body.",
+    "Great. Now I'll measure you from eight sides. Hold your arms straight out at shoulder height and keep them there. Each time, turn 45 degrees clockwise, to your right, and wait for the tone.",
     "Your clothes look loose, which makes the measurements too large. Take them off or put on something fitted.",
     "Good, now hold still.",
     "Turn a little further clockwise.",
@@ -56,6 +57,7 @@ LINES = [
     "Move to the middle of the picture.",
     "Raise your arms to shoulder height, straight out to the sides.",
     "Step back until you're fully visible, head to feet.",
+    "Step back until your hands fit in the picture too.",
     "Good.",
     "Step back into the frame.",
     "Stop and hold still for a moment.",
@@ -76,14 +78,13 @@ LINES = [
     "Hold your arms slightly away from your body.",
     "Turn fully to your side.",
     # StationGuide.instruction
-    "Face the phone with your arms straight out, and hold still.",
-    "Turn a little clockwise, so you stand diagonally to the phone, and stop.",
-    "Keep turning clockwise until your left side faces the phone, and stop.",
-    "Keep turning clockwise until your back is diagonal to the phone, and stop.",
-    "Keep turning clockwise until your back faces the phone, and stop.",
-    "Keep turning clockwise a little more, back diagonal again, and stop.",
-    "Keep turning clockwise until your right side faces the phone, and stop.",
-    "Last one: turn clockwise a little more, front diagonal to the phone, and stop.",
+    "Face the phone, arms straight out to the sides, and hold still.",
+    "Turn 45 degrees clockwise and stop.",
+    "Another 45 degrees clockwise, so your left side faces the phone.",
+    "Another 45 degrees clockwise, so your back faces the phone.",
+    "Another 45 degrees clockwise, so your right side faces the phone.",
+    "Last one: another 45 degrees clockwise, and stop.",
+    "Another 45 degrees clockwise, and stop.",
 ]
 RETAKE = "One more look at %lld position(s)."
 NUMBER_WORDS = {
@@ -95,7 +96,20 @@ COUNTDOWN = {"en": {"3": "Three!", "2": "Two!", "1": "One!"}, "tr": {"3": "Üç!
 
 # Lines the model stumbles on as written (a word repeated, sounds after it); said in
 # other words with the same meaning.
-SPOKEN = {"Done.": "All done.", "Your measurements are ready.": "Your measurements are ready to see."}
+SPOKEN = {"Done.": "All done.", "Your measurements are ready.": "Your measurements are ready to see.",
+          "Your feet aren't visible.": "I can't see your feet."}
+# Numbers are said in words: the model reads digits unreliably, Turkish ones worst.
+NUMBERS = {"en": {"45": "forty-five"}, "tr": {"45": "kırk beş"}}
+# Sampling per language. A lower CFG weight gives slower, more deliberate speech, which
+# keeps Turkish instructions clear; a little less exaggeration keeps the tone calm.
+SETTINGS = {"en": dict(exaggeration=0.45, cfg_weight=0.4, temperature=0.75),
+            "tr": dict(exaggeration=0.4, cfg_weight=0.3, temperature=0.7)}
+
+
+def spoken_numbers(text, lang):
+    for digits, words in NUMBERS[lang].items():
+        text = text.replace(digits, words)
+    return text
 
 
 def split(text):
@@ -125,7 +139,7 @@ def sentences(lang, tr):
     out = []
     for line in LINES:
         for s in split(value(line)):
-            out.append((s, SPOKEN.get(s, s) if lang == "en" else s))
+            out.append((s, spoken_numbers(SPOKEN.get(s, s) if lang == "en" else s, lang)))
     for digit, spoken in COUNTDOWN[lang].items():
         out.append((digit, spoken))
     # The retake line, for one to three stops.
@@ -140,13 +154,14 @@ def sentences(lang, tr):
     return unique
 
 
-DIGITS = {"8": "sekiz", "1": "bir", "2": "iki", "3": "üç"}
+DIGITS = {"tr": {"45": "kırk beş", "8": "sekiz", "1": "bir", "2": "iki", "3": "üç"},
+          "en": {"45": "forty five", "8": "eight", "1": "one", "2": "two", "3": "three"}}
 
 
-def cer(a, b):
+def cer(a, b, lang="tr"):
     """Character error rate between two strings, ignoring case and punctuation (Whisper
-    writes some Turkish numbers as digits)."""
-    for digit, word in DIGITS.items():
+    writes numbers as digits)."""
+    for digit, word in DIGITS[lang].items():
         b = b.replace(digit, word)
     norm = lambda s: re.sub(r"[^\w]", "", unicodedata.normalize("NFC", s).casefold())
     a, b = norm(a), norm(b)
@@ -171,6 +186,10 @@ def main():
     meter = pyloudnorm.Meter(tts.sr)
     tr = translations()
     manifest = {}
+    if "--fresh" in sys.argv:
+        for f in os.listdir(OUT):
+            if f.startswith("voice_") and f.endswith(".m4a"):
+                os.remove(os.path.join(OUT, f))
     for lang in ("tr", "en"):
         for shown, spoken in sentences(lang, tr):
             name = key(shown)
@@ -179,12 +198,13 @@ def main():
             if os.path.exists(path):
                 continue
             best = None
-            # Very short lines are where the model stumbles (a word repeated, sounds
-            # added after it), so they get more tries.
-            for attempt in range(12 if len(spoken) < 12 else 4):
+            # Three takes of each line, the clearest kept. Very short lines are where the
+            # model stumbles (a word repeated, sounds added after it), so they get more.
+            short = len(spoken) < 20
+            for attempt in range(12 if short else 3):
                 torch.manual_seed(1000 + attempt)
                 try:
-                    wav = tts.generate(spoken, language_id=lang).squeeze().cpu().numpy().astype("float32")
+                    wav = tts.generate(spoken, language_id=lang, **SETTINGS[lang]).squeeze().cpu().numpy().astype("float32")
                 except Exception as error:  # the model occasionally produces nothing for a word
                     print(f"  attempt {attempt}: {error}", flush=True)
                     continue
@@ -193,10 +213,10 @@ def main():
                     continue
                 heard = asr({"raw": librosa.resample(wav, orig_sr=tts.sr, target_sr=16000), "sampling_rate": 16000},
                             generate_kwargs={"language": "turkish" if lang == "tr" else "english"})["text"]
-                err = cer(spoken, heard)
+                err = cer(spoken, heard, lang)
                 if best is None or err < best[0]:
                     best = (err, wav, heard)
-                if err <= 0.12:
+                if err == 0 or (short and err <= 0.12):
                     break
             if best is None:
                 print(f"[{lang}] FAILED {shown!r}", flush=True)
@@ -216,6 +236,10 @@ def main():
                 sf.write(raw, wav, tts.sr)
                 subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", raw, "-ac", "1", "-ar", "24000",
                                 "-c:a", "aac", "-b:a", "48k", path], check=True)
+    # Clips no line uses any more.
+    for f in os.listdir(OUT):
+        if f.startswith("voice_") and f.endswith(".m4a") and f[:-4] not in manifest:
+            os.remove(os.path.join(OUT, f))
     with open(os.path.join(ROOT, "scripts", "voice_manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1, sort_keys=True)
     bad = {k: v for k, v in manifest.items() if v.get("cer", 0) > 0.12}

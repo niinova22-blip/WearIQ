@@ -44,21 +44,36 @@ import Testing
             }
         }
         draw(a.body) { _ in Vec3(0.8, 0.81, 0.84) }
-        if let g = a.garment {
+        let palette: [FitTone: Vec3] = [.fits: Vec3(0.2, 0.45, 0.9), .loose: Vec3(1, 0.85, 0.2), .long: Vec3(0.95, 0.2, 0.2),
+                                        .tight: Vec3(0.6, 0.3, 0.9), .short: Vec3(1, 0.55, 0.15)]
+        for layer in a.layers {
+            let g = layer.mesh
             draw(g) { i in
                 guard fitMap else { return Vec3(0.25, 0.32, 0.5) }
-                let s = g.strain[i]
-                let relaxed = Vec3(0.3, 0.55, 0.75), on = Vec3(0.36, 0.75, 0.6), close = Vec3(0.98, 0.8, 0.32), pull = Vec3(0.9, 0.3, 0.28)
-                if s < 0.35 { return relaxed + (on - relaxed) * (s / 0.35) }
-                if s < 0.7 { return on + (close - on) * ((s - 0.35) / 0.35) }
-                return close + (pull - close) * min(1, (s - 0.7) / 0.4)
+                let base = palette[.fits]!, tone = palette[g.tones[i]]!
+                return base + (tone - base) * g.toneWeight[i]
             }
         }
-        for i in stride(from: 0, to: a.seams.count, by: 1) {
-            let v = view(a.seams[i])
+        func plot(_ p: Vec3, _ c: Vec3, _ r: Int) {
+            let v = view(p)
             let x = Int(cx + v.x * scale), y = Int((top - v.y) * scale)
-            guard x >= 0, x < W, y >= 0, y < H, v.z >= depth[y * W + x] - 0.01 else { continue }
-            color[(y * W + x) * 3] = 250; color[(y * W + x) * 3 + 1] = 250; color[(y * W + x) * 3 + 2] = 250
+            guard x >= 0, x < W, y >= 0, y < H, v.z >= depth[y * W + x] - 0.012 else { return }
+            for dx in -r...r { for dy in -r...r where x + dx >= 0 && x + dx < W && y + dy >= 0 && y + dy < H {
+                let k = (y + dy) * W + x + dx
+                color[k * 3] = UInt8(c.x * 255); color[k * 3 + 1] = UInt8(c.y * 255); color[k * 3 + 2] = UInt8(c.z * 255) } }
+        }
+        func segments(_ pts: [Vec3], _ c: Vec3, _ r: Int) {
+            for k in stride(from: 0, to: pts.count - 1, by: 2) {
+                for t in 0...6 { plot(pts[k] + (pts[k + 1] - pts[k]) * (Float(t) / 6), c, r) }
+            }
+        }
+        for layer in a.layers {
+            segments(layer.seams, Vec3(0.95, 0.95, 0.95), 0)
+            guard fitMap else { continue }
+            for line in layer.fitLines {
+                segments(line.line, palette[line.tone]! * 0.6 + Vec3(0.4, 0.4, 0.4), 1)
+                segments(line.target, Vec3(1, 1, 1), 1)
+            }
         }
         for l in a.landmarks {
             let v = view(l.position)
@@ -86,5 +101,14 @@ import Testing
         let p = Avatar(me, garment: pants)
         render(p, yaw: 0, fitMap: false, name: "pants_front")
         render(p, yaw: 0.7, fitMap: true, name: "pants_map")
+        // A small T-shirt whose shoulders are 2 cm too wide each side, over long trousers.
+        var small = Avatar.GarmentFit(kind: .top(longSleeves: false))
+        small.chestEase = 8; small.waistEase = 10; small.hipEase = 10; small.shoulderDelta = 4
+        var long = pants; long.lengthDelta = 6
+        let outfit = Avatar(me, garments: [small, long])
+        render(outfit, yaw: 0.35, fitMap: true, name: "outfit_map")
+        var shirt = Avatar.GarmentFit(kind: .top(longSleeves: true))
+        shirt.chestEase = 18; shirt.waistEase = 22; shirt.hipEase = 22; shirt.sleeveDelta = 5; shirt.lengthDelta = 6
+        render(Avatar(me, garment: shirt), yaw: -0.4, fitMap: true, name: "shirt_map")
     }
 }

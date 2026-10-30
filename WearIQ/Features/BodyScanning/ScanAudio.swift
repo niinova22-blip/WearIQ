@@ -13,11 +13,18 @@ import CryptoKit
 /// feedback) silently drops utterances, and on some iOS 17 builds it stops producing
 /// sound altogether. If rendering yields nothing, the synthesizer's own playback is
 /// tried as a fallback. The session uses `.playback` so cues are heard in silent mode.
+///
+/// One voice at a time: a line never starts over another. Corrections are dropped while
+/// something is being said, instructions wait for the current line to end (the newest
+/// waiting one wins), and only urgent lines (the countdown, results) cut in. Speech
+/// starts after a cue tone has finished rather than over it.
 @MainActor
 final class ScanAudio {
     enum Priority {
         /// Dropped while something else is being said.
         case normal
+        /// Said once the current line ends; replaces any line already waiting.
+        case queued
         /// Cuts off whatever is being said.
         case high
     }
@@ -50,6 +57,11 @@ final class ScanAudio {
     /// Last utterance whose rendering produced audio.
     private var renderedGeneration = -1
     private var speakingUntil = Date.distantPast
+    /// When the last cue tone ends.
+    private var toneUntil = Date.distantPast
+    /// An instruction waiting for the current line to end.
+    private var waiting: String?
+    private var waitTask: Task<Void, Never>?
     private var configured = false
     private var observers: [NSObjectProtocol] = []
 
@@ -96,7 +108,38 @@ final class ScanAudio {
 
     func say(_ text: String, priority: Priority = .normal) {
         guard isEnabled else { return }
-        if priority == .normal, isSpeaking { return }
+        switch priority {
+        case .normal:
+            if isSpeaking || waiting != nil { return }
+        case .queued:
+            if isSpeaking {
+                waiting = text
+                waitForTurn()
+                return
+            }
+        case .high:
+            break
+        }
+        waiting = nil
+        waitTask?.cancel()
+        speak(text)
+    }
+
+    /// Says the waiting line once the current one has ended.
+    private func waitForTurn() {
+        waitTask?.cancel()
+        waitTask = Task { [weak self] in
+            while let self, self.isSpeaking {
+                try? await Task.sleep(for: .milliseconds(60))
+                if Task.isCancelled { return }
+            }
+            guard let self, !Task.isCancelled, let text = self.waiting else { return }
+            self.waiting = nil
+            self.speak(text)
+        }
+    }
+
+    private func speak(_ text: String) {
         ensureRunning()
         silenceSpeech()
         if let clips = ScanVoice.clips(for: text) {
@@ -105,8 +148,14 @@ final class ScanAudio {
                 clipPlayer.scheduleFile(clip, at: nil, completionHandler: nil)
                 seconds += Double(clip.length) / clip.processingFormat.sampleRate
             }
-            clipPlayer.play()
-            speakingUntil = Date().addingTimeInterval(seconds + 0.1)
+            // After a cue tone, not over it.
+            let delay = max(0, toneUntil.timeIntervalSinceNow)
+            if delay > 0.01 {
+                clipPlayer.play(at: AVAudioTime(hostTime: mach_absolute_time() + AVAudioTime.hostTime(forSeconds: delay)))
+            } else {
+                clipPlayer.play()
+            }
+            speakingUntil = Date().addingTimeInterval(delay + seconds + 0.1)
             return
         }
         generation += 1
@@ -139,11 +188,16 @@ final class ScanAudio {
         guard let buffer = Self.render(cue, format: toneFormat) else { return }
         tonePlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
         if !tonePlayer.isPlaying { tonePlayer.play() }
+        let seconds = Double(buffer.frameLength) / toneFormat.sampleRate
+        toneUntil = max(toneUntil, Date()).addingTimeInterval(seconds * 0.8)
     }
 
     private func silence() {
+        waiting = nil
+        waitTask?.cancel()
         silenceSpeech()
         tonePlayer.stop()
+        toneUntil = .distantPast
     }
 
     private func silenceSpeech() {

@@ -556,7 +556,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kadraja gir."
+            "value": "Görüntüye gir."
           }
         }
       }
@@ -566,7 +566,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Başın kadrajın dışında. Geri çekil veya telefonu eğ."
+            "value": "Başın görünmüyor. Biraz geri git ya da telefonu eğ."
           }
         }
       }
@@ -576,7 +576,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ayakların görünmüyor. Geri çekil."
+            "value": "Ayakların görünmüyor. Biraz geri git."
           }
         }
       }
@@ -586,7 +586,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Biraz geri çekil."
+            "value": "Biraz geri git."
           }
         }
       }
@@ -606,7 +606,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kadrajın ortasına geç."
+            "value": "Görüntünün ortasına geç."
           }
         }
       }
@@ -4636,7 +4636,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kadraja geri gel."
+            "value": "Görüntüye geri gel."
           }
         }
       }
@@ -4656,7 +4656,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bitti. Telefona geri dönebilirsin."
+            "value": "Bitti. Artık telefona dönebilirsin."
           }
         }
       }
@@ -4896,7 +4896,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baştan ayağa tamamen görünene kadar biraz geri git."
+            "value": "Baştan ayağa görünene kadar biraz geri git."
           }
         }
       }
@@ -5026,7 +5026,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Biraz fazla döndün. Saat yönünün tersine hafifçe geri dön."
+            "value": "Biraz fazla döndün. Hafifçe geri dön."
           }
         }
       }
@@ -5186,7 +5186,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kıyafetin bol görünüyor, bu ölçüleri büyütür. Çıkar ya da dar bir şey giy."
+            "value": "Kıyafetin bol görünüyor, bu ölçüleri büyütür. Çıkar ya da daha dar bir şey giy."
           }
         }
       }
@@ -6266,7 +6266,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Güzel, şimdi kıpırdama."
+            "value": "Güzel, şimdi kıpırdamadan bekle."
           }
         }
       }
@@ -6346,7 +6346,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kollarını omuz hizasına kaldır, yanlara düz aç."
+            "value": "Kollarını omuz hizasına kaldır, yanlara dümdüz aç."
           }
         }
       }
@@ -7006,7 +7006,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld duruşa bir kez daha bakalım."
+            "value": "%lld duruşu bir kez daha ölçelim."
           }
         }
       }
@@ -7027,6 +7027,406 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tekrar oynat"
+          }
+        }
+      }
+    },
+    "Seams sit on your shoulders": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikişler tam omuz başında"
+          }
+        }
+      }
+    },
+    "Shoulder seams sit about %@ cm low": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz dikişleri yaklaşık %@ cm düşük kalır"
+          }
+        }
+      }
+    },
+    "Shoulder seams sit about %@ cm inside your shoulders": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz dikişleri omuz başının yaklaşık %@ cm içinde kalır"
+          }
+        }
+      }
+    },
+    "Sleeves reach about %@ cm past your wrists": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar bileği yaklaşık %@ cm geçer"
+          }
+        }
+      }
+    },
+    "Sleeves end about %@ cm above your wrists": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar bileğin yaklaşık %@ cm üstünde biter"
+          }
+        }
+      }
+    },
+    "About %@ cm longer than usual": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normalden yaklaşık %@ cm uzun"
+          }
+        }
+      }
+    },
+    "About %@ cm shorter than usual": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normalden yaklaşık %@ cm kısa"
+          }
+        }
+      }
+    },
+    "Legs about %@ cm long; they'll gather at the ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paçalar yaklaşık %@ cm uzun; bilekte toplanır"
+          }
+        }
+      }
+    },
+    "Legs end about %@ cm above the ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paçalar bileğin yaklaşık %@ cm üstünde biter"
+          }
+        }
+      }
+    },
+    "Fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam"
+          }
+        }
+      }
+    },
+    "Drag to turn": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çevirmek için kaydır"
+          }
+        }
+      }
+    },
+    "Blue fits, yellow is loose, red is long, purple is tight, orange is short. Glowing lines are where the seams and hems fall; white dashes are where they belong on your body. The garment is cut to the size chart and settles on your body under its own weight, as far as its fibres stretch. Without the product's own pattern this is a model of the garment, not the real one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mavi tam oturuyor, sarı bol, kırmızı uzun, mor dar, turuncu kısa. Parlayan çizgiler dikişlerin ve eteklerin düştüğü yer; beyaz kesikli çizgiler vücudunda olması gereken yer. Kıyafet beden tablosuna göre kesilir ve kendi ağırlığıyla, lifleri ne kadar esnerse o kadar esneyerek vücuduna oturur. Ürünün kendi kalıbı olmadan bu, kıyafetin bir modelidir; gerçeğinin aynısı değildir."
+          }
+        }
+      }
+    },
+    "Take it off": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çıkar"
+          }
+        }
+      }
+    },
+    "Wear it with trousers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantolonla birlikte giydir"
+          }
+        }
+      }
+    },
+    "Wear it with a top": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir üstle birlikte giydir"
+          }
+        }
+      }
+    },
+    "No tops analysed yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz analiz edilmiş üst yok"
+          }
+        }
+      }
+    },
+    "No trousers analysed yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz analiz edilmiş pantolon yok"
+          }
+        }
+      }
+    },
+    "Check the fit of one and it will appear here.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birinin bedenini kontrol et, burada görünsün."
+          }
+        }
+      }
+    },
+    "Add a top": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üst ekle"
+          }
+        }
+      }
+    },
+    "Add trousers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantolon ekle"
+          }
+        }
+      }
+    },
+    "Zone by zone": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bölge bölge"
+          }
+        }
+      }
+    },
+    "Zone by zone and all sizes compared ★": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bölge bölge analiz ve tüm bedenlerin karşılaştırması ★"
+          }
+        }
+      }
+    },
+    "Stand about three steps back from the phone, facing it, arms slightly away from your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefondan üç adım kadar uzakta, yüzün telefona dönük dur. Kollarını vücudundan biraz aç."
+          }
+        }
+      }
+    },
+    "Great. Now I'll measure you from eight sides. Hold your arms straight out at shoulder height and keep them there. Each time, turn 45 degrees clockwise, to your right, and wait for the tone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harika. Şimdi seni sekiz yönden ölçeceğim. Kollarını omuz hizasında yanlara aç ve hep öyle tut. Her seferinde saat yönünde, yani sağına doğru 45 derece dön ve bip sesini bekle."
+          }
+        }
+      }
+    },
+    "Face the phone, arms straight out to the sides, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yüzün telefona dönük, kolların yanlara açık dur ve kıpırdama."
+          }
+        }
+      }
+    },
+    "Turn 45 degrees clockwise and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde 45 derece dön ve dur."
+          }
+        }
+      }
+    },
+    "Another 45 degrees clockwise, so your left side faces the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde 45 derece daha dön. Sol yanın telefona baksın."
+          }
+        }
+      }
+    },
+    "Another 45 degrees clockwise, so your back faces the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde 45 derece daha dön. Sırtın telefona baksın."
+          }
+        }
+      }
+    },
+    "Another 45 degrees clockwise, so your right side faces the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde 45 derece daha dön. Sağ yanın telefona baksın."
+          }
+        }
+      }
+    },
+    "Last one: another 45 degrees clockwise, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son kez saat yönünde 45 derece dön ve dur."
+          }
+        }
+      }
+    },
+    "Another 45 degrees clockwise, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saat yönünde 45 derece daha dön ve dur."
+          }
+        }
+      }
+    },
+    "Step back until your hands fit in the picture too.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ellerin de görüntüye sığana kadar biraz geri git."
+          }
+        }
+      }
+    },
+    "Second look": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İkinci bakış"
+          }
+        }
+      }
+    },
+    "Arms straight out · 45° clockwise each time": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar yanlara açık · her seferinde saat yönünde 45°"
+          }
+        }
+      }
+    },
+    "Measuring…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülüyor…"
+          }
+        }
+      }
+    },
+    "Step back: hands cut off": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri git: ellerin taşıyor"
+          }
+        }
+      }
+    },
+    "Turn 45° and stop": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45° dön ve dur"
+          }
+        }
+      }
+    },
+    "A little further": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz daha"
+          }
+        }
+      }
+    },
+    "Prop the phone upright at waist height, about 3 m away: far enough for your outstretched arms to fit in the picture.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonu bel hizasında dik olarak yerleştir ve yaklaşık 3 m uzağa geç: yana açtığın kolların da görüntüye sığmalı."
+          }
+        }
+      }
+    },
+    "Then hold your arms straight out and turn clockwise 45° at a time, 8 stops in all, waiting for the tone at each one. This measures your chest, waist and hips.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonra kollarını yanlara aç ve saat yönünde her seferinde 45° dön; toplam 8 duruş var, her birinde bip sesini bekle. Böylece göğsün, belin ve kalçan ölçülür."
           }
         }
       }

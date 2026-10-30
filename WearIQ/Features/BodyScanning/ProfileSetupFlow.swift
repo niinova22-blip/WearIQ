@@ -174,11 +174,11 @@ struct ScanGuideView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.m) {
                 clothingCard
-                tip("iphone.gen3", "Prop the phone upright at waist height, about 2–3 m away.")
+                tip("iphone.gen3", "Prop the phone upright at waist height, about 3 m away: far enough for your outstretched arms to fit in the picture.")
                 tip("lightbulb", "Use a bright room with a plain background.")
                 tip("shoeprints.fill", "Barefoot, with long hair tied up: your height sets the scale, and shoes or volume on top make every measurement come out smaller.")
                 tip("figure.arms.open", "First a front photo: face the phone, arms slightly away from your body.")
-                tip("arrow.trianglehead.2.clockwise.rotate.90", "Then hold your arms straight out and turn clockwise in 8 small steps, stopping at each one. The voice tells you where to face; this measures your chest, waist and hips.")
+                tip("arrow.trianglehead.2.clockwise.rotate.90", "Then hold your arms straight out and turn clockwise 45° at a time, 8 stops in all, waiting for the tone at each one. This measures your chest, waist and hips.")
                 tip("speaker.wave.2", "Voice cues guide you; the photo is taken automatically.")
                 tip("lock.shield", "Photos are analysed on this device and deleted right after measuring.")
             }

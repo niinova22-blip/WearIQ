@@ -5,13 +5,13 @@ public struct Vec3: Equatable, Sendable {
     public var x, y, z: Float
     public init(_ x: Float, _ y: Float, _ z: Float) { self.x = x; self.y = y; self.z = z }
 
-    static func + (a: Vec3, b: Vec3) -> Vec3 { Vec3(a.x + b.x, a.y + b.y, a.z + b.z) }
-    static func - (a: Vec3, b: Vec3) -> Vec3 { Vec3(a.x - b.x, a.y - b.y, a.z - b.z) }
-    static func * (a: Vec3, s: Float) -> Vec3 { Vec3(a.x * s, a.y * s, a.z * s) }
-    var length: Float { (x * x + y * y + z * z).squareRoot() }
-    var normalized: Vec3 { let l = length; return l > 0 ? self * (1 / l) : self }
-    func dot(_ b: Vec3) -> Float { x * b.x + y * b.y + z * b.z }
-    func cross(_ b: Vec3) -> Vec3 { Vec3(y * b.z - z * b.y, z * b.x - x * b.z, x * b.y - y * b.x) }
+    public static func + (a: Vec3, b: Vec3) -> Vec3 { Vec3(a.x + b.x, a.y + b.y, a.z + b.z) }
+    public static func - (a: Vec3, b: Vec3) -> Vec3 { Vec3(a.x - b.x, a.y - b.y, a.z - b.z) }
+    public static func * (a: Vec3, s: Float) -> Vec3 { Vec3(a.x * s, a.y * s, a.z * s) }
+    public var length: Float { (x * x + y * y + z * z).squareRoot() }
+    public var normalized: Vec3 { let l = length; return l > 0 ? self * (1 / l) : self }
+    public func dot(_ b: Vec3) -> Float { x * b.x + y * b.y + z * b.z }
+    public func cross(_ b: Vec3) -> Vec3 { Vec3(y * b.z - z * b.y, z * b.x - x * b.z, x * b.y - y * b.x) }
 }
 
 /// Triangles with smooth per-vertex normals, ready for SceneKit or RealityKit.
@@ -22,6 +22,13 @@ public struct Mesh: Sendable {
     /// Per-vertex fit for garments, for the fit map: 0 loose, about 0.35 resting on the
     /// body, 1 at the fabric's stretch limit, above it pulling. Empty for the body.
     public var strain: [Float] = []
+    /// Per-vertex for garments: how that part sits (see `FitTone`), and how strongly,
+    /// 0–1, for blending its colour over the colour of a good fit.
+    public var tones: [FitTone] = []
+    public var toneWeight: [Float] = []
+    /// Per-vertex for garments: how freely the fabric swings when the body turns, 0 where
+    /// it hangs from (shoulders, waistband) to 1 for a loose hem of fluid fabric.
+    public var sway: [Float] = []
 
     public init() {}
 

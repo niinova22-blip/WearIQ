@@ -29,6 +29,9 @@ public struct RegionFit: Codable, Hashable, Sendable {
     public var confidence: ConfidenceLevel
     /// What's missing when verdict == .insufficientData.
     public var missing: MissingData?
+    /// Garment minus body for this region, cm (for a body chart, the size's body minus
+    /// yours). Nil without data and in analyses saved before it was kept.
+    public var easeCm: Double?
 
     public enum MissingData: String, Codable, Sendable {
         case bodyMeasurement, garmentMeasurement

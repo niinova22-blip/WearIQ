@@ -162,5 +162,27 @@ Günlük kıyafetle tarama `ClothingAwareReconstruction` ile yapılır: silüet 
 Taramanın sabit cümleleri önceden kaydedilmiş seslerdir (`WearIQ/Resources/Voice`, `scripts/generate_voice.py`).
 
 - **Motor:** Chatterbox Multilingual (Resemble AI, MIT lisansı). Çıktılarında Resemble'ın duyulmaz Perth filigranı vardır.
-- **Kontrol:** Her klip Whisper large-v3-turbo ile geri yazıya çevrilerek denetlendi. 107 klibin tamamı %12 karakter hatasının altında (bkz. `scripts/voice_manifest.json`).
+- **Kontrol:** Her cümle üç kez üretilip Whisper large-v3-turbo ile geri yazıya çevrildi, en iyi okuma tutuldu (2026-10-31). 106 klibin hepsi %12 karakter hatasının altında, en kötüsü %8 (bkz. `scripts/voice_manifest.json`). Sayılar yazıyla okunuyor ("kırk beş"). Türkçe daha yavaş ve sakin ayarlarla üretiliyor.
 - **Yedek:** Klibi olmayan metin (hata ayrıntısı gibi) sistem sentezleyicisiyle okunur.
+
+## 11. Omuz genişliği ve uyum haritası (2026-10-31)
+
+- **Omuz tanımı:** Tarama, iki omuz kemiği arasındaki düz mesafeyi (biakromiyal genişlik) ölçer. Kıyafet tabloları ise omzu sırtın üzerinden, dikişten dikişe verir. Bu ikisi doğrudan karşılaştırılınca her gömleğin omzu ~4 cm geniş, yani "bol" çıkıyordu.
+  - Taranmış ya da tahmin edilmiş omuz değeri artık 1,085 ile çarpılıyor. Oranın kaynağı ANSUR II ortalamaları: interscye (sırt üzeri) / biakromiyal, erkek 45,0/41,6, kadın 39,6/36,5.
+  - Bu oran kişiden kişiye değişiyor; belirsizliğe ±1 cm eklendi.
+  - Mezurayla girilen değer (uygulama zaten sırt üzerinden ölçtürüyor) olduğu gibi kullanılıyor.
+  - Test: `ScannedShoulders`.
+- **Uyum renkleri (`FitTone`):** Mavi tam, sarı bol, kırmızı uzun, mor dar, turuncu kısa.
+  - Mor (dar): yalnızca vücuda değen ve kumaşın rahat esnemesinin %60'ını aşan yerler.
+  - Sarı (bol): normal bir kesimin payından (gövdede 2,5 cm, pantolon bacağında 3,2 cm) daha uzak duran kumaş.
+  - Kırmızı/turuncu: bilek, normal etek boyu ve bilek kemiği referanslarına göre.
+  - Bu eşikler kalibre edilmedi.
+- **Uyum çizgileri:** Omuz dikişi (omuz ucundan koltuk altına inen kol oyuğu düzlemi), kol ucu, etek ve paça, bel bandı. Olması gereken yer beyaz kesikli çizgiyle gösteriliyor. Test: `FitLinesTests`.
+- **Sallanma:** Avatar çevrilirken kıyafet sönümlü bir yay gibi (~1,2 Hz, sönüm oranı 0,22) geride kalıp geri salınıyor. Her köşe kendi `sway` ağırlığı kadar dönüyor: askı noktasında 0, bol bir etekte 1'e kadar. Bu tam bir kumaş simülasyonu değil, GPU'da yapılan bir görsel yaklaşık.
+- **Simülasyon belirliliği:** Kumaş kısıtları artık sabit sırada çözülüyor. Önceden sözlük sırası her çalıştırmada değiştiği için aynı kıyafet ±0,1 farklı gerilim verebiliyordu.
+
+## 12. Tarama çerçevesi (2026-10-31)
+
+- Telefon dik tutulduğunda görüntü 9:16'dır. Kollar yana açıkken kol açıklığı boya yakın olduğu için, vücut görüntü yüksekliğinin ~%50'sinden büyükse eller yanlardan taşar. Önceden önden konumlanmada %66'ya kadar izin veriliyordu, bu yüzden dönüşte eller kesiliyor ve dönüş açısı yanlış okunuyordu.
+- Artık konumlanma burun–bilek mesafesini görüntünün %34–45'inde tutuyor.
+- Dönüşte önce sırayla tam görünürlük, sonra kenarlardan taşma kontrol ediliyor (`StopGuide.cutEdges`, test `FramingTests`).

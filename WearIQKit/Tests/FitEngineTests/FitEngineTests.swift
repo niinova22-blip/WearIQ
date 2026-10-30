@@ -179,3 +179,18 @@ private let regularShirt = shirt([
         #expect(analysis.recommendedSize?.label == "32" || analysis.recommendation == .between(smaller: "32", larger: "34"))
     }
 }
+
+@Suite struct ScannedShoulders {
+    /// A scan measures the straight distance between the shoulder bones; the chart's
+    /// shoulder runs over the back. A 41.6 cm biacromial breadth is a 45 cm shoulder.
+    @Test func scannedShoulderIsComparedOverTheBack() {
+        var scanned = body
+        scanned[.shoulderWidth] = MeasuredValue(cm: 41.6, uncertaintyCm: 1, source: .scan)
+        let a = FitEngine().analyze(body: scanned, garment: regularShirt)
+        let s = a.sizes[1].region(.shoulder)!
+        #expect(s.verdict == .ideal)
+        #expect(abs(s.easeCm! - (46.5 - 41.6 * 1.085)) < 0.01)
+        // Typed in with a tape it is taken as it is.
+        #expect(FitEngine.acrossBack(m(46)).cm == 46)
+    }
+}

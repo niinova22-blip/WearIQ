@@ -55,7 +55,39 @@ extension RegionFit {
                 ? String(localized: "Your profile lacks this measurement")
                 : String(localized: "The size chart lacks this measurement")
         default:
-            [verdictTitle, offsetText].compactMap { $0 }.joined(separator: " · ")
+            placementText ?? [verdictTitle, offsetText].compactMap { $0 }.joined(separator: " · ")
+        }
+    }
+
+    /// Where a seam or an edge lands on the body, for the shoulders and lengths: "shoulder
+    /// seams sit about 2 cm low" says more than "loose". Half the shoulder difference
+    /// falls on each side.
+    var placementText: String? {
+        func cm(_ v: Double) -> String { String(Int(max(1, v.rounded()))) }
+        let amount = estimatedOffsetCm.map { ($0.lowerBound + $0.upperBound) / 2 }
+        switch (region, verdict) {
+        case (.shoulder, .ideal):
+            return String(localized: "Seams sit on your shoulders")
+        case (.shoulder, .slightlyLoose), (.shoulder, .loose):
+            guard let easeCm, easeCm > 0 else { return nil }
+            return String(localized: "Shoulder seams sit about \(cm(easeCm / 2)) cm low")
+        case (.shoulder, .slightlyTight), (.shoulder, .tight):
+            guard let easeCm, easeCm < 0 else { return nil }
+            return String(localized: "Shoulder seams sit about \(cm(-easeCm / 2)) cm inside your shoulders")
+        case (.sleeve, .long):
+            return amount.map { String(localized: "Sleeves reach about \(cm($0)) cm past your wrists") }
+        case (.sleeve, .short):
+            return amount.map { String(localized: "Sleeves end about \(cm($0)) cm above your wrists") }
+        case (.bodyLength, .long):
+            return amount.map { String(localized: "About \(cm($0)) cm longer than usual") }
+        case (.bodyLength, .short):
+            return amount.map { String(localized: "About \(cm($0)) cm shorter than usual") }
+        case (.inseam, .long), (.outseam, .long):
+            return amount.map { String(localized: "Legs about \(cm($0)) cm long; they'll gather at the ankle") }
+        case (.inseam, .short), (.outseam, .short):
+            return amount.map { String(localized: "Legs end about \(cm($0)) cm above the ankle") }
+        default:
+            return nil
         }
     }
 }

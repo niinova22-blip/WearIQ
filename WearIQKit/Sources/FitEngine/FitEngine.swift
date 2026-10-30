@@ -30,7 +30,7 @@ public struct FitEngine: FitAnalyzing {
         var hasCritical = true
 
         for rule in rules {
-            guard let b = body[rule.body] else {
+            guard let b = rule.region == .shoulder ? body[.shoulderWidth].map(Self.acrossBack) : body[rule.body] else {
                 regions.append(.missing(rule.region, .bodyMeasurement))
                 if rule.critical { hasCritical = false }
                 continue
@@ -84,9 +84,10 @@ public struct FitEngine: FitAnalyzing {
         let confidence: ConfidenceLevel = decisive > 0.8 ? .high : (decisive > 0.6 ? .medium : .low)
 
         let expected = Self.expectedPenalty(ease: ease, sigma: sigma, range: range, rule: rule)
-        let fit = RegionFit(region: rule.region, verdict: verdict, severity: severity,
+        var fit = RegionFit(region: rule.region, verdict: verdict, severity: severity,
                             estimatedOffsetCm: offset, probabilityIdeal: pIdeal,
                             confidence: confidence, missing: nil)
+        fit.easeCm = ease
         return (fit, rule.weight * expected)
     }
 
@@ -112,6 +113,21 @@ public struct FitEngine: FitAnalyzing {
         case .asDesigned: return 0
         case .looser: return 0.35 * width
         }
+    }
+
+    /// Shoulder width as a garment chart measures it: across the back from one shoulder
+    /// point to the other, over the curve of the back. A tape measurement (the app asks
+    /// for exactly that) is already this. A scan or an estimate gives biacromial breadth,
+    /// the straight distance between the shoulder bones, which runs about 8.5% shorter:
+    /// in ANSUR II the over-the-back interscye breadth averages 45.0 cm on men with a
+    /// 41.6 cm biacromial breadth, and 39.6 on women with 36.5 (ratios 1.082 and 1.085).
+    /// Compared directly, every shirt's shoulders read about 4 cm too wide.
+    public static func acrossBack(_ shoulder: MeasuredValue) -> MeasuredValue {
+        guard shoulder.source == .scan || shoulder.source == .estimated else { return shoulder }
+        let ratio = 1.085
+        // The ratio itself varies from person to person, about ±1 cm at these sizes.
+        let sd = ((shoulder.uncertaintyCm * ratio) * (shoulder.uncertaintyCm * ratio) + 1).squareRoot()
+        return MeasuredValue(cm: shoulder.cm * ratio, uncertaintyCm: sd, source: shoulder.source)
     }
 
     // MARK: - Recommendation

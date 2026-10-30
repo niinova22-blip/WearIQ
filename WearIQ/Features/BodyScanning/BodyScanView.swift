@@ -18,13 +18,18 @@ struct BodyScanView: View {
             CameraPreview(session: model.camera.session)
                 .ignoresSafeArea()
                 .accessibilityHidden(true)
+            // Layers, back to front: the picture's frame (which edges the body runs off), the
+            // target pose, the measured levels, the live outline, the capture flash.
             Group {
                 switch model.stage {
                 case .turning:
+                    FrameGuide(cut: model.turn.cutEdges, seen: model.turn.reading != nil)
                     TurnGuideOverlay(state: model.turn)
                 case let .positioning(issue):
+                    FrameGuide(cut: model.liveReading.map(StopGuide.cutEdges) ?? [], seen: model.liveReading != nil)
                     PositioningOverlay(reading: model.liveReading, good: issue == nil)
                 case .countdown:
+                    FrameGuide(cut: [], seen: true)
                     PositioningOverlay(reading: model.liveReading, good: true)
                 default:
                     EmptyView()
@@ -100,14 +105,15 @@ struct BodyScanView: View {
             let station = min(model.turn.station, StationScan.stationCount - 1)
             VStack(spacing: Theme.Spacing.m) {
                 HStack(spacing: Theme.Spacing.l) {
-                    StationDial(station: station, captured: model.turn.captured, holding: model.turn.holding)
+                    StationDial(station: station, captured: model.turn.captured, holding: model.turn.holding,
+                                capturing: model.turn.capturing)
                         .frame(width: 130, height: 130)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Step \(station + 1) of \(StationScan.stationCount)")
                             .font(.system(size: 20, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.75))
                             .monospacedDigit()
-                        Text(StationGuide.title(station))
+                        Text(model.turn.retaking ? String(localized: "Second look") : StationGuide.title(station))
                             .font(.system(size: 38, weight: .heavy, design: .rounded))
                             .foregroundStyle(.white)
                             .minimumScaleFactor(0.6)
@@ -124,7 +130,7 @@ struct BodyScanView: View {
                     }
                 }
                 // The one posture that lets chest, waist and hips all be measured.
-                Label("Arms straight out · turn clockwise", systemImage: "figure.arms.open")
+                Label("Arms straight out · 45° clockwise each time", systemImage: "figure.arms.open")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
             }
@@ -216,10 +222,14 @@ struct BodyScanView: View {
     @ViewBuilder
     private func fitLabel(_ fit: StopFit?) -> some View {
         switch fit {
+        case .ok where model.turn.capturing:
+            Label("Measuring…", systemImage: "camera.aperture").foregroundStyle(.green)
         case .ok:
             Label("Hold still…", systemImage: "pause.circle.fill").foregroundStyle(.green)
+        case .handsOutOfFrame:
+            Label("Step back: hands cut off", systemImage: "arrow.down.to.line").foregroundStyle(.orange)
         case .turnFurther:
-            Label("Turn further", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
+            Label("A little further", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
         case .turnBack:
             Label("Turn back counter-clockwise", systemImage: "arrow.counterclockwise").foregroundStyle(.orange)
         case .openArms:
@@ -231,7 +241,7 @@ struct BodyScanView: View {
         case .moveToCentre:
             Label("Move to the middle", systemImage: "arrow.left.and.right").foregroundStyle(.orange)
         case nil:
-            Label("Turn and stop", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
+            Label("Turn 45° and stop", systemImage: "arrow.clockwise").foregroundStyle(.yellow)
         }
     }
 
@@ -346,10 +356,102 @@ private struct TurnGuideOverlay: View {
                 TargetFigure(pose: .armsOut(station: min(state.station, StationScan.stationCount - 1)),
                              matched: matched, rect: rect)
                 if let reading = state.reading {
+                    LevelLines(reading: reading, measured: state.measured, rect: rect)
                     LiveOutline(outline: reading.outline, rect: rect, tint: matched ? .silhouetteMatched : .silhouette)
+                }
+                // A soft flash while the stop's stills are taken.
+                Rectangle()
+                    .fill(.white)
+                    .opacity(state.capturing ? 0.12 : 0)
+                    .animation(.easeOut(duration: 0.25), value: state.capturing)
+            }
+        }
+    }
+}
+
+/// Where chest, waist and hips are measured on the live outline: a short line across
+/// each, a little wider than the body, green once that level has been measured from
+/// enough sides.
+private struct LevelLines: View {
+    let reading: FrameReading
+    let measured: Set<BodyLevel>
+    let rect: CGRect
+
+    var body: some View {
+        ZStack {
+            ForEach([BodyLevel.chest, .waist, .hip], id: \.self) { level in
+                if let l = reading.levels[level] {
+                    let done = measured.contains(level)
+                    let pad = (l.right - l.left) * 0.18
+                    Path { p in
+                        p.move(to: point(l.left - pad, l.y, in: rect))
+                        p.addLine(to: point(l.right + pad, l.y, in: rect))
+                    }
+                    .stroke(done ? Color.green : .white.opacity(0.7),
+                            style: StrokeStyle(lineWidth: done ? 3 : 2, lineCap: .round, dash: done ? [] : [5, 5]))
+                    Text(level.title)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(done ? Color.green : .white.opacity(0.85))
+                        .shadow(color: .black.opacity(0.8), radius: 3)
+                        .position(point(l.right + pad, l.y, in: rect))
+                        .offset(x: 30)
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: measured)
+    }
+}
+
+/// The picture's corners as brackets, so the user sees the space they must fit in:
+/// green when the whole body, hands included, is inside, and an orange bar along each
+/// edge the body runs off. Fitting in the picture comes before everything else.
+private struct FrameGuide: View {
+    let cut: StopGuide.Edges
+    let seen: Bool
+    @State private var pulse = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            let r = cameraImageRect(in: proxy.size).insetBy(dx: 12, dy: 12)
+            let inside = seen && cut.isEmpty
+            ZStack {
+                Self.brackets(r, length: min(r.width, r.height) * 0.12)
+                    .stroke(inside ? Color.silhouetteMatched : .white.opacity(0.55),
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                ForEach(Self.sides(cut, in: r), id: \.0) { _, from, to in
+                    Path { p in
+                        p.move(to: from)
+                        p.addLine(to: to)
+                    }
+                    .stroke(Color.orange, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .shadow(color: .orange, radius: pulse ? 12 : 4)
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: cut)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.6).repeatForever()) { pulse = true }
+        }
+    }
+
+    static func brackets(_ r: CGRect, length: CGFloat) -> Path {
+        var p = Path()
+        for (corner, dx, dy) in [(CGPoint(x: r.minX, y: r.minY), 1.0, 1.0), (CGPoint(x: r.maxX, y: r.minY), -1.0, 1.0),
+                                 (CGPoint(x: r.minX, y: r.maxY), 1.0, -1.0), (CGPoint(x: r.maxX, y: r.maxY), -1.0, -1.0)] {
+            p.move(to: CGPoint(x: corner.x + dx * length, y: corner.y))
+            p.addLine(to: corner)
+            p.addLine(to: CGPoint(x: corner.x, y: corner.y + dy * length))
+        }
+        return p
+    }
+
+    static func sides(_ cut: StopGuide.Edges, in r: CGRect) -> [(Int, CGPoint, CGPoint)] {
+        var out: [(Int, CGPoint, CGPoint)] = []
+        if cut.contains(.top) { out.append((0, CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.minY))) }
+        if cut.contains(.bottom) { out.append((1, CGPoint(x: r.minX, y: r.maxY), CGPoint(x: r.maxX, y: r.maxY))) }
+        if cut.contains(.left) { out.append((2, CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.minX, y: r.maxY))) }
+        if cut.contains(.right) { out.append((3, CGPoint(x: r.maxX, y: r.minY), CGPoint(x: r.maxX, y: r.maxY))) }
+        return out
     }
 }
 
@@ -407,8 +509,10 @@ private struct TargetFigure: View {
         case .front: 0
         }
         let c = cos(theta), s = sin(theta)
-        let stature = 0.56 * rect.height
-        let floor = rect.minY + 0.93 * rect.height
+        // Stand where the body fills about 45% of the picture's height, so the arms held
+        // out during the turn fit across it.
+        let stature = 0.45 * rect.height
+        let floor = rect.minY + 0.86 * rect.height
         let mid = rect.midX
         func half(_ w: Double, _ d: Double) -> Double { ((w * c) * (w * c) + (d * s) * (d * s)).squareRoot() }
         func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: mid + x * stature, y: floor - y * stature) }
@@ -499,6 +603,7 @@ private struct StationDial: View {
     let station: Int
     let captured: Set<Int>
     let holding: Bool
+    var capturing = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -514,11 +619,24 @@ private struct StationDial: View {
                         .rotationEffect(.degrees(-90))
                         .frame(width: radius * 2, height: radius * 2)
                 }
+                // The arm turns clockwise 45° per stop, like the user.
                 Image(systemName: "arrow.up")
                     .font(.system(size: size * 0.26, weight: .heavy))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(capturing ? .green : .white)
                     .rotationEffect(.degrees(Double(station) * 45))
                     .animation(.spring(duration: 0.5), value: station)
+                Text("45°")
+                    .font(.system(size: size * 0.11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .offset(y: size * 0.24)
+                if holding || capturing {
+                    Circle()
+                        .trim(from: 0, to: capturing ? 1 : 0.6)
+                        .stroke(Color.green, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: radius * 1.45, height: radius * 1.45)
+                        .animation(.easeInOut(duration: 0.5), value: capturing)
+                }
                 Image(systemName: "iphone")
                     .font(.system(size: size * 0.13, weight: .bold))
                     .foregroundStyle(.white.opacity(0.8))

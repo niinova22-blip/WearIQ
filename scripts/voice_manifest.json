@@ -1,263 +1,393 @@
 {
+ "voice_0017b6f74303b614": {
+  "cer": 0.0,
+  "heard": "Baştan ayağa görünene kadar biraz geri git.",
+  "lang": "tr",
+  "text": "Baştan ayağa görünene kadar biraz geri git."
+ },
  "voice_007fd197599e9ebd": {
+  "cer": 0.0,
+  "heard": "Tamam.",
   "lang": "tr",
   "text": "Tamam."
  },
  "voice_01f6a3b91d58ee3f": {
+  "cer": 0.0,
+  "heard": "Last one.",
   "lang": "en",
   "text": "Last one:"
  },
  "voice_0270011ddff0ce47": {
+  "cer": 0.08,
+  "heard": "Tamamen yandın.",
   "lang": "tr",
   "text": "Tamamen yan dön."
  },
- "voice_03ace588e1015f4e": {
+ "voice_02c6118232848c7b": {
+  "cer": 0.0,
+  "heard": "Üç duruşu bir kez daha ölçelim.",
   "lang": "tr",
-  "text": "Şimdi seni sekiz yönden ölçeceğiz."
+  "text": "3 duruşu bir kez daha ölçelim."
  },
  "voice_0842cb3001de2396": {
+  "cer": 0.0,
+  "heard": "Step back a little.",
   "lang": "en",
   "text": "Step back a little."
  },
  "voice_0a4204db7d46e81c": {
+  "cer": 0.0,
+  "heard": "come a little closer to the phone.",
   "lang": "en",
   "text": "Come a little closer to the phone."
  },
- "voice_0b1b3fc551798485": {
-  "lang": "tr",
-  "text": "Saat yönünde dönmeye devam et, sırtın telefona çapraz olsun ve dur."
- },
- "voice_0ea46baf96293cdf": {
-  "lang": "tr",
-  "text": "Saat yönünün tersine hafifçe geri dön."
+ "voice_103b32216332c337": {
+  "cer": 0.0,
+  "heard": "Another 45 degrees clockwise so your back faces the phone.",
+  "lang": "en",
+  "text": "Another 45 degrees clockwise, so your back faces the phone."
  },
  "voice_10449240cd4f9019": {
+  "cer": 0.0,
+  "heard": "Biraz yaklaş.",
   "lang": "tr",
   "text": "Biraz yaklaş."
  },
- "voice_126fc5ad69cb572b": {
-  "lang": "tr",
-  "text": "Kollarını omuz hizasına kaldır, yanlara düz aç."
- },
  "voice_14eb5ec87b6ec3b4": {
+  "cer": 0.0,
+  "heard": "wear fitted clothes and keep your whole body in frame.",
   "lang": "en",
   "text": "Wear fitted clothes and keep your whole body in frame."
  },
- "voice_17a84ac3971060c5": {
+ "voice_15ae0c791dcac69b": {
+  "cer": 0.0,
+  "heard": "Artık telefona dönebilirsin.",
   "lang": "tr",
-  "text": "Geri çekil."
+  "text": "Artık telefona dönebilirsin."
  },
  "voice_183290e677d22292": {
+  "cer": 0.0,
+  "heard": "you can turn back to the phone.",
   "lang": "en",
   "text": "You can turn back to the phone."
  },
  "voice_18ef5f4614465699": {
+  "cer": 0.0,
+  "heard": "Telefona biraz yaklaş.",
   "lang": "tr",
   "text": "Telefona biraz yaklaş."
  },
- "voice_1af96c60ac6956ab": {
-  "lang": "tr",
-  "text": "Çıkar ya da dar bir şey giy."
- },
- "voice_1bcd800bc827eb9b": {
+ "voice_191015c53bbec19c": {
+  "cer": 0.0,
+  "heard": "Step back until your hands fit in the picture too.",
   "lang": "en",
-  "text": "Face the phone with your arms straight out, and hold still."
+  "text": "Step back until your hands fit in the picture too."
  },
  "voice_1d577d182eaf44e8": {
+  "cer": 0.0,
+  "heard": "One more look at two positions.",
   "lang": "en",
   "text": "One more look at 2 position(s)."
  },
+ "voice_1d5fdd5bb23fffd6": {
+  "cer": 0.0,
+  "heard": "another 45 degrees clockwise and stop.",
+  "lang": "en",
+  "text": "another 45 degrees clockwise, and stop."
+ },
+ "voice_1e259f1199da14db": {
+  "cer": 0.0,
+  "heard": "Saat yönünde 45 derece daha dön.",
+  "lang": "tr",
+  "text": "Saat yönünde 45 derece daha dön."
+ },
  "voice_1e8af693ad92d276": {
+  "cer": 0.0,
+  "heard": "One more look at one positions.",
   "lang": "en",
   "text": "One more look at 1 position(s)."
  },
+ "voice_21799b8ccc4dbc1f": {
+  "cer": 0.0,
+  "heard": "another 45 degrees clockwise and stop.",
+  "lang": "en",
+  "text": "Another 45 degrees clockwise, and stop."
+ },
  "voice_25d80ccce8938554": {
+  "cer": 0.0,
+  "heard": "Dur ve bir an kıpırdama.",
   "lang": "tr",
   "text": "Dur ve bir an kıpırdama."
  },
- "voice_2620bd18158d932c": {
-  "lang": "tr",
-  "text": "Telefona dönük dur, kollarını vücudundan biraz uzak tut."
- },
  "voice_2698bdc4fefb7b25": {
+  "cer": 0.0,
+  "heard": "Bu ölçüler vücudundan büyük görünüyor, büyük ihtimalle kıyafetin yüzünden.",
   "lang": "tr",
   "text": "Bu ölçüler vücudundan büyük görünüyor, büyük ihtimalle kıyafetin yüzünden."
  },
  "voice_2a184acc533bc230": {
+  "cer": 0.0,
+  "heard": "come a little closer.",
   "lang": "en",
   "text": "Come a little closer."
  },
- "voice_2a6cae0d412319ef": {
+ "voice_2bb408b3aa1ef130": {
+  "cer": 0.0,
+  "heard": "Sırtın telefona baksın.",
   "lang": "tr",
-  "text": "1 duruşa bir kez daha bakalım."
+  "text": "Sırtın telefona baksın."
  },
  "voice_2c33dcef91e06624": {
+  "cer": 0.0,
+  "heard": "Good.",
   "lang": "en",
   "text": "Good."
  },
- "voice_2e1ce2b28728cf28": {
+ "voice_2e962f0f9fc10806": {
+  "cer": 0.0,
+  "heard": "another 45 degrees clockwise so your left side faces the phone.",
   "lang": "en",
-  "text": "Now we'll measure you from eight sides."
+  "text": "Another 45 degrees clockwise, so your left side faces the phone."
  },
  "voice_31bfdcd885796ab7": {
+  "cer": 0.0,
+  "heard": "Stop and hold still for a moment.",
   "lang": "en",
   "text": "Stop and hold still for a moment."
  },
+ "voice_32010f9e99de2469": {
+  "cer": 0.0,
+  "heard": "İki duruşu bir kez daha ölçelim.",
+  "lang": "tr",
+  "text": "2 duruşu bir kez daha ölçelim."
+ },
  "voice_320ec8c369342383": {
+  "cer": 0.0,
+  "heard": "Your clothes look loose, which makes the measurements too large.",
   "lang": "en",
   "text": "Your clothes look loose, which makes the measurements too large."
  },
- "voice_36456c179775207b": {
+ "voice_353a16f5b88e9bfb": {
+  "cer": 0.0,
+  "heard": "Biraz geri git.",
   "lang": "tr",
-  "text": "Saat yönünde dönmeye devam et, sağ yanın telefona baksın ve dur."
+  "text": "Biraz geri git."
  },
  "voice_36d96eea471241f0": {
+  "cer": 0.0,
+  "heard": "Kıyafetin bol görünüyor, bu ölçüleri büyütür.",
   "lang": "tr",
   "text": "Kıyafetin bol görünüyor, bu ölçüleri büyütür."
  },
  "voice_3809534cd9b13ab3": {
+  "cer": 0.0,
+  "heard": "Face the phone directly.",
   "lang": "en",
   "text": "Face the phone directly."
  },
+ "voice_38185552779fbfa5": {
+  "cer": 0.0,
+  "heard": "Each time, turn 45 degrees clockwise to your right and wait for the tone.",
+  "lang": "en",
+  "text": "Each time, turn 45 degrees clockwise, to your right, and wait for the tone."
+ },
  "voice_3992da05024dc2aa": {
+  "cer": 0.0,
+  "heard": "We couldn't find you in the photo.",
   "lang": "en",
   "text": "We couldn't find you in the photo."
  },
- "voice_3c2c62549d4f92b4": {
-  "lang": "tr",
-  "text": "Saat yönünde biraz dön, telefona çapraz dur."
- },
- "voice_3c3b0b326a8ba8d9": {
-  "lang": "tr",
-  "text": "Baştan ayağa tamamen görünene kadar biraz geri git."
- },
  "voice_3c544f35f6923bea": {
+  "cer": 0.0,
+  "heard": "Harika.",
   "lang": "tr",
   "text": "Harika."
  },
  "voice_3c6a683a2e425bcb": {
+  "cer": 0.0,
+  "heard": "Ayakların görünmüyor.",
   "lang": "tr",
   "text": "Ayakların görünmüyor."
  },
  "voice_3d77150c6ad738f4": {
+  "cer": 0.0,
+  "heard": "Görüntünün ortasına geç.",
   "lang": "tr",
   "text": "Görüntünün ortasına geç."
  },
  "voice_3e67be3972a6d007": {
+  "cer": 0.0,
+  "heard": "Dar kıyafet giy ve tüm vücudunu kadrajda tut.",
   "lang": "tr",
   "text": "Dar kıyafet giy ve tüm vücudunu kadrajda tut."
  },
- "voice_3e73b8452d5164c8": {
-  "lang": "en",
-  "text": "Hold your arms straight out to the sides at shoulder height, in one straight line, and keep them there."
- },
  "voice_3f369ca3d43ed1b0": {
+  "cer": 0.0,
+  "heard": "Kollarını vücudundan biraz uzak tut.",
   "lang": "tr",
   "text": "Kollarını vücudundan biraz uzak tut."
  },
  "voice_3f6107350e75d5b6": {
+  "cer": 0.0,
+  "heard": "Step back.",
   "lang": "en",
   "text": "Step back."
  },
- "voice_418b8114d88ebc6b": {
+ "voice_42c05fabdb3cfb89": {
+  "cer": 0.0,
+  "heard": "Another 45 degrees clockwise so your right side faces the phone.",
+  "lang": "en",
+  "text": "Another 45 degrees clockwise, so your right side faces the phone."
+ },
+ "voice_4334f7ab5321cb99": {
+  "cer": 0.0,
+  "heard": "Her seferinde saat yönünde yani sağına doğru 45 derece dön ve bip sesini bekle.",
   "lang": "tr",
-  "text": "Güzel, şimdi kıpırdama."
+  "text": "Her seferinde saat yönünde, yani sağına doğru 45 derece dön ve bip sesini bekle."
+ },
+ "voice_440cf26c269451ba": {
+  "cer": 0.0,
+  "heard": "Kollarını omuz hizasında yanlara aç ve hep öyle tut.",
+  "lang": "tr",
+  "text": "Kollarını omuz hizasında yanlara aç ve hep öyle tut."
  },
  "voice_44b3596668e37465": {
+  "cer": 0.0,
+  "heard": "I can't see your feet.",
   "lang": "en",
   "text": "Your feet aren't visible."
  },
  "voice_44cb4066d6e11102": {
+  "cer": 0.0,
+  "heard": "Doğru beden için dar kıyafetle ya da iç çamaşırıyla tekrar tara.",
   "lang": "tr",
   "text": "Doğru beden için dar kıyafetle ya da iç çamaşırıyla tekrar tara."
  },
  "voice_45ce4fcd4eaae116": {
+  "cer": 0.0,
+  "heard": "Tarama tamamlandı.",
   "lang": "tr",
   "text": "Tarama tamamlandı."
  },
- "voice_48ba1aaaaaee0656": {
-  "lang": "tr",
-  "text": "Kollarını omuz hizasında yanlara tam aç, iki kolun düz bir çizgi olsun ve hep böyle tut."
- },
  "voice_49a760ccc151c93a": {
+  "cer": 0.0,
+  "heard": "Dönüşü bir kez daha deneyelim.",
   "lang": "tr",
   "text": "Dönüşü bir kez daha deneyelim."
  },
+ "voice_4b53a58f30dd1aa4": {
+  "cer": 0.0,
+  "heard": "Hafifçe geri dön.",
+  "lang": "tr",
+  "text": "Hafifçe geri dön."
+ },
  "voice_4c7fc377d578c491": {
+  "cer": 0.0,
+  "heard": "One more look at three positions.",
   "lang": "en",
   "text": "One more look at 3 position(s)."
  },
  "voice_4e07408562bedb8b": {
+  "cer": 0.0,
+  "heard": "Üç.",
   "lang": "en",
   "text": "3"
  },
+ "voice_4ee484f298b03dd7": {
+  "cer": 0.0,
+  "heard": "Başın görünmüyor.",
+  "lang": "tr",
+  "text": "Başın görünmüyor."
+ },
  "voice_505dc8d427bb2e1f": {
+  "cer": 0.08,
+  "heard": "Move to the center of the frame.",
   "lang": "en",
   "text": "Move to the centre of the frame."
  },
- "voice_529256703aa91577": {
-  "lang": "en",
-  "text": "Keep turning clockwise a little more, back diagonal again, and stop."
- },
- "voice_5aeb47a07fd40a38": {
+ "voice_557ec9cb02919898": {
+  "cer": 0.0,
+  "heard": "Görüntüye geri gel.",
   "lang": "tr",
-  "text": "Kadrajın ortasına geç."
+  "text": "Görüntüye geri gel."
  },
  "voice_5dcf8718216f8256": {
+  "cer": 0.0,
+  "heard": "These measurements look larger than your body, probably because of your clothes.",
   "lang": "en",
   "text": "These measurements look larger than your body, probably because of your clothes."
  },
- "voice_644da2d24cd63a1a": {
-  "lang": "en",
-  "text": "Stand facing the phone, arms slightly away from your body."
- },
- "voice_6b614e274322b586": {
+ "voice_602919418384f639": {
+  "cer": 0.0,
+  "heard": "Saat yönünde 45 derece daha dön ve dur.",
   "lang": "tr",
-  "text": "Son adım:"
+  "text": "Saat yönünde 45 derece daha dön ve dur."
+ },
+ "voice_64d11805995573ce": {
+  "cer": 0.0,
+  "heard": "Biraz geri git ya da telefonu eğ.",
+  "lang": "tr",
+  "text": "Biraz geri git ya da telefonu eğ."
  },
  "voice_6b86b273ff34fce1": {
+  "cer": 0.0,
+  "heard": "Bir.",
   "lang": "en",
   "text": "1"
  },
+ "voice_6c1dba7b82edb90a": {
+  "cer": 0.0,
+  "heard": "Face the phone, arms straight out to the sides, and hold still.",
+  "lang": "en",
+  "text": "Face the phone, arms straight out to the sides, and hold still."
+ },
  "voice_6e793d7dc7653702": {
+  "cer": 0.0,
+  "heard": "a little too far.",
   "lang": "en",
   "text": "A little too far."
  },
- "voice_6e97c1cf22bcfbed": {
-  "lang": "en",
-  "text": "Keep turning clockwise until your right side faces the phone, and stop."
- },
  "voice_7078396cbb43e255": {
+  "cer": 0.0,
+  "heard": "your head is cut off.",
   "lang": "en",
   "text": "Your head is cut off."
  },
  "voice_739f2de7d52e2fd7": {
+  "cer": 0.0,
+  "heard": "Move to the middle of the picture.",
   "lang": "en",
   "text": "Move to the middle of the picture."
  },
- "voice_75f64f1548566de9": {
-  "lang": "tr",
-  "text": "Kolların yanlara açık, telefona dönük dur ve kıpırdama."
- },
- "voice_7c16dd484a7160d1": {
-  "lang": "tr",
-  "text": "2 duruşa bir kez daha bakalım."
+ "voice_7778621397147412": {
+  "cer": 0.0,
+  "heard": "Stand about three steps back from the phone, facing it, arms slightly away from your body.",
+  "lang": "en",
+  "text": "Stand about three steps back from the phone, facing it, arms slightly away from your body."
  },
  "voice_8074a9fd4dbbe5ff": {
+  "cer": 0.0,
+  "heard": "Step back or tilt the phone.",
   "lang": "en",
   "text": "Step back or tilt the phone."
  },
- "voice_8b4682be130f39d7": {
-  "lang": "tr",
-  "text": "Başın kadrajın dışında."
- },
- "voice_8d4c7ce3782c2f30": {
-  "lang": "tr",
-  "text": "Saat yönünde biraz daha dön, sırtın yine çapraz olsun ve dur."
+ "voice_881a17edc6c0f564": {
+  "cer": 0.0,
+  "heard": "Now I'll measure you from 8 sides.",
+  "lang": "en",
+  "text": "Now I'll measure you from eight sides."
  },
  "voice_91b1c161e5cda4c2": {
+  "cer": 0.0,
+  "heard": "For the right sizes, scan again in fitted clothes or underwear.",
   "lang": "en",
   "text": "For the right sizes, scan again in fitted clothes or underwear."
+ },
+ "voice_9244d6644bb79e07": {
+  "cer": 0.0,
+  "heard": "Güzel. Şimdi kıpırdamadan bekle.",
+  "lang": "tr",
+  "text": "Güzel, şimdi kıpırdamadan bekle."
  },
  "voice_9999a67740f8bedb": {
   "cer": 0.0,
@@ -266,167 +396,243 @@
   "text": "Your measurements are ready."
  },
  "voice_99ca706c9ac96f1a": {
+  "cer": 0.0,
+  "heard": "Step back until you're fully visible, head to feet.",
   "lang": "en",
   "text": "Step back until you're fully visible, head to feet."
  },
+ "voice_9e15844496b3c76b": {
+  "cer": 0.0,
+  "heard": "Bir duruşu bir kez daha ölçelim.",
+  "lang": "tr",
+  "text": "1 duruşu bir kez daha ölçelim."
+ },
  "voice_a016b4923b12462e": {
+  "cer": 0.0,
+  "heard": "turn back slightly counterclockwise.",
   "lang": "en",
   "text": "Turn back slightly, counter-clockwise."
  },
- "voice_a448e525a192f1ce": {
-  "lang": "tr",
-  "text": "Geri çekil veya telefonu eğ."
- },
- "voice_a476508588685e19": {
-  "lang": "tr",
-  "text": "Saat yönünde dönmeye devam et, sol yanın telefona baksın ve dur."
- },
- "voice_a7df4ff5a5ecc63b": {
-  "lang": "tr",
-  "text": "saat yönünde biraz daha dön, önün telefona çapraz olsun ve dur."
- },
  "voice_a9de692fc4755296": {
+  "cer": 0.0,
+  "heard": "Let's try the turn again.",
   "lang": "en",
   "text": "Let's try the turn again."
  },
  "voice_aa52aacb8b1919a2": {
+  "cer": 0.0,
+  "heard": "Make sure your whole body is visible and the room is well lit.",
   "lang": "en",
   "text": "Make sure your whole body is visible and the room is well lit."
  },
- "voice_ab10d58f397bc997": {
+ "voice_aacd09f06964cd7f": {
+  "cer": 0.05,
+  "heard": "Ellerin de görünçüye sılana kadar biraz geri git.",
   "lang": "tr",
-  "text": "Kadraja gir."
+  "text": "Ellerin de görüntüye sığana kadar biraz geri git."
+ },
+ "voice_ab3e5a4fad5d4f6e": {
+  "cer": 0.0,
+  "heard": "Hold your arms straight out at shoulder height and keep them there.",
+  "lang": "en",
+  "text": "Hold your arms straight out at shoulder height and keep them there."
  },
  "voice_ad0c7f65dea05a18": {
+  "cer": 0.0,
+  "heard": "Hold your arms slightly away from your body.",
   "lang": "en",
   "text": "Hold your arms slightly away from your body."
  },
  "voice_ad19b8cc2deb82c3": {
+  "cer": 0.0,
+  "heard": "Great.",
   "lang": "en",
   "text": "Great."
  },
+ "voice_adf9e1c9a010b9f5": {
+  "cer": 0.0,
+  "heard": "Yüzün telefona dönük, kolların yanlara açık dur ve kıpırdama.",
+  "lang": "tr",
+  "text": "Yüzün telefona dönük, kolların yanlara açık dur ve kıpırdama."
+ },
  "voice_aecd3beb521d10b4": {
+  "cer": 0.0,
+  "heard": "Turn a little further clockwise.",
   "lang": "en",
   "text": "Turn a little further clockwise."
  },
- "voice_b3fc7e02dc599e61": {
-  "lang": "tr",
-  "text": "Biraz geri çekil."
- },
  "voice_b49132a626551c92": {
+  "cer": 0.0,
+  "heard": "some body points weren't visible.",
   "lang": "en",
   "text": "Some body points weren't visible."
  },
  "voice_b4da4aab9c62a478": {
+  "cer": 0.0,
+  "heard": "Scan complete.",
   "lang": "en",
   "text": "Scan complete."
  },
- "voice_b5f3cc5b3461e5eb": {
-  "lang": "en",
-  "text": "Keep turning clockwise until your back faces the phone, and stop."
- },
- "voice_b6aefbd43229abc4": {
+ "voice_b55f6add583c66d9": {
+  "cer": 0.0,
+  "heard": "Sol yanın telefona baksın.",
   "lang": "tr",
-  "text": "Hep saat yönünde, yani sağına doğru döneceksin ve ben söyleyince duracaksın."
+  "text": "Sol yanın telefona baksın."
  },
  "voice_b8f8d4a2bd2b891e": {
+  "cer": 0.0,
+  "heard": "Take them off or put on something fitted.",
   "lang": "en",
   "text": "Take them off or put on something fitted."
  },
+ "voice_b9974cfd2353bb3d": {
+  "cer": 0.0,
+  "heard": "Son kez saat yönünde 45 derece dön ve dur.",
+  "lang": "tr",
+  "text": "Son kez saat yönünde 45 derece dön ve dur."
+ },
  "voice_ba5ba1fe30b3879d": {
+  "cer": 0.0,
+  "heard": "Step back into the frame.",
   "lang": "en",
   "text": "Step back into the frame."
  },
  "voice_bb4afeb667e324bb": {
+  "cer": 0.0,
+  "heard": "Good, now hold still.",
   "lang": "en",
   "text": "Good, now hold still."
  },
  "voice_bcad05831a231c2d": {
+  "cer": 0.0,
+  "heard": "Ölçülerin hazır.",
   "lang": "tr",
   "text": "Ölçülerin hazır."
  },
+ "voice_bd2f1d634b2c5fe5": {
+  "cer": 0.0,
+  "heard": "Görüntüye gir.",
+  "lang": "tr",
+  "text": "Görüntüye gir."
+ },
  "voice_bd7e85e1b881f079": {
+  "cer": 0.0,
+  "heard": "Tüm vücudunun göründüğünden ve ortamın aydınlık olduğundan emin ol.",
   "lang": "tr",
   "text": "Tüm vücudunun göründüğünden ve ortamın aydınlık olduğundan emin ol."
  },
- "voice_c0311c6f5696677e": {
-  "lang": "en",
-  "text": "Turn a little clockwise, so you stand diagonally to the phone, and stop."
+ "voice_c0e8fdb9e9cb9e14": {
+  "cer": 0.0,
+  "heard": "Çıkar ya da daha dar bir şey giy.",
+  "lang": "tr",
+  "text": "Çıkar ya da daha dar bir şey giy."
  },
  "voice_c19c239933980f23": {
+  "cer": 0.0,
+  "heard": "Bitti.",
   "lang": "tr",
   "text": "Bitti."
  },
- "voice_c2f26d52e7927178": {
-  "lang": "en",
-  "text": "turn clockwise a little more, front diagonal to the phone, and stop."
- },
  "voice_c504e95fc43afa6f": {
+  "cer": 0.0,
+  "heard": "Seni fotoğrafta bulamadık.",
   "lang": "tr",
   "text": "Seni fotoğrafta bulamadık."
  },
  "voice_c515b8ccc3ecbb90": {
+  "cer": 0.0,
+  "heard": "Saat yönünde biraz daha dön.",
   "lang": "tr",
   "text": "Saat yönünde biraz daha dön."
  },
+ "voice_c6ca36b1917b2564": {
+  "cer": 0.0,
+  "heard": "Şimdi seni 8 yönden ölçeceğim.",
+  "lang": "tr",
+  "text": "Şimdi seni sekiz yönden ölçeceğim."
+ },
+ "voice_c6d208dd4f2dae8e": {
+  "cer": 0.0,
+  "heard": "Kollarını omuz hizasına kaldır, yanlara dümdüz aç.",
+  "lang": "tr",
+  "text": "Kollarını omuz hizasına kaldır, yanlara dümdüz aç."
+ },
  "voice_c7cab30334561c09": {
+  "cer": 0.0,
+  "heard": "Turn fully to your side.",
   "lang": "en",
   "text": "Turn fully to your side."
  },
+ "voice_d1ff054d0f3256ad": {
+  "cer": 0.0,
+  "heard": "Sağ yanın telefona baksın.",
+  "lang": "tr",
+  "text": "Sağ yanın telefona baksın."
+ },
  "voice_d3c55799e06d4ac8": {
+  "cer": 0.0,
+  "heard": "Raise your arms to shoulder height straight out to the sides.",
   "lang": "en",
   "text": "Raise your arms to shoulder height, straight out to the sides."
  },
  "voice_d4735e3a265e16ee": {
+  "cer": 0.0,
+  "heard": "İki.",
   "lang": "en",
   "text": "2"
  },
  "voice_d5c20b2406f1009f": {
+  "cer": 0.0,
+  "heard": "Step into the frame.",
   "lang": "en",
   "text": "Step into the frame."
  },
  "voice_d664259d42e456a1": {
+  "cer": 0.0,
+  "heard": "Bazı vücut noktaları görünmedi.",
   "lang": "tr",
   "text": "Bazı vücut noktaları görünmedi."
  },
- "voice_d833f06cbc37bac7": {
+ "voice_dc499c2d254a21b6": {
+  "cer": 0.0,
+  "heard": "Saat yönünde 45 derece dön ve dur.",
   "lang": "tr",
-  "text": "Telefona geri dönebilirsin."
- },
- "voice_e0aa493e228e67ad": {
-  "lang": "tr",
-  "text": "Kadraja geri gel."
+  "text": "Saat yönünde 45 derece dön ve dur."
  },
  "voice_e51849745fee9ccb": {
+  "cer": 0.0,
+  "heard": "Telefona tam karşıdan bak.",
   "lang": "tr",
   "text": "Telefona tam karşıdan bak."
  },
- "voice_e57575b74447f227": {
-  "lang": "en",
-  "text": "You'll always turn clockwise, to your right, and stop when I tell you."
- },
- "voice_e6135272e2430db2": {
+ "voice_e637cfd18c51742c": {
+  "cer": 0.04,
+  "heard": "Telefondan üç adım kadar uzakta, yüzün telefona dönüktür.",
   "lang": "tr",
-  "text": "Saat yönünde dönmeye devam et, sırtın telefona baksın ve dur."
- },
- "voice_e8794e9143d41763": {
-  "lang": "tr",
-  "text": "3 duruşa bir kez daha bakalım."
+  "text": "Telefondan üç adım kadar uzakta, yüzün telefona dönük dur."
  },
  "voice_ed251864987c367e": {
+  "cer": 0.0,
+  "heard": "All done.",
   "lang": "en",
   "text": "Done."
  },
- "voice_efe80d82671f3af0": {
-  "lang": "en",
-  "text": "Keep turning clockwise until your left side faces the phone, and stop."
- },
- "voice_f1f31f434749cde1": {
-  "lang": "en",
-  "text": "Keep turning clockwise until your back is diagonal to the phone, and stop."
- },
  "voice_f7ed9cfac61a582e": {
+  "cer": 0.0,
+  "heard": "Biraz fazla döndün.",
   "lang": "tr",
   "text": "Biraz fazla döndün."
+ },
+ "voice_facd2ab9749ad8dd": {
+  "cer": 0.0,
+  "heard": "Turn 45 degrees clockwise and stop.",
+  "lang": "en",
+  "text": "Turn 45 degrees clockwise and stop."
+ },
+ "voice_ffdcf16f72b9314d": {
+  "cer": 0.0,
+  "heard": "Kollarını vücudundan biraz aç.",
+  "lang": "tr",
+  "text": "Kollarını vücudundan biraz aç."
  }
 }
