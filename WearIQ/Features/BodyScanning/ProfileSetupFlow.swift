@@ -1,6 +1,7 @@
 import AVFoundation
 import BodyMeasurementEngine
 import ProductMeasurementParser
+import SwiftData
 import SwiftUI
 import WearIQCore
 
@@ -24,6 +25,9 @@ struct ProfileSetupFlow: View {
     @AppStorage("ageYears") private var ageYears: Double = 0
     @AppStorage("fitPreference") private var fitPreference: FitPreference = .asDesigned
     @State private var path: [Step] = []
+    /// What the user said they wear for this scan; nil until they pick.
+    @State private var attire: ScanAttire?
+    @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -34,7 +38,7 @@ struct ProfileSetupFlow: View {
             .navigationDestination(for: Step.self) { step in
                 switch step {
                 case .scanGuide:
-                    ScanGuideView(onScan: { path.append(.scan) }, onManual: startManualEntry)
+                    ScanGuideView(attire: $attire, onScan: { path.append(.scan) }, onManual: startManualEntry)
                 case .scan:
                     BodyScanView(body: bodyBasics) { scanned in
                         path.append(.review(scanned))
@@ -50,7 +54,7 @@ struct ProfileSetupFlow: View {
 
     private var bodyBasics: BodyBasics {
         BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw),
-                   ageYears: ageYears > 0 ? ageYears : nil)
+                   ageYears: ageYears > 0 ? ageYears : nil, attire: attire, previous: profiles.first?.profile)
     }
 
     /// Starts from height/weight estimates so the user corrects values instead of typing all of them.
@@ -66,6 +70,11 @@ struct BodyBasics: Equatable, Sendable {
     var sex: BodySex?
     /// Sharpens the waist estimate; optional.
     var ageYears: Double?
+    /// What the user wears for the scan; decides how much of the outline is clothes.
+    var attire: ScanAttire?
+    /// The last saved profile: its tape and fitted-clothes values help a scan in
+    /// everyday clothes.
+    var previous: BodyProfile?
 
     /// Best estimate without photos: height/weight (and age) statistics.
     func prior() -> [BodyDimension: MeasuredValue] {
@@ -150,13 +159,15 @@ struct HeightPreferencesView: View {
 }
 
 struct ScanGuideView: View {
+    /// The scan measures the outline, so loose clothes would be measured as body.
+    /// Starting needs the user to say what they wear: fitted clothes are measured
+    /// directly; with everyday clothes the scan works out what is clothes and says how
+    /// sure it is of each value.
+    @Binding var attire: ScanAttire?
     let onScan: () -> Void
     let onManual: () -> Void
 
     @State private var status = CameraController.authorizationStatus
-    /// The scan measures the outline, so loose clothes are measured as body. Starting
-    /// needs an explicit "yes, fitted clothes".
-    @State private var wearingFittedClothes = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -186,7 +197,7 @@ struct ScanGuideView: View {
                 } else {
                     Button("Start scan") { Task { await requestAndScan() } }
                         .buttonStyle(.primary)
-                        .disabled(!wearingFittedClothes)
+                        .disabled(attire == nil)
                 }
                 Button("Enter measurements manually", action: onManual)
             }
@@ -208,15 +219,39 @@ struct ScanGuideView: View {
             Label("Otherwise: a fitted T-shirt or tank top with leggings or fitted shorts. Tie long hair up.",
                   systemImage: "2.circle.fill")
                 .font(.subheadline)
-            Toggle("I'm in underwear or fitted clothes", isOn: $wearingFittedClothes)
+            Text("What are you wearing?")
                 .font(.headline)
-                .tint(.green)
+                .padding(.top, Theme.Spacing.xs)
+            attireOption(.fitted, title: "Underwear or fitted clothes",
+                         detail: "Most accurate: your outline is your body.")
+            attireOption(.everyday, title: "My everyday clothes",
+                         detail: "Works too. Where clothes hide your body, values are estimated and shown with a range.")
         }
         .padding(Theme.Spacing.m)
         .background(.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-            .strokeBorder(wearingFittedClothes ? Color.green : .orange, lineWidth: 1.5))
-        .sensoryFeedback(.selection, trigger: wearingFittedClothes)
+            .strokeBorder(attire == nil ? Color.orange : .green, lineWidth: 1.5))
+        .sensoryFeedback(.selection, trigger: attire)
+    }
+
+    private func attireOption(_ option: ScanAttire, title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
+        Button {
+            attire = option
+        } label: {
+            HStack(alignment: .top, spacing: Theme.Spacing.s) {
+                Image(systemName: attire == option ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(attire == option ? Color.green : .secondary)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                    Text(detail).font(.footnote).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(attire == option ? .isSelected : [])
     }
 
     private func tip(_ symbol: String, _ text: LocalizedStringKey) -> some View {

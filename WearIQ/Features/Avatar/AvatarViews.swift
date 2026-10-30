@@ -12,7 +12,7 @@ import WearIQCore
 /// `LandmarkLabels`) that follow the avatar as it turns. Body and garment geometry are
 /// swapped in place, so the camera stays where the user put it. With `fitMap` the
 /// garment is coloured by how it sits: blue loose, green resting on the body, yellow
-/// tight, red pulling past what the fabric gives.
+/// slightly tight, orange tight, red pulling past what the fabric gives.
 struct AvatarSceneView: UIViewRepresentable {
     let avatar: Avatar
     var fitMap = false
@@ -145,13 +145,19 @@ struct AvatarSceneView: UIViewRepresentable {
             }
         }
 
-        /// Fit-map colour: loose, resting on the body, tight, pulling (see `fitValues`).
+        /// Fit-map colour (see `fitValues`): blue loose, green resting on the body, yellow
+        /// from 0.3 of the fabric's comfortable stretch, orange from 0.6, red at the limit
+        /// (the same thresholds as `ZoneReport`).
         static func fitColor(_ v: Float) -> SIMD4<Float> {
-            let loose = SIMD4<Float>(0.3, 0.55, 0.78, 1), resting = SIMD4<Float>(0.36, 0.76, 0.6, 1)
-            let tight = SIMD4<Float>(0.98, 0.8, 0.32, 1), pulling = SIMD4<Float>(0.9, 0.3, 0.28, 1)
-            if v < 0.35 { return loose + (resting - loose) * (v / 0.35) }
-            if v < 0.7 { return resting + (tight - resting) * ((v - 0.35) / 0.35) }
-            return tight + (pulling - tight) * min(1, (v - 0.7) / 0.4)
+            let stops: [(Float, SIMD4<Float>)] = [
+                (0, SIMD4(0.3, 0.55, 0.78, 1)), (0.35, SIMD4(0.36, 0.76, 0.6, 1)), (0.45, SIMD4(0.36, 0.76, 0.6, 1)),
+                (0.545, SIMD4(0.98, 0.84, 0.32, 1)), (0.74, SIMD4(0.97, 0.58, 0.24, 1)), (1.0, SIMD4(0.9, 0.3, 0.28, 1)),
+            ]
+            guard v > stops[0].0 else { return stops[0].1 }
+            for (a, b) in zip(stops, stops.dropFirst()) where v < b.0 {
+                return a.1 + (b.1 - a.1) * ((v - a.0) / (b.0 - a.0))
+            }
+            return stops[stops.count - 1].1
         }
 
         /// Faint dashed stitching from pairs of points.
@@ -324,6 +330,20 @@ enum AvatarFitMapper {
         return Fabric(fibres: Dictionary(uniqueKeysWithValues: fibres.map { ($0.key.rawValue, $0.value) }), knit: knit)
     }
 
+    /// The body at the low and high ends of its measured ranges, where those are wider
+    /// than a few centimetres (clothes hid it); nil ends where the scan is sure.
+    static func bodyRange(_ body: BodyProfile, around m: Avatar.Measurements) -> (Avatar.Measurements?, Avatar.Measurements?) {
+        func ends(_ d: BodyDimension) -> (Double, Double)? {
+            guard let a = body.assessment(d), a.high - a.low > 4 else { return nil }
+            return (a.low, a.high)
+        }
+        let dims: [BodyDimension] = [.chest, .waist, .hip, .thigh]
+        guard dims.contains(where: { ends($0) != nil }) else { return (nil, nil) }
+        let low = m.with(chest: ends(.chest)?.0, waist: ends(.waist)?.0, hip: ends(.hip)?.0, thigh: ends(.thigh)?.0)
+        let high = m.with(chest: ends(.chest)?.1, waist: ends(.waist)?.1, hip: ends(.hip)?.1, thigh: ends(.thigh)?.1)
+        return (low, high)
+    }
+
     /// Where each fit region's dot goes.
     static func anchor(for region: FitRegion, trousers: Bool) -> Avatar.Anchor {
         switch region {
@@ -348,10 +368,15 @@ struct AvatarFitView: View {
     var material: String?
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppContainer.self) private var container
     @State private var showFitMap = false
     @State private var showLabels = true
     @State private var avatar: Avatar?
     @StateObject private var labelModel = LandmarkLabels()
+    /// Every size draped, on the body as measured and at the ends of its ranges.
+    @State private var comparison: [SizeDrape]?
+    @State private var comparing = false
+    @State private var showPaywall = false
 
     var body: some View {
         NavigationStack {
@@ -379,6 +404,7 @@ struct AvatarFitView: View {
             .background(Theme.screenBackground)
             .navigationTitle("On your avatar")
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showPaywall) { PaywallView() }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showLabels.toggle() } label: {
@@ -431,19 +457,28 @@ struct AvatarFitView: View {
                 }
                 .pickerStyle(.segmented)
             }
-            Picker("View", selection: $showFitMap) {
+            Picker("View", selection: Binding(get: { showFitMap }, set: { wanted in
+                // The fit map and the zone analysis are Premium.
+                if wanted, !container.isPremium { showPaywall = true } else { showFitMap = wanted }
+            })) {
                 Text("Garment").tag(false)
-                Text("Fit map").tag(true)
+                Text(container.isPremium ? LocalizedStringKey("Fit map") : LocalizedStringKey("Fit map ★")).tag(true)
             }
             .pickerStyle(.segmented)
             if showFitMap {
                 HStack(spacing: Theme.Spacing.s) {
-                    legend("Loose", Color(red: 0.3, green: 0.55, blue: 0.78))
-                    legend("On the body", Color(red: 0.36, green: 0.76, blue: 0.6))
-                    legend("Tight", Color(red: 0.98, green: 0.8, blue: 0.32))
-                    legend("Pulling", Color(red: 0.9, green: 0.3, blue: 0.28))
+                    ForEach(ZoneTension.allCases, id: \.self) { t in legend(t.title, t.color) }
                 }
-                .font(.footnote)
+                .font(.caption2)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                        if let zones = avatar?.fitReport, !zones.isEmpty {
+                            zoneList(zones)
+                        }
+                        comparisonSection
+                    }
+                }
+                .frame(maxHeight: 240)
             } else {
                 ForEach(regions, id: \.region) { r in
                     HStack {
@@ -455,7 +490,7 @@ struct AvatarFitView: View {
                     .font(.subheadline)
                 }
             }
-            Text("Draped with cloth physics: the garment is cut to the size chart, settles on your body under its own weight and stretches where it must, as far as its fibres allow. Dashed lines are its seams and hems.")
+            Text("Draped with cloth physics: the garment is cut to the size chart, settles on your body under its own weight and stretches where it must, as far as its fibres allow. Dashed lines are its seams and hems. Without the product's own pattern and fabric data this is a model of the garment, not the real one.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -465,7 +500,102 @@ struct AvatarFitView: View {
         .sensoryFeedback(.selection, trigger: showFitMap)
     }
 
-    private func legend(_ title: LocalizedStringKey, _ color: Color) -> some View {
+    /// The simulated zones, tightest first.
+    private func zoneList(_ zones: [FitZone: ZoneReport]) -> some View {
+        let sorted = zones.values.sorted { $0.tension > $1.tension || ($0.tension == $1.tension && $0.zone.rawValue < $1.zone.rawValue) }
+        let range = comparison?.first { $0.label == sizeLabel }?.range ?? [:]
+        return VStack(alignment: .leading, spacing: 4) {
+            ForEach(sorted, id: \.zone) { z in
+                HStack(spacing: 6) {
+                    Circle().fill(z.tension.color).frame(width: 9, height: 9)
+                    Text(z.zone.title)
+                    Spacer()
+                    Text(zoneDetail(z, range: range[z.zone])).foregroundStyle(.secondary)
+                }
+                .font(.footnote)
+            }
+        }
+    }
+
+    private func zoneDetail(_ z: ZoneReport, range: ClosedRange<ZoneTension>?) -> String {
+        var text = z.tension.title
+        if let range, range.lowerBound != range.upperBound {
+            text = String(localized: "\(range.lowerBound.title) to \(range.upperBound.title)")
+        }
+        if z.stretchPercent >= 1 {
+            text += " · " + String(localized: "stretched \(Int(z.stretchPercent.rounded()))%")
+        } else if z.tension == .loose {
+            text += " · " + String(localized: "\(z.gapCm.formatted(.number.precision(.fractionLength(0...1)))) cm off the body")
+        }
+        if let d = z.lengthDeltaCm, abs(d) >= 1 {
+            let cm = abs(d).formatted(.number.precision(.fractionLength(0)))
+            text += " · " + (d > 0 ? String(localized: "\(cm) cm long") : String(localized: "\(cm) cm short"))
+        }
+        return text
+    }
+
+    /// Drapes every size and ranks them by how they sit; where the body's measurements
+    /// are uncertain, also on the smaller and larger body they allow.
+    @ViewBuilder
+    private var comparisonSection: some View {
+        if spec.sizes.count > 1 {
+            if let comparison {
+                let best = Avatar.best(comparison)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(comparison, id: \.label) { drape in
+                        HStack(spacing: 6) {
+                            Text(drape.label).font(.footnote.weight(drape.label == best?.label ? .bold : .regular))
+                                .frame(minWidth: 34, alignment: .leading)
+                            ForEach(drape.zones.values.sorted { $0.zone.rawValue < $1.zone.rawValue }, id: \.zone) { z in
+                                Circle().fill(z.tension.color).frame(width: 8, height: 8)
+                            }
+                            Spacer()
+                            if !drape.uncertainZones.isEmpty {
+                                Text("depends on \(drape.uncertainZones.map(\.title).joined(separator: ", "))")
+                                    .font(.caption2).foregroundStyle(.orange).lineLimit(1)
+                            }
+                        }
+                    }
+                    if let best {
+                        Text("By the simulation, \(best.label) sits best.")
+                            .font(.footnote.weight(.semibold))
+                    }
+                }
+            } else {
+                Button {
+                    Task { await compareSizes() }
+                } label: {
+                    if comparing {
+                        ProgressView().frame(maxWidth: .infinity)
+                    } else {
+                        Label("Compare all sizes on my body", systemImage: "square.stack.3d.up").frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(comparing)
+            }
+        }
+    }
+
+    private func compareSizes() async {
+        guard let body = profiles.first?.profile, let m = Avatar.Measurements(body) else { return }
+        comparing = true
+        let fabric = AvatarFitMapper.fabric(spec: spec, material: material)
+        let sizes: [(label: String, fit: Avatar.GarmentFit)] = spec.sizes.map { size in
+            var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body)
+            fit.fabric = fabric
+            return (size.label, fit)
+        }
+        let (low, high) = AvatarFitMapper.bodyRange(body, around: m)
+        let result = await Task.detached(priority: .userInitiated) {
+            Avatar.compare(sizes: sizes, body: m, low: low, high: high)
+        }.value
+        comparing = false
+        guard !Task.isCancelled else { return }
+        withAnimation { comparison = result }
+    }
+
+    private func legend(_ title: String, _ color: Color) -> some View {
         HStack(spacing: 4) {
             Circle().fill(color).frame(width: 9, height: 9)
             Text(title).lineLimit(1).minimumScaleFactor(0.8)
@@ -579,6 +709,47 @@ struct AvatarEditorView: View {
             try? modelContext.save()
             AppSounds.shared.play(.saved)
             original = values
+        }
+    }
+}
+
+extension FitZone {
+    var title: String {
+        switch self {
+        case .shoulder: String(localized: "Shoulders")
+        case .chest: String(localized: "Chest")
+        case .back: String(localized: "Back")
+        case .waist: String(localized: "Waist")
+        case .abdomen: String(localized: "Belly")
+        case .sleeve: String(localized: "Sleeves")
+        case .elbow: String(localized: "Elbows")
+        case .hip: String(localized: "Hips")
+        case .thigh: String(localized: "Thighs")
+        case .knee: String(localized: "Knees")
+        case .hem: String(localized: "Hems")
+        }
+    }
+}
+
+extension ZoneTension {
+    var title: String {
+        switch self {
+        case .loose: String(localized: "Loose")
+        case .comfortable: String(localized: "Comfortable")
+        case .slightlyTight: String(localized: "Slightly tight")
+        case .tight: String(localized: "Tight")
+        case .veryTight: String(localized: "Very tight")
+        }
+    }
+
+    /// The fit map's colours.
+    var color: Color {
+        switch self {
+        case .loose: Color(red: 0.3, green: 0.55, blue: 0.78)
+        case .comfortable: Color(red: 0.36, green: 0.76, blue: 0.6)
+        case .slightlyTight: Color(red: 0.98, green: 0.84, blue: 0.32)
+        case .tight: Color(red: 0.97, green: 0.58, blue: 0.24)
+        case .veryTight: Color(red: 0.9, green: 0.3, blue: 0.28)
         }
     }
 }

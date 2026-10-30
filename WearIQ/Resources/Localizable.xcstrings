@@ -6520,6 +6520,496 @@
           }
         }
       }
+    },
+    "Upper arm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üst kol"
+          }
+        }
+      }
+    },
+    "Forearm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ön kol"
+          }
+        }
+      }
+    },
+    "Knee": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diz"
+          }
+        }
+      }
+    },
+    "Calf": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baldır"
+          }
+        }
+      }
+    },
+    "Around the base of your neck, where a shirt collar sits.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boynunun dibinden, gömlek yakasının oturduğu yerden çevresini ölç."
+          }
+        }
+      }
+    },
+    "Around the fullest part of your upper arm, arm relaxed.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolun gevşekken üst kolunun en dolgun yerinden çevresini ölç."
+          }
+        }
+      }
+    },
+    "Around the fullest part of your forearm, arm relaxed.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolun gevşekken ön kolunun en dolgun yerinden çevresini ölç."
+          }
+        }
+      }
+    },
+    "Around your wrist, just above the wrist bone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilek kemiğinin hemen üstünden bileğinin çevresini ölç."
+          }
+        }
+      }
+    },
+    "Around your leg just above the kneecap, standing.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayaktayken diz kapağının hemen üstünden bacağının çevresini ölç."
+          }
+        }
+      }
+    },
+    "Around the fullest part of your calf, standing.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayaktayken baldırının en dolgun yerinden çevresini ölç."
+          }
+        }
+      }
+    },
+    "Around the narrowest part of your leg above the ankle bone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayak bileği kemiğinin üstünde bacağının en ince yerinden çevresini ölç."
+          }
+        }
+      }
+    },
+    "Skin or underwear": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çıplak ten veya iç çamaşırı"
+          }
+        }
+      }
+    },
+    "Fitted": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar"
+          }
+        }
+      }
+    },
+    "Thick or layered": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalın veya katmanlı"
+          }
+        }
+      }
+    },
+    "Arms": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar"
+          }
+        }
+      }
+    },
+    "Legs": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacaklar"
+          }
+        }
+      }
+    },
+    "Your top is loose over the chest. A fitted top would measure it directly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üstün göğüs bölgesinde bol. Dar bir üstle göğüs doğrudan ölçülür."
+          }
+        }
+      }
+    },
+    "Your top hides your waist. Tuck it in or pull it close to your body and scan again.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üstün belini gizliyor. Pantolonun içine sok ya da vücuduna yaklaştır ve yeniden tara."
+          }
+        }
+      }
+    },
+    "Your trousers are loose at the hips. Fitted trousers or leggings would measure them directly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantolonun kalçada bol. Dar pantolon veya taytla kalça doğrudan ölçülür."
+          }
+        }
+      }
+    },
+    "Your sleeves are loose. Short or fitted sleeves would help.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kolların bol. Kısa ya da dar kollu bir üst daha iyi sonuç verir."
+          }
+        }
+      }
+    },
+    "Your trouser legs are loose. Fitted trousers or leggings would measure your thighs directly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantolon paçaların bol. Dar pantolon veya taytla basenler doğrudan ölçülür."
+          }
+        }
+      }
+    },
+    "Clothing": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet"
+          }
+        }
+      }
+    },
+    "Where clothes hide your body, the value is worked out from your outline and your height and weight, and shown with the range it most likely lies in. Size advice takes that range into account.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafetin vücudunu gizlediği yerlerde değer, siluetinden ve boy-kilondan hesaplanır ve büyük olasılıkla içinde bulunduğu aralıkla gösterilir. Beden önerisi bu aralığı hesaba katar."
+          }
+        }
+      }
+    },
+    "More measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diğer ölçüler"
+          }
+        }
+      }
+    },
+    "Too small to see in the photos, so estimated from your height and weight. Tap one to enter your own.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflarda net görülemeyecek kadar küçük oldukları için boy ve kilondan tahmin edilir. Kendi ölçünü girmek için dokun."
+          }
+        }
+      }
+    },
+    "Likely %@ · clothes: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olası aralık %1$@ · kıyafet: %2$@"
+          }
+        }
+      }
+    },
+    "Likely %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olası aralık %@"
+          }
+        }
+      }
+    },
+    "What are you wearing?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üzerinde ne var?"
+          }
+        }
+      }
+    },
+    "Underwear or fitted clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İç çamaşırı veya dar kıyafet"
+          }
+        }
+      }
+    },
+    "Most accurate: your outline is your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En doğru sonuç: siluetin doğrudan vücudundur."
+          }
+        }
+      }
+    },
+    "My everyday clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük kıyafetlerim"
+          }
+        }
+      }
+    },
+    "Works too. Where clothes hide your body, values are estimated and shown with a range.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu da olur. Kıyafetin vücudunu gizlediği yerlerde değerler tahmin edilir ve bir aralıkla gösterilir."
+          }
+        }
+      }
+    },
+    "One more look at %lld position(s). %@:": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld duruşa bir kez daha bakalım. %@:"
+          }
+        }
+      }
+    },
+    "Belly": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karın"
+          }
+        }
+      }
+    },
+    "Elbows": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dirsekler"
+          }
+        }
+      }
+    },
+    "Knees": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dizler"
+          }
+        }
+      }
+    },
+    "Hems": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paçalar"
+          }
+        }
+      }
+    },
+    "Comfortable": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rahat"
+          }
+        }
+      }
+    },
+    "Very tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çok dar"
+          }
+        }
+      }
+    },
+    "%@ to %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ile %2$@ arası"
+          }
+        }
+      }
+    },
+    "stretched %lld%%": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%%%lld gerilmiş"
+          }
+        }
+      }
+    },
+    "%@ cm off the body": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vücuttan %@ cm uzakta"
+          }
+        }
+      }
+    },
+    "%@ cm long": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ cm uzun"
+          }
+        }
+      }
+    },
+    "%@ cm short": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ cm kısa"
+          }
+        }
+      }
+    },
+    "depends on %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ölçüsüne bağlı"
+          }
+        }
+      }
+    },
+    "By the simulation, %@ sits best.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simülasyona göre en iyi oturan beden %@."
+          }
+        }
+      }
+    },
+    "Compare all sizes on my body": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm bedenleri vücudumda karşılaştır"
+          }
+        }
+      }
+    },
+    "Fit map ★": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyum haritası ★"
+          }
+        }
+      }
+    },
+    "Draped with cloth physics: the garment is cut to the size chart, settles on your body under its own weight and stretches where it must, as far as its fibres allow. Dashed lines are its seams and hems. Without the product's own pattern and fabric data this is a model of the garment, not the real one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumaş fiziğiyle giydirilir: kıyafet beden tablosuna göre kesilir, kendi ağırlığıyla vücuduna oturur ve gereken yerde, lifleri izin verdiği kadar esner. Kesikli çizgiler dikiş ve paça/etek yerleridir. Ürünün kendi kalıp ve kumaş verisi olmadan bu, gerçek ürünün değil bir modelinin simülasyonudur."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

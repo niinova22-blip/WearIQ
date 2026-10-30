@@ -187,3 +187,34 @@ import WearIQCore
         #expect(!StopGuide.armsDown(FrameReading(top: 0.1, floor: 0.9, centerX: 0.5, levels: [:])))
     }
 }
+
+@Suite struct StationRetakeTests {
+    /// Widths of an elliptical section seen from eight directions.
+    func ring(_ a: Double, _ b: Double) -> [[BodyLevel: Double]] {
+        (0..<8).map { i in
+            let t = Double(i) * .pi / 4
+            let w = 2 * (a * a * cos(t) * cos(t) + b * b * sin(t) * sin(t)).squareRoot()
+            return [.waist: w, .hip: w * 1.1]
+        }
+    }
+
+    @Test func cleanTurnNeedsNoRetake() {
+        var scan = StationScan()
+        for (i, w) in ring(15, 11).enumerated() { scan.record(w, at: i) }
+        #expect(scan.stopsToRetake().isEmpty)
+    }
+
+    @Test func theOddStopOutIsRetaken() {
+        var scan = StationScan()
+        var widths = ring(15, 11)
+        widths[3] = widths[3].mapValues { $0 * 1.18 }   // stood a step closer
+        for (i, w) in widths.enumerated() { scan.record(w, at: i) }
+        #expect(scan.stopsToRetake() == [3])
+    }
+
+    @Test func missedStopIsRetaken() {
+        var scan = StationScan()
+        for (i, w) in ring(15, 11).enumerated() where i != 5 { scan.record(w, at: i) }
+        #expect(scan.stopsToRetake() == [5])
+    }
+}

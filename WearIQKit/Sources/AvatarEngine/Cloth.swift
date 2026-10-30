@@ -16,168 +16,83 @@ public struct Fabric: Equatable, Sendable {
     public var stretchLimit: Float
     /// Cusick drape coefficient, 0 (fluid) to 1 (stiff).
     public var drape: Float
+    /// Weight per area, g/m². Heavier fabric hangs straighter and presses harder.
+    public var density: Float
+    /// Thickness, metres: how far the fabric's midline sits off the skin.
+    public var thickness: Float
+    /// Friction against skin: how much fabric resting on the body resists sliding.
+    public var friction: Float
 
-    public init(stretchLimit: Float, drape: Float) {
+    public init(stretchLimit: Float, drape: Float, density: Float = 160, thickness: Float = 0.0005,
+                friction: Float = 0.45) {
         self.stretchLimit = max(0.02, stretchLimit)
         self.drape = min(0.95, max(0.15, drape))
+        self.density = min(600, max(40, density))
+        self.thickness = min(0.003, max(0.0002, thickness))
+        self.friction = min(0.9, max(0.1, friction))
     }
 
-    public static let woven = Fabric(stretchLimit: 0.035, drape: 0.6)
-    public static let knit = Fabric(stretchLimit: 0.12, drape: 0.45)
+    public static let woven = Fabric(stretchLimit: 0.035, drape: 0.6, density: 130, thickness: 0.0003)
+    public static let knit = Fabric(stretchLimit: 0.12, drape: 0.45, density: 160, thickness: 0.0006)
+
+    /// Typical fabrics of each kind, from the composition rules below: a cotton jersey
+    /// T-shirt, a cotton poplin shirt, 12 oz denim, a linen shirt, a wool suiting, a
+    /// polyester shirt and a 95/5 cotton–elastane jersey.
+    public static let cottonJersey = Fabric(fibres: ["cotton": 100], knit: true)
+    public static let cottonShirting = Fabric(fibres: ["cotton": 100], knit: false)
+    public static let denim = Fabric(fibres: ["cotton": 100], knit: false, weight: 400)
+    public static let linen = Fabric(fibres: ["linen": 100], knit: false)
+    public static let wool = Fabric(fibres: ["wool": 100], knit: false)
+    public static let polyester = Fabric(fibres: ["polyester": 100], knit: false)
+    public static let stretchJersey = Fabric(fibres: ["cotton": 95, "elastane": 5], knit: true)
 
     /// From fibre percentages keyed by fibre name (elastane, cotton, polyester, viscose,
     /// wool, linen, polyamide, acrylic); unknown or missing fibres count as cotton.
-    public init(fibres: [String: Double], knit: Bool) {
-        let drapeOf: [String: Float] = [
-            "cotton": 0.55, "viscose": 0.28, "wool": 0.5, "linen": 0.72, "polyester": 0.45,
-            "polyamide": 0.4, "acrylic": 0.55, "elastane": 0.5,
+    ///
+    /// Per fibre, typical values for apparel fabrics made of it: the drape coefficient as
+    /// above; friction against skin (cotton and linen grip more than smooth synthetics
+    /// and viscose); relative thickness and weight. Weight when the page doesn't give it
+    /// (`weight`, g/m²): a plain single jersey about 160, a shirting about 120, scaled by
+    /// the fibre (linen and wool cloth run heavier, polyester and viscose lighter). These
+    /// describe a kind of fabric, not this garment's: an unknown fabric is estimated.
+    public init(fibres: [String: Double], knit: Bool, weight: Float? = nil) {
+        struct Fibre { let drape, friction, thickness, weight: Float }
+        let table: [String: Fibre] = [
+            "cotton": Fibre(drape: 0.55, friction: 0.5, thickness: 1, weight: 1),
+            "viscose": Fibre(drape: 0.28, friction: 0.35, thickness: 0.8, weight: 0.9),
+            "wool": Fibre(drape: 0.5, friction: 0.5, thickness: 1.6, weight: 1.6),
+            "linen": Fibre(drape: 0.72, friction: 0.55, thickness: 1.2, weight: 1.3),
+            "polyester": Fibre(drape: 0.45, friction: 0.3, thickness: 0.8, weight: 0.85),
+            "polyamide": Fibre(drape: 0.4, friction: 0.3, thickness: 0.7, weight: 0.8),
+            "acrylic": Fibre(drape: 0.55, friction: 0.4, thickness: 1.4, weight: 1.1),
+            "elastane": Fibre(drape: 0.5, friction: 0.5, thickness: 1, weight: 1),
         ]
         let total = fibres.values.reduce(0, +)
-        var drape: Float = 0.55
-        if total > 0 {
-            drape = 0
-            for (fibre, percent) in fibres { drape += (drapeOf[fibre] ?? 0.55) * Float(percent / total) }
+        let mix = total > 0 ? fibres : ["cotton": 100]
+        let sum = Float(total > 0 ? total : 100)
+        var drape: Float = 0, friction: Float = 0, thick: Float = 0, heavy: Float = 0
+        for (fibre, percent) in mix {
+            let f = table[fibre] ?? table["cotton"]!
+            let share = Float(percent) / sum
+            drape += f.drape * share
+            friction += f.friction * share
+            thick += f.thickness * share
+            heavy += f.weight * share
         }
         let elastane = Float(fibres["elastane"] ?? 0)
+        let base: Float = knit ? 160 : 120
+        let grams = weight ?? base * heavy
+        // Heavier wovens drape stiffer (denim): a little per 100 g/m² over a shirting.
+        let stiffening: Float = knit ? 0 : max(0, grams - 150) / 100 * 0.05
         self.init(stretchLimit: (knit ? 0.12 : 0.035) + 0.04 * min(elastane, 10),
-                  drape: drape - (knit ? 0.08 : 0))
+                  drape: drape - (knit ? 0.08 : 0) + stiffening,
+                  density: grams,
+                  thickness: (knit ? 0.0006 : 0.0003) * thick * (grams / (base * heavy)).squareRoot(),
+                  friction: friction)
     }
 
     /// Folds a loose drape falls into around the body.
     var folds: Int { Int((4 + (1 - drape) * 7).rounded()) }
-}
-
-/// Pushes a point out of the body; `thickness` is how far the fabric's midline sits off
-/// the skin.
-/// A garment as a triangle mesh settled on the body with position-based dynamics
-/// (Müller et al. 2007). The rest shape is the garment as cut; every mesh edge keeps its
-/// cut length as a distance constraint, and the vertices across each pair of triangles
-/// resist folding flat into each other (bending, push only: cloth buckles rather than
-/// compressing). Gravity pulls it down, contacts with the body are resolved along the
-/// distance field's gradient with friction (fabric pressed on the body doesn't slide),
-/// and where it hangs from (shoulders, waistband) stays put. What's left stretched past
-/// its cut length is the strain; where it presses on the body is the contact.
-struct TriangleCloth {
-    var positions: [Vec3]
-    let rest: [Vec3]
-    let indices: [UInt32]
-    /// Per vertex after draping: stretch past the cut, as a fraction.
-    private(set) var stretch: [Float] = []
-    /// Per vertex after draping: resting on the body.
-    private(set) var contact: [Bool] = []
-
-    private struct Link { let a: Int, b: Int, length: Float }
-    private let edges: [Link]
-    private let bends: [Link]
-
-    init(_ mesh: Mesh) {
-        positions = mesh.positions
-        rest = mesh.positions
-        indices = mesh.indices
-        var edgeTriangles: [Int: [Int]] = [:]
-        for t in stride(from: 0, to: indices.count - 2, by: 3) {
-            for e in 0..<3 {
-                let a = Int(indices[t + e]), b = Int(indices[t + (e + 1) % 3])
-                edgeTriangles[min(a, b) << 32 | max(a, b), default: []].append(t)
-            }
-        }
-        var edges: [Link] = [], bends: [Link] = []
-        let rest = mesh.positions, indices = mesh.indices
-        for (key, triangles) in edgeTriangles {
-            let a = key >> 32, b = key & 0xFFFF_FFFF
-            edges.append(Link(a: a, b: b, length: (rest[a] - rest[b]).length))
-            guard triangles.count == 2 else { continue }
-            let opposite = triangles.map { t in (0..<3).map { Int(indices[t + $0]) }.first { $0 != a && $0 != b } ?? a }
-            bends.append(Link(a: opposite[0], b: opposite[1], length: (rest[opposite[0]] - rest[opposite[1]]).length))
-        }
-        self.edges = edges
-        self.bends = bends
-    }
-
-    /// Settles the cloth on the body. `pinned` vertices don't fall or get pulled, but are
-    /// still pushed out of the body.
-    mutating func drape(body: (Vec3) -> Float, fabric: Fabric, pinned: [Bool], steps: Int = 18, iterations: Int = 4) {
-        let thickness: Float = 0.003
-        let dt: Float = 1.0 / 60
-        let gravity = Vec3(0, -9.81 * dt * dt, 0)
-        let bendStiffness: Float = 0.1 + 0.5 * fabric.drape
-        var velocity = [Vec3](repeating: Vec3(0, 0, 0), count: positions.count)
-        var touching = [Bool](repeating: false, count: positions.count)
-
-        func solve(_ links: [Link], stiffness: Float, pushOnly: Bool) {
-            for l in links {
-                let d = positions[l.b] - positions[l.a]
-                let len = d.length
-                guard len > 1e-6, !(pushOnly && len > l.length) else { continue }
-                let wa: Float = pinned[l.a] ? 0 : 1, wb: Float = pinned[l.b] ? 0 : 1
-                guard wa + wb > 0 else { continue }
-                let corr = d * ((len - l.length) / len * stiffness / (wa + wb))
-                positions[l.a] = positions[l.a] + corr * wa
-                positions[l.b] = positions[l.b] - corr * wb
-            }
-        }
-        // Long-range attachments (Kim, Chentanez & Müller 2012): every free vertex stays
-        // within its rest distance of the nearest held vertex, so the fabric can't creep
-        // longer under its own weight, as a real one doesn't.
-        let held = positions.indices.filter { pinned[$0] }
-        var tethers = [(anchor: Int, length: Float)?](repeating: nil, count: positions.count)
-        if !held.isEmpty {
-            for i in positions.indices where !pinned[i] {
-                var best = held[0], bestD = Float.greatestFiniteMagnitude
-                for j in held {
-                    let d = (rest[i] - rest[j]).length
-                    if d < bestD { best = j; bestD = d }
-                }
-                tethers[i] = (best, bestD)
-            }
-        }
-        func collide() {
-            for i in positions.indices {
-                if let tether = tethers[i] {
-                    let d = positions[i] - positions[tether.anchor]
-                    let len = d.length
-                    if len > tether.length { positions[i] = positions[tether.anchor] + d * (tether.length / len) }
-                }
-                if positions[i].y < thickness { positions[i].y = thickness; touching[i] = true }
-                let d = body(positions[i]) - thickness
-                guard d < 0 else { continue }
-                positions[i] = positions[i] - gradient(body, at: positions[i]) * d
-                touching[i] = true
-            }
-        }
-        func project() {
-            solve(edges, stiffness: 1, pushOnly: false)
-            solve(bends, stiffness: bendStiffness, pushOnly: true)
-            collide()
-        }
-
-        collide()
-        for _ in 0..<steps {
-            let start = positions
-            touching = [Bool](repeating: false, count: positions.count)
-            for i in positions.indices where !pinned[i] {
-                positions[i] = positions[i] + velocity[i] * dt + gravity
-            }
-            for _ in 0..<iterations { project() }
-            for i in positions.indices {
-                // Friction: fabric pressed on the body stops sliding.
-                velocity[i] = touching[i] ? Vec3(0, 0, 0) : (positions[i] - start[i]) * (0.6 / dt)
-            }
-        }
-        // At rest: let the constraints settle what the last steps' weight left unresolved.
-        touching = [Bool](repeating: false, count: positions.count)
-        for _ in 0..<(iterations * 8) { project() }
-        contact = touching
-
-        // The most stretched edge at each vertex: a garment pulled round the body
-        // stretches across, not along.
-        var most = [Float](repeating: 0, count: positions.count)
-        for l in edges where l.length > 1e-6 {
-            let e = max(0, (positions[l.a] - positions[l.b]).length / l.length - 1)
-            most[l.a] = max(most[l.a], e); most[l.b] = max(most[l.b], e)
-        }
-        stretch = most
-    }
 }
 
 /// How a garment sits at each point, for the fit map, after CLO 3D's fit maps: 0 loose

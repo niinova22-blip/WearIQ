@@ -8,7 +8,7 @@ import WearIQCore
 
     @Test func averageManIsPlausible() throws {
         let e = prior.estimate(heightCm: 178, weightKg: 80, sex: .male)
-        #expect(e.count == 9)
+        #expect(e.count == 16)
         let chest = try #require(e[.chest])
         #expect((97...107).contains(chest.cm))
         #expect(chest.source == .estimated)

@@ -47,6 +47,8 @@ final class BodyScanViewModel {
         var fit: StopFit?
         /// Loose clothing seen at the front stop; the turn waits while this is non-empty.
         var clothing: [ClothingCheck.Finding] = []
+        /// Taking again a stop that disagreed with the one opposite it.
+        var retaking = false
     }
 
     private(set) var pose: ScanPose = .front
@@ -89,6 +91,11 @@ final class BodyScanViewModel {
     private var levelFractions: [BodyLevel: Double] = [:]
     /// The user chose to scan in their clothes after the loose-clothing warning.
     private var clothingWarningDismissed = false
+    /// What the loose-clothing check saw at the front stop; the measurement uses it.
+    private var clothingFindings: [ClothingCheck.Finding] = []
+    /// Stops still to take again after the turn, and whether that was offered already.
+    private var retakeQueue: [Int] = []
+    private var retakesOffered = false
     /// A stop's still is being measured.
     private var capturing = false
     private var lastHintAt = Date.distantPast
@@ -139,6 +146,9 @@ final class BodyScanViewModel {
         scan = StationScan()
         stillness.reset()
         turn = TurnState()
+        retakeQueue = []
+        retakesOffered = false
+        clothingFindings = []
         result = nil
         partialResult = nil
         turnNext = false
@@ -342,14 +352,16 @@ final class BodyScanViewModel {
         turn.fit = fit
         turn.holding = fit == .ok
         guard fit == .ok else { return nudge(fit) }
-        if station == 0 {
+        if station == 0, !turn.retaking {
             // Facing the phone with the arms out is where loose clothing shows.
             let bmi = basics.weightKg / ((basics.heightCm / 100) * (basics.heightCm / 100))
             let findings = ClothingCheck.findings(armThickness: reading.armThickness,
                                                   waistWidthCm: reading.levels[.waist]?.widthCm,
                                                   hipWidthCm: reading.levels[.hip]?.widthCm,
                                                   bmi: bmi, sex: basics.sex)
-            if !findings.isEmpty, !clothingWarningDismissed {
+            clothingFindings = findings
+            // In everyday clothes that's expected: the measurement accounts for it.
+            if !findings.isEmpty, !clothingWarningDismissed, basics.attire != .everyday {
                 turn.clothing = findings
                 turn.holding = false
                 audio.play(.problem)
@@ -424,6 +436,14 @@ final class BodyScanViewModel {
         stillness.reset()
         turn.fit = nil
 
+        if turn.retaking {
+            retakeQueue.removeAll { $0 == station }
+            guard let next = retakeQueue.first else { return finishTurn() }
+            turn.station = next
+            stationStart = Date()
+            say(String(localized: "Good.") + " " + StationGuide.instruction(next))
+            return
+        }
         let next = station + 1
         turn.station = next
         stage = .turning(Double(next) / Double(StationScan.stationCount))
@@ -451,6 +471,25 @@ final class BodyScanViewModel {
     }
 
     private func finishTurn() {
+        // Opposite stops see the same outline; where they disagree one was off. A few such
+        // stops are taken again instead of redoing the whole turn; many mean the turn as a
+        // whole went wrong, and the measurement says how sure it is.
+        if !retakesOffered {
+            retakesOffered = true
+            let retake = scan.stopsToRetake()
+            if !retake.isEmpty, retake.count <= 3 {
+                retakeQueue = retake
+                turn.retaking = true
+                turn.station = retake[0]
+                turnStart = Date()
+                stationStart = Date()
+                stillness.reset()
+                audio.play(.problem)
+                say(String(localized: "One more look at \(retake.count) position(s). \(StationGuide.title(retake[0])):") + " "
+                    + StationGuide.instruction(retake[0]))
+                return
+            }
+        }
         camera.onFrame = nil
         countdownTask?.cancel()
         audio.play(.success)
@@ -469,8 +508,9 @@ final class BodyScanViewModel {
             let outcome: Result<BodyProfile, Error>
             do {
                 let frontResult = try await front.value
+                let findings = clothingFindings
                 outcome = await Task.detached(priority: .userInitiated) {
-                    Result { try Self.measure(front: frontResult, scan: scan, basics: basics) }
+                    Result { try Self.measure(front: frontResult, scan: scan, basics: basics, findings: findings) }
                 }.value
             } catch {
                 outcome = .failure(error)
@@ -506,7 +546,8 @@ final class BodyScanViewModel {
                     guard let measured = girths[level]?.cm, let expected = prior[dim] else { return false }
                     return measured - expected.cm > 2 * expected.uncertaintyCm
                 }
-                if inflated.count >= 2 {
+                // In everyday clothes that's expected and already accounted for.
+                if inflated.count >= 2, basics.attire != .everyday {
                     stage = .clothesSuspected
                     audio.play(.problem)
                     audio.say(String(localized: "These measurements look larger than your body, probably because of your clothes. For the right sizes, scan again in fitted clothes or underwear."),
@@ -523,7 +564,8 @@ final class BodyScanViewModel {
         }
     }
 
-    private nonisolated static func measure(front: FrontAnalysis, scan: StationScan, basics: BodyBasics) throws -> BodyProfile {
+    private nonisolated static func measure(front: FrontAnalysis, scan: StationScan, basics: BodyBasics,
+                                            findings: [ClothingCheck.Finding]) throws -> BodyProfile {
         // Lengths and shoulder width from the front photo; its girths would rely on an
         // assumed body depth, so they are replaced by the turn's.
         var profile = try BodyMeasurementEngine().measure(heightCm: basics.heightCm, front: front.observation, side: nil)
@@ -541,21 +583,33 @@ final class BodyScanViewModel {
         // A reading far from anything this height and weight allows is a failed detection:
         // the height/weight estimate takes its place, and the reading is kept for the review.
         // Lengths and the shoulder width combine both (inverse-variance weighting): the
-        // statistics predict them to ±2 cm, as good as a photo can measure them. Girths
-        // stay as measured. Values the photos couldn't show at all are estimated.
+        // statistics predict them to ±2 cm, as good as a photo can measure them. Girths go
+        // through the clothing-aware step. Values the photos couldn't show are estimated.
         let prior = basics.prior()
         let fusion = MeasurementFusion.fuse(scan: profile, prior: prior)
         var rejectedScans: [BodyDimension: Double] = [:]
+        // A girth far above the statistics may be clothes rather than a failed detection;
+        // the clothing-aware step below weighs that. Far below them is a failed detection.
+        let girths: Set<BodyDimension> = [.chest, .waist, .hip, .thigh]
         for d in fusion.rejected {
+            if girths.contains(d), let measured = profile[d]?.cm, let expected = prior[d]?.cm, measured > expected { continue }
             rejectedScans[d] = profile[d]?.cm
             profile[d] = prior[d]
         }
-        for d in [BodyDimension.shoulderWidth, .armLength, .torsoLength, .inseam, .outseam, .thigh]
+        for d in [BodyDimension.shoulderWidth, .armLength, .torsoLength, .inseam, .outseam]
         where !fusion.rejected.contains(d) && profile[d] != nil {
             profile[d] = fusion.profile[d]
         }
+        // The outline girths are the body plus whatever the clothes add there: separate
+        // the two, with a range for each value.
+        profile = ClothingAwareReconstruction().apply(to: profile, attire: basics.attire, findings: findings,
+                                                      expected: prior, previous: basics.previous,
+                                                      heightCm: basics.heightCm)
         profile.skeletonToMaskRatio = BodyMeasurementEngine.skeletonToMaskRatio(front.observation)
-        for (d, estimate) in prior where profile[d] == nil { profile[d] = estimate }
+        for (d, estimate) in prior where profile[d] == nil {
+            profile[d] = estimate
+            profile.assessments?[d] = MeasurementAssessment(estimate)
+        }
         profile.rejectedScans = rejectedScans.isEmpty ? nil : rejectedScans
         return profile
     }

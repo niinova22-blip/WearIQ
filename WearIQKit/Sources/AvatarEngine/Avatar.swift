@@ -42,6 +42,8 @@ public struct Avatar: Sendable {
     /// segments: pairs of points.
     public var seams: [Vec3] = []
     public var landmarks: [Landmark] = []
+    /// How the garment sits in each zone, from the drape; empty without a garment.
+    public var fitReport: [FitZone: ZoneReport] = [:]
     /// Where a region's label belongs on the avatar (on the garment when there is one).
     public var anchors: [Anchor: Vec3]
 
@@ -120,6 +122,7 @@ public struct Avatar: Sendable {
             garment = dressed.mesh
             seams = dressed.seams
             anchors.merge(dressed.anchors) { _, new in new }
+            fitReport = dressed.report
             cover = dressed.cut
         }
         landmarks = model.landmarks(covering: cover)
@@ -352,6 +355,7 @@ extension BodyModel {
         var anchors: [Avatar.Anchor: Vec3]
         /// The garment as cut, as a distance field.
         var cut: (Vec3) -> Float
+        var report: [FitZone: ZoneReport]
     }
 
     func dress(_ fit: Avatar.GarmentFit, cell: Float) -> Dressed {
@@ -505,6 +509,7 @@ extension BodyModel {
         cloth.drape(body: { distance($0) }, fabric: fabric, pinned: pinned)
         mesh.positions = cloth.positions
         mesh.strain = fitValues(stretch: cloth.stretch, contact: cloth.contact, fabric: fabric, neighbours: neighbours)
+        let report = self.report(cloth, tags: tags, fit: fit, fabric: fabric)
         if case .trousers = fit.kind {
             // A hem resting on the shoe isn't a fit problem; the avatar has no shoes.
             for i in mesh.strain.indices where cloth.rest[i].y < ankleY + 0.015 { mesh.strain[i] = min(mesh.strain[i], 0.5) }
@@ -536,7 +541,7 @@ extension BodyModel {
         if case .trousers = fit.kind, let lowest = mesh.positions.filter({ $0.x > 0 }).min(by: { $0.y < $1.y }) {
             anchors[.hem] = Vec3(anchors[.hem]?.x ?? lowest.x, lowest.y, 0)
         }
-        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: cut)
+        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: cut, report: report)
     }
 
     /// Stitch lines where the garment has them, as dash segments slightly off the

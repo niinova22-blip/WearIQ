@@ -106,3 +106,33 @@ hata %2,45 (6.068 kişi).
 Göğüs, bel ve kalça seviyeleri de iskeletten konur: ANSUR'un nüfus yükseklikleri (göğüs 0,728,
 göbek 0,601, kalça 0,507), kişinin kendi kalça ve omuz eklemleri arasına gerilerek.
 
+
+## 6. Kıyafetli taramalar (Clothed scans)
+
+Günlük kıyafetle tarama `ClothingAwareReconstruction` ile yapılır: silüet çevresi = vücut + kıyafetin eklediği pay. Pay, kıyafet türüne göre bir olasılık dağılımı olarak modellenir (`EaseModel`). Vücut değeri Bayes kuralıyla, silüet, bu dağılım ve boy/kilo istatistiği (ya da kişinin yakın tarihli dar kıyafetli veya mezura ölçüsü) birleştirilerek bulunur. Sabit bir santimetre düşülmez. Sonuç her ölçü için şunları içerir: değer, %90 aralık, olası kıyafet türü ve kıyafetin eklediği tahmini pay.
+
+**Durum: kalibre edilmedi.** Kıyafet payı dağılımları başlangıç değerleridir:
+
+- Kaynakları: `EaseTable`'daki tasarım payları ve iki cihaz taraması (bol tişört: bel +10 cm; kazak: +13/+15/+7 cm).
+- Gerçek eşli veriyle ayarlanana kadar günlük kıyafetli taramalar için doğruluk iddiası yapılmaz.
+- Otomatik testte (`intervalsCoverTheTruthOnSimulatedClothedScans`) %90 aralıkların, modelden üretilen sentetik veride %85–95 kapsadığı doğrulanır. Bu yalnızca hesabı test eder, modelin gerçeğe uygunluğunu değil.
+
+### Eşli veri protokolü
+
+1. **Kişiler ve referans:** En az 30 kişi, her biri mezurayla ölçülür (ISO 8559-1 noktaları: göğüs, bel, kalça, uyluk).
+2. **Taramalar:** Her kişi şu gruplarda ikişer kez taranır: `skin` (iç çamaşırı), `fitted` (dar spor kıyafeti), `tshirt` (normal tişört), `shirt` (gömlek), `loose` (bol tişört), `loosetrousers` (bol pantolon), `thick` (kalın), `layered` (katmanlı).
+3. **Kayıt:** Sonuçlar `subject,group,dimension,scanned,low,high,tape` başlıklı CSV'ye yazılır.
+4. **Puanlama:** `ScanValidation.score` grup ve ölçü başına şunları hesaplar: ortalama mutlak hata, sapma, hata dağılımı (SD, 95. yüzdelik), tekrar tarama tutarlılığı, başarısızlık oranı ve %90 aralığın mezura değerini kapsama oranı.
+5. **Raporlama:** Normal kıyafetli grupların hatası, dar kıyafetli gruplarınkiyle karşılaştırılarak ayrıca raporlanır.
+
+### Kalibrasyon
+
+- **Pay dağılımları:** Her kıyafet türü için `EaseModel` ortalaması ve SD'si, eşli veride gözlenen `(silüet − mezura) / mezura` değerlerinden yeniden kestirilir.
+- **Kapsama hedefi:** %90 aralığın kapsama oranı 0,85–0,95 arasında olmalıdır. Altındaysa SD büyütülür, üstündeyse küçültülür.
+- **Silüet hatası:** `outlineRelError` (%3), `skin` grubunun mezura hatasından yeniden ölçülür.
+
+## 7. Kumaş simülasyonu
+
+- **Çözücü:** `TriangleCloth`, XPBD ile çalışır. Kenarlar esneme uyumluluğuyla, bükülme kumaşın dökümünden gelen uyumlulukla çözülür. Her köşe kumaş ağırlığından kütle alır. Vücuda çarpışmada sürtünme uygulanır ve kumaşın kendi kendisiyle çarpışması uzamsal bir hash ile ayrılır.
+- **Testler (`FitReportTests`):** Bölgeler drapeden hesaplanır. Aynı tişörtün S, M ve L bedenleri farklı gerilim verir (S göğüste çok dar, M rahat, L bol). Esnek kumaş aynı kesimi daha rahat taşır. Belirsiz bel, bel bölgesinde bir sonuç aralığı üretir.
+- **Doğrulanmamış:** Gerilme eşikleri (konforlu esnemenin %30, %60 ve %100'ü) gerçek deneme sonuçlarıyla karşılaştırılmadı. Beden önerisi doğrulaması (bölüm 4) simülasyon için de yapılmalıdır: aynı kişi M ve L bedeni gerçekten dener ve simülasyon kararıyla karşılaştırılır.

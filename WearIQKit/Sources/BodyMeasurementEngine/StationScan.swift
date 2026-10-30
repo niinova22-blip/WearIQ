@@ -77,6 +77,42 @@ public struct StationScan: Sendable {
         return result
     }
 
+    /// Stops to take again: a silhouette seen from opposite sides has the same width, so
+    /// opposite stops that disagree by more than `tolerance` at the waist or hips mean
+    /// one of them was off (turned too far, a step closer, an arm in the way). Of the
+    /// pair, the one further from what its neighbours predict for an elliptical section
+    /// (w(θ)² = w(θ+45°)² + w(θ−45°)² − w(θ+90°)²) is retaken. Missing stops are retaken
+    /// too.
+    public func stopsToRetake(tolerance: Double = 0.08) -> [Int] {
+        let n = Self.stationCount
+        var retake = Set((0..<n).filter { !captured.contains($0) })
+        for i in 0..<(n / 2) {
+            let j = i + n / 2
+            var worst = 0.0
+            for level in [BodyLevel.waist, .hip] {
+                guard let a = widths[i][level], let b = widths[j][level], a > 0, b > 0 else { continue }
+                worst = max(worst, abs(a - b) / ((a + b) / 2))
+            }
+            guard worst > tolerance else { continue }
+            retake.insert(predictionError(i) >= predictionError(j) ? i : j)
+        }
+        return retake.sorted()
+    }
+
+    /// Relative gap between a stop's waist/hip width and what its neighbours predict.
+    private func predictionError(_ i: Int) -> Double {
+        let n = Self.stationCount
+        var worst = 0.0
+        for level in [BodyLevel.waist, .hip] {
+            guard let w = widths[i][level], let next = widths[(i + 1) % n][level],
+                  let previous = widths[(i + n - 1) % n][level], let across = widths[(i + 2) % n][level] else { continue }
+            let square = next * next + previous * previous - across * across
+            guard square > 0 else { continue }
+            worst = max(worst, abs(w - square.squareRoot()) / w)
+        }
+        return worst
+    }
+
     /// Width at a stop, without readings widened by the arms.
     private func usableWidth(_ level: BodyLevel, at station: Int) -> Double? {
         guard let width = widths[station][level] else { return nil }

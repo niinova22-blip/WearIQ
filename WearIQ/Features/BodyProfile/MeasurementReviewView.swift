@@ -37,6 +37,23 @@ struct MeasurementReviewView: View {
                     }
                 }
             }
+            if !model.clothingIssues.isEmpty {
+                Section {
+                    ForEach(model.clothingIssues, id: \.region) { issue in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(issue.region.title): \(issue.cover.title)")
+                                .font(.subheadline.weight(.semibold))
+                            Text(issue.region.advice)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Clothing")
+                } footer: {
+                    Text("Where clothes hide your body, the value is worked out from your outline and your height and weight, and shown with the range it most likely lies in. Size advice takes that range into account.")
+                }
+            }
             if !model.lowConfidence.isEmpty {
                 Section {
                     Label("Values marked low confidence are rough estimates from photos. For better size advice, measure them with a tape and tap to correct.",
@@ -50,8 +67,18 @@ struct MeasurementReviewView: View {
                         .foregroundStyle(.primary)
                 }
             } footer: {
+                Text("Photo-based values are estimates. Tap any value to replace it with your own measurement.")
+            }
+            Section {
+                ForEach(MeasurementReviewModel.detailOrder, id: \.self) { d in
+                    Button { editing = d } label: { row(d) }
+                        .foregroundStyle(.primary)
+                }
+            } header: {
+                Text("More measurements")
+            } footer: {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Photo-based values are estimates. Tap any value to replace it with your own measurement.")
+                    Text("Too small to see in the photos, so estimated from your height and weight. Tap one to enter your own.")
                     if let ratio = model.profile.skeletonToMaskRatio {
                         // Diagnostic: 1.00 when the joints and the outline give the same scale.
                         Text("Scan check: skeleton/outline scale \(ratio, format: .number.precision(.fractionLength(2)))")
@@ -105,6 +132,11 @@ struct MeasurementReviewView: View {
                     Text(v.source == .scan ? v.confidence.title : v.source.title)
                         .font(.caption)
                         .foregroundStyle((v.confidence == .low && v.source == .scan) || v.source == .estimated ? .orange : .secondary)
+                    if v.source == .scan, let range = model.range(d) {
+                        Text(rangeText(range, cover: model.profile.assessment(d)?.clothing))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             Spacer()
@@ -118,6 +150,13 @@ struct MeasurementReviewView: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private func rangeText(_ range: String, cover: ClothingCover?) -> String {
+        if let cover, cover > .fitted {
+            return String(localized: "Likely \(range) · clothes: \(cover.title.lowercased())")
+        }
+        return String(localized: "Likely \(range)")
     }
 
     private func save() {
