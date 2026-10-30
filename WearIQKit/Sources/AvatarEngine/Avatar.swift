@@ -2,13 +2,17 @@ import Foundation
 import WearIQCore
 
 /// The user's body as a 3D avatar built from their measurements, and a garment draped on
-/// it from the fit analysis. The garment is cut to its own measurements (body girth plus
-/// ease at each level, its own lengths) and then settled on the body by a cloth
-/// simulation (see `ClothPiece`): where it's cut smaller than the body it has to stretch,
-/// and that strain, against what the fabric can take, is the fit map. Longer than the
-/// body, the extra length bunches into folds (a trouser hem stacking on the shoe, a
-/// sleeve over the hand); shorter, skin shows. A shoulder seam wider than the shoulders
-/// sits down the arm, and loose fabric falls in vertical folds.
+/// it from the fit analysis.
+///
+/// The body is one smooth surface: a torso lofted through sections scaled to the
+/// measured girths, with neck, head, arms, hands, legs and feet blended into it as
+/// distance fields, so shoulders, hips and joints flow without seams. The garment is cut
+/// as an offset of the body parts it covers (body girth plus the garment's ease at each
+/// level, its own lengths, open at hem, cuffs, neckline and waistband) and then settled
+/// on the body by a cloth simulation (`TriangleCloth`): where it's cut smaller than the
+/// body it stretches, and that strain, against what the fabric can take, plus where it
+/// rests on the body, is the fit map. Extra length bunches at hems and cuffs, loose
+/// fabric falls in vertical folds, and seams are stitched in where a garment has them.
 ///
 /// Proportions not measured come from ANSUR II stature fractions: knee 0.28, armpit
 /// 0.757, shoulder 0.80, neck 0.835, head centre 0.93 of stature, waist (navel) 0.601,
@@ -18,8 +22,26 @@ public struct Avatar: Sendable {
         case shoulder, chest, waist, hip, thigh, sleeveEnd, hem
     }
 
+    /// A body point worth naming on screen.
+    public struct Landmark: Sendable {
+        public enum Kind: String, Sendable, CaseIterable {
+            case neck, shoulder, chest, elbow, waist, wrist, hip, crotch, thigh, knee, ankle
+        }
+        public var kind: Kind
+        /// On the outside surface (the garment's, where it covers the point).
+        public var position: Vec3
+        /// Surface normal there, to tell whether it faces the camera.
+        public var normal: Vec3
+        /// Which way the label goes: +1 towards the avatar's left (+x), −1 its right.
+        public var side: Float
+    }
+
     public var body: Mesh
     public var garment: Mesh?
+    /// Stitch lines on the garment (hems, cuffs, side and shoulder seams), as dash
+    /// segments: pairs of points.
+    public var seams: [Vec3] = []
+    public var landmarks: [Landmark] = []
     /// Where a region's label belongs on the avatar (on the garment when there is one).
     public var anchors: [Anchor: Vec3]
 
@@ -78,134 +100,180 @@ public struct Avatar: Sendable {
         }
     }
 
+    /// Mesh resolution: grid cell size in metres for the body and the garment.
+    public struct Detail: Sendable {
+        public var body: Float
+        public var garment: Float
+        public static let standard = Detail(body: 0.011, garment: 0.014)
+        public static let preview = Detail(body: 0.02, garment: 0.022)
+    }
+
     // MARK: Building
 
-    public init(_ m: Measurements, garment fit: GarmentFit? = nil) {
-        let geo = Skeleton(m)
-        body = geo.bodyMesh()
-        anchors = geo.bodyAnchors
+    public init(_ m: Measurements, garment fit: GarmentFit? = nil, detail: Detail = .standard) {
+        let model = BodyModel(m)
+        body = model.mesh(cell: detail.body)
+        anchors = model.bodyAnchors
+        var cover: ((Vec3) -> Float)?
         if let fit {
-            let (mesh, garmentAnchors) = geo.garmentMesh(fit)
-            garment = mesh
-            anchors.merge(garmentAnchors) { _, new in new }
+            let dressed = model.dress(fit, cell: detail.garment)
+            garment = dressed.mesh
+            seams = dressed.seams
+            anchors.merge(dressed.anchors) { _, new in new }
+            cover = dressed.cut
         }
+        landmarks = model.landmarks(covering: cover)
     }
 }
 
-/// Positions and sizes derived from the measurements.
-private struct Skeleton {
+/// Positions, sizes and the body's distance field, from the measurements.
+struct BodyModel: Sendable {
     let m: Avatar.Measurements
     let h: Float
     let crotchY, kneeY, ankleY, hipY, waistY, chestY, armpitY, shoulderY, neckY, headY: Float
     let hip, waist, chest: (Float, Float)
-    let shoulderHalf: Float
-    let thighR: Float
-    let legX: Float
-    let armDir: (Vec3, Vec3)   // left, right
-    let armStart: (Vec3, Vec3)
-    let armLength: Float
-    let upperArmR: Float
-    /// Smoothed torso sections, crotch to neck.
-    let torso: [Ring]
-    /// Limb radii, top to bottom, smoothed.
-    let legRadii: [Float]
-    let armRadii: [Float]
+    let shoulderHalf, thighR, legX, armLength, upperArmR: Float
+    let torso: LoftedTorso
+    let neck: Bone
+    let skull, jaw: Ellipsoid
+    /// Left (+x) then right.
+    let arms: [(start: Vec3, dir: Vec3, limb: Limb, hand: Ellipsoid)]
+    let legs: [(hip: Vec3, knee: Vec3, ankle: Vec3, limb: Limb, foot: Ellipsoid)]
 
     init(_ m: Avatar.Measurements) {
         self.m = m
         let h = Float(m.height / 100)
         self.h = h
-        crotchY = Float(m.inseam / 100)
+        let crotchY = Float(m.inseam / 100)
+        let hipY = max(crotchY + 0.025 * h, 0.507 * h)
+        let waistY = 0.601 * h, chestY = 0.728 * h, armpitY = 0.757 * h
+        let shoulderY = 0.80 * h, neckY = 0.835 * h, headY = 0.93 * h
+        self.crotchY = crotchY
         kneeY = 0.28 * h
         ankleY = 0.04 * h
-        hipY = max(crotchY + 0.025 * h, 0.507 * h)
-        waistY = 0.601 * h
-        chestY = 0.728 * h
-        armpitY = 0.757 * h
-        shoulderY = 0.80 * h
-        neckY = 0.835 * h
-        headY = 0.93 * h
-        hip = Shapes.ellipse(girthCm: m.hip, depthRatio: 0.78)
-        waist = Shapes.ellipse(girthCm: m.waist, depthRatio: 0.75)
-        chest = Shapes.ellipse(girthCm: m.chest, depthRatio: 0.72)
-        shoulderHalf = Float(m.shoulderWidth / 200) * 1.08
-        thighR = Float(m.thigh / 100) / (2 * .pi)
-        legX = hip.0 * 0.5
-        // Arms hang about 12° out from the body.
-        let angle: Float = 12 * .pi / 180
-        armDir = (Vec3(sin(angle), -cos(angle), 0), Vec3(-sin(angle), -cos(angle), 0))
-        armStart = (Vec3(shoulderHalf * 0.92, shoulderY - 0.01 * h, 0), Vec3(-shoulderHalf * 0.92, shoulderY - 0.01 * h, 0))
-        armLength = Float(m.armLength / 100)
-        upperArmR = 0.0275 * h
+        self.hipY = hipY; self.waistY = waistY; self.chestY = chestY; self.armpitY = armpitY
+        self.shoulderY = shoulderY; self.neckY = neckY; self.headY = headY
+        let hip = Shapes.ellipse(girthCm: m.hip, depthRatio: 0.78)
+        let waist = Shapes.ellipse(girthCm: m.waist, depthRatio: 0.75)
+        let chest = Shapes.ellipse(girthCm: m.chest, depthRatio: 0.72)
+        self.hip = hip; self.waist = waist; self.chest = chest
+        let shoulderHalf = Float(m.shoulderWidth / 200) * 1.08
+        self.shoulderHalf = shoulderHalf
+        let thighR = Float(m.thigh / 100) / (2 * .pi)
+        self.thighR = thighR
+        // Thighs as wide as the hips allow: the outer thigh stays inside the hip line.
+        let legX = max(hip.0 - thighR * 1.05, thighR * 0.75)
+        self.legX = legX
+        let armLength = Float(m.armLength / 100)
+        self.armLength = armLength
+        let u = 0.0265 * h
+        upperArmR = u
 
         // Key sections: superellipses a little boxier than an ellipse through the chest
         // and shoulders, the seat set back and the chest forward, each measured level
         // scaled to its exact girth; Catmull–Rom smoothing flows between them.
         func key(_ y: Float, _ size: (Float, Float), z: Float = 0, power: Float = 2.2, girth: Double? = nil) -> Ring {
             let ring = Ring(center: Vec3(0, y, z * h), halfWidth: size.0, halfDepth: size.1, power: power)
-            return girth.map { ring.scaled(toPerimeter: Float($0 / 100)) } ?? ring
+            guard let girth else { return ring }
+            return ring.scaled(toPerimeter: Float(girth / 100))
         }
-        let keys = [
-            key(crotchY, (hip.0 * 0.9, hip.1 * 0.8), z: -0.004, power: 2.1),
+        let keys: [Ring] = [
+            key(crotchY - 0.01 * h, (hip.0 * 0.55, hip.1 * 0.6), z: -0.004, power: 2.1),
+            key(crotchY + 0.012 * h, (hip.0 * 0.95, hip.1 * 0.9), z: -0.007, power: 2.2),
             key(hipY, hip, z: -0.008, power: 2.3, girth: m.hip),
-            key((hipY + waistY) / 2, ((hip.0 + waist.0) / 2, (hip.1 + waist.1) / 2), z: -0.004, power: 2.3, girth: (m.hip + m.waist) / 2),
+            key((hipY + waistY) / 2, ((hip.0 + waist.0) / 2, (hip.1 + waist.1) / 2), z: -0.004, power: 2.3,
+                girth: (m.hip + m.waist) / 2),
             key(waistY, waist, power: 2.2, girth: m.waist),
             key((waistY + chestY) / 2, ((waist.0 + chest.0) / 2, (waist.1 + chest.1) / 2), z: 0.002, power: 2.3,
                 girth: (m.waist + m.chest) / 2),
             key(chestY, chest, z: 0.004, power: 2.4, girth: m.chest),
-            key(armpitY, (chest.0 * 0.97, chest.1 * 0.93), z: 0.002, power: 2.6),
-            key(shoulderY - 0.012 * h, (shoulderHalf * 0.96, chest.1 * 0.74), power: 2.8),
-            key(shoulderY + 0.012 * h, (shoulderHalf * 0.78, chest.1 * 0.6), z: -0.004, power: 2.5),
-            key(0.826 * h, (shoulderHalf * 0.42, chest.1 * 0.45), z: -0.004),
-            key(neckY, (0.033 * h, 0.035 * h), z: -0.002, power: 2),
+            key(armpitY, (chest.0 * 0.96, chest.1 * 0.93), z: 0.002, power: 2.6),
+            key(shoulderY - 0.012 * h, (shoulderHalf * 0.9, chest.1 * 0.74), power: 2.5),
+            key(shoulderY + 0.01 * h, (shoulderHalf * 0.72, chest.1 * 0.6), z: -0.004, power: 2.5),
+            key(0.826 * h, (shoulderHalf * 0.4, chest.1 * 0.45), z: -0.004),
+            key(neckY, (0.032 * h, 0.034 * h), z: -0.003, power: 2),
         ]
-        torso = Shapes.smooth(keys)
-        // Thigh to ankle with the knee narrowing and the calf filling out again.
-        legRadii = Shapes.smoothRadii([1, 0.9, 0.78, 0.63, 0.66, 0.6, 0.46, 0.38].map { [thighR] in $0 * thighR })
-        // Deltoid, biceps, elbow, forearm, wrist.
-        armRadii = Shapes.smoothRadii([1.08, 1, 0.93, 0.8, 0.82, 0.72, 0.56].map { [upperArmR] in $0 * upperArmR })
-    }
+        torso = LoftedTorso(rings: Shapes.smooth(keys))
+        neck = Bone(a: Vec3(0, neckY - 0.02 * h, -0.004 * h), b: Vec3(0, headY - 0.045 * h, 0.002 * h), ra: 0.031 * h, rb: 0.028 * h)
+        skull = Ellipsoid(center: Vec3(0, headY + 0.008 * h, -0.002 * h), radii: Vec3(0.044 * h, 0.059 * h, 0.053 * h))
+        jaw = Ellipsoid(center: Vec3(0, headY - 0.03 * h, 0.012 * h), radii: Vec3(0.034 * h, 0.032 * h, 0.04 * h))
 
-    // MARK: Body
-
-    private var legs: [(top: Vec3, bottom: Vec3)] {
-        [1, -1].map { (side: Float) in
-            (Vec3(side * legX, crotchY + 0.01 * h, 0), Vec3(side * legX * 0.85, ankleY, 0))
+        // Arms hang about 16° out from the body.
+        let angle: Float = 16 * .pi / 180
+        arms = [Float(1), -1].map { side in
+            let start = Vec3(side * shoulderHalf * 0.94, shoulderY - 0.012 * h, -0.004 * h)
+            let dir = Vec3(side * sin(angle), -cos(angle), 0)
+            func at(_ f: Float) -> Vec3 { start + dir * (armLength * f) }
+            let limb = Limb(bones: [
+                Bone(a: start, b: at(0.12), ra: u * 1.02, rb: u * 1.03),   // deltoid
+                Bone(a: at(0.12), b: at(0.36), ra: u * 1.04, rb: u * 0.95),  // biceps
+                Bone(a: at(0.36), b: at(0.55), ra: u * 0.95, rb: u * 0.74),  // elbow
+                Bone(a: at(0.55), b: at(0.68), ra: u * 0.76, rb: u * 0.8),   // forearm
+                Bone(a: at(0.68), b: at(1), ra: u * 0.8, rb: u * 0.55),     // wrist
+            ], blend: 0.006 * h)
+            let across = Vec3(dir.y, -dir.x, 0)
+            let hand = Ellipsoid(center: at(1) + dir * (0.05 * h), radii: Vec3(0.012 * h, 0.052 * h, 0.024 * h),
+                                 frame: (across, dir, Vec3(0, 0, 1)))
+            return (start, dir, limb, hand)
+        }
+        legs = [Float(1), -1].map { side in
+            let top = Vec3(side * legX, crotchY + 0.02 * h, -0.004 * h)
+            // A slight A-stance, feet a little apart, as body scanners pose the avatar.
+            let knee = Vec3(side * legX * 1.12, 0.28 * h, 0.004 * h)
+            let ankle = Vec3(side * legX * 1.15, 0.04 * h, -0.006 * h)
+            func thigh(_ f: Float) -> Vec3 { top + (knee - top) * f }
+            func shank(_ f: Float) -> Vec3 { knee + (ankle - knee) * f + Vec3(0, 0, -0.008 * h * sin(f * .pi)) }
+            let r = thighR
+            let limb = Limb(bones: [
+                Bone(a: top, b: thigh(0.12), ra: r * 0.82, rb: r * 1.0),
+                Bone(a: thigh(0.12), b: thigh(0.3), ra: r * 1.0, rb: r * 0.95),
+                Bone(a: thigh(0.3), b: thigh(0.62), ra: r * 0.95, rb: r * 0.8),
+                Bone(a: thigh(0.62), b: knee, ra: r * 0.8, rb: r * 0.6),
+                Bone(a: knee, b: shank(0.28), ra: r * 0.6, rb: r * 0.64),   // calf
+                Bone(a: shank(0.28), b: shank(0.6), ra: r * 0.64, rb: r * 0.52),
+                Bone(a: shank(0.6), b: ankle, ra: r * 0.52, rb: r * 0.36),
+            ], blend: 0.008 * h)
+            let foot = Ellipsoid(center: Vec3(ankle.x, 0.024 * h, 0.04 * h), radii: Vec3(0.027 * h, 0.024 * h, 0.076 * h))
+            return (top, knee, ankle, limb, foot)
         }
     }
 
-    private var arms: [(start: Vec3, dir: Vec3)] { [(armStart.0, armDir.0), (armStart.1, armDir.1)] }
+    // MARK: Distance field
 
-    private func radius(_ radii: [Float], at f: Float) -> Float {
-        let x = min(1, max(0, f)) * Float(radii.count - 1)
-        let k = min(radii.count - 2, Int(x))
-        return radii[k] + (radii[k + 1] - radii[k]) * (x - Float(k))
+    @inline(__always) func arm(_ i: Int, _ p: Vec3) -> Float {
+        smin(arms[i].limb.distance(p), arms[i].hand.distance(p), 0.012 * h)
     }
 
-    func bodyMesh() -> Mesh {
-        var mesh = Shapes.loft(torso)
-        // Neck, skull and jaw.
-        mesh.append(Shapes.tube(from: Vec3(0, neckY - 0.012 * h, -0.002 * h), to: Vec3(0, headY - 0.035 * h, 0.002 * h),
-                                radii: [0.033 * h, 0.03 * h, 0.029 * h]))
-        mesh.append(Shapes.ellipsoid(center: Vec3(0, headY + 0.01 * h, 0), radii: Vec3(0.044 * h, 0.058 * h, 0.052 * h)))
-        mesh.append(Shapes.ellipsoid(center: Vec3(0, headY - 0.03 * h, 0.012 * h), radii: Vec3(0.036 * h, 0.036 * h, 0.04 * h)))
-        // Legs, ankles and feet.
-        for leg in legs {
-            mesh.append(Shapes.tube(from: leg.top, to: leg.bottom, radii: legRadii))
-            mesh.append(Shapes.ellipsoid(center: leg.bottom, radii: Vec3(repeating: legRadii.last ?? 0.02)))
-            let heel = Vec3(leg.bottom.x, 0.022 * h, -0.035 * h), toe = Vec3(leg.bottom.x, 0.016 * h, 0.115 * h)
-            mesh.append(Shapes.tube(from: heel, to: toe, radii: Shapes.smoothRadii([0.018, 0.024, 0.028, 0.027, 0.016].map { $0 * h }),
-                                    flatten: 0.55))
+    @inline(__always) func leg(_ i: Int, _ p: Vec3) -> Float {
+        smin(legs[i].limb.distance(p), legs[i].foot.distance(p), 0.014 * h)
+    }
+
+    /// Signed distance to the body's skin.
+    func distance(_ p: Vec3) -> Float {
+        var d = torso.distance(p)
+        if p.y > neckY - 0.06 * h {
+            d = smin(d, neck.distance(p).d, 0.014 * h)
+            d = smin(d, smin(skull.distance(p), jaw.distance(p), 0.03 * h), 0.012 * h)
         }
-        // Shoulders, arms and hands.
-        for arm in arms {
-            let wrist = arm.start + arm.dir * armLength
-            mesh.append(Shapes.ellipsoid(center: arm.start, radii: Vec3(upperArmR * 1.12, upperArmR * 1.2, upperArmR * 1.08)))
-            mesh.append(Shapes.tube(from: arm.start, to: wrist, radii: armRadii))
-            mesh.append(Shapes.tube(from: wrist - arm.dir * (0.005 * h), to: wrist + arm.dir * (0.105 * h),
-                                    radii: Shapes.smoothRadii([0.016, 0.024, 0.025, 0.022, 0.012].map { $0 * h }), flatten: 0.45))
+        if p.y > ankleY + 0.1 * h, p.y < shoulderY + 0.05 * h {
+            d = smin(d, arm(0, p), 0.007 * h)
+            d = smin(d, arm(1, p), 0.007 * h)
         }
-        return mesh
+        if p.y < hipY + 0.06 * h {
+            d = smin(d, min(leg(0, p), leg(1, p)), 0.012 * h)
+        }
+        return max(d, -p.y)
+    }
+
+    /// Box around the whole body.
+    var bounds: (Vec3, Vec3) {
+        let reach = shoulderHalf + armLength * 0.26 + 0.08 * h
+        return (Vec3(-reach, -0.01, -0.13 * h), Vec3(reach, h + 0.01, 0.14 * h))
+    }
+
+    func mesh(cell: Float) -> Mesh {
+        let (lo, hi) = bounds
+        return SurfaceNets.mesh(from: lo, to: hi, cell: cell) { distance($0) }
     }
 
     var bodyAnchors: [Avatar.Anchor: Vec3] {
@@ -216,30 +284,8 @@ private struct Skeleton {
         ]
     }
 
-    /// The body as the cloth sees it.
-    private var collider: BodyCollider {
-        var c = BodyCollider()
-        c.torso = torso
-        return c
-    }
-
-    private func limbCollider(_ a: Vec3, _ b: Vec3, _ radii: [Float]) -> BodyCollider {
-        var c = BodyCollider()
-        c.limbs = [(a, b, radii)]
-        return c
-    }
-
-    // MARK: Garment
-
-    /// The torso section at a height, the body's own shape there.
-    private func bodyRing(at y: Float) -> Ring {
-        var ring = collider.torsoRing(at: y)!
-        ring.center.y = y
-        return ring
-    }
-
     /// Value at `y` interpolated through (height, value) keys; flat beyond them.
-    private func interpolate(_ keys: [(Float, Float)], at y: Float) -> Float {
+    func interpolate(_ keys: [(Float, Float)], at y: Float) -> Float {
         guard let first = keys.first, let last = keys.last else { return 0 }
         if y <= first.0 { return first.1 }
         if y >= last.0 { return last.1 }
@@ -249,150 +295,353 @@ private struct Skeleton {
         return last.1
     }
 
-    /// A torso panel from `bottom` to `top`: at each body section, the garment's cut is
-    /// the body's shape scaled to the body's girth plus `ease` (m), widened by `widen`.
-    private func torsoPanel(from bottom: Float, to top: Float, ease: (Float) -> Float,
-                            widen: (Float) -> Float = { _ in 0 }) -> (ClothPiece, [Float]) {
-        // Evenly spaced rings, about 1.5 cm apart.
-        let count = max(2, Int(((top - bottom) / 0.015).rounded()) + 1)
-        let levels = (0..<count).map { bottom + (top - bottom) * Float($0) / Float(count - 1) }
-        var rings: [[Vec3]] = [], centers: [Vec3] = [], slack: [Float] = []
-        for y in levels {
-            let body = bodyRing(at: y)
-            let e = ease(y)
-            var cut = body.scaled(toPerimeter: max(0.3 * body.perimeter, body.perimeter + e))
-            cut.halfWidth += widen(y)
-            rings.append((0..<Shapes.segments).map { cut.point(Float($0) / Float(Shapes.segments) * 2 * .pi) })
-            centers.append(cut.center)
-            slack.append(e)
-        }
-        return (ClothPiece(rings: rings, centers: centers), slack)
-    }
+    // MARK: Landmarks
 
-    /// A tube panel through (centre, radius) stations, round in the frame of `a`→`b`.
-    private func tubePanel(_ stations: [(Vec3, Float)], frame: (u: Vec3, v: Vec3)) -> ClothPiece {
-        let rings = stations.map { c, r in
-            (0..<Shapes.segments).map { i -> Vec3 in
-                let t = Float(i) / Float(Shapes.segments) * 2 * .pi
-                return c + frame.u * (r * cos(t)) + frame.v * (r * sin(t))
+    /// Named body points, on the surface: found by walking out from the bone until past
+    /// the skin and, where given, the garment's cut.
+    func landmarks(covering cover: ((Vec3) -> Float)?) -> [Avatar.Landmark] {
+        let left = arms[0], rightLeg = legs[1], leftLeg = legs[0]
+        let specs: [(Avatar.Landmark.Kind, Vec3, Vec3, Float)] = [
+            (.neck, Vec3(0, neckY + 0.012 * h, 0), Vec3(-1, 0, 0.3), -1),
+            (.shoulder, left.start + Vec3(0, 0.01 * h, 0), Vec3(0.7, 1, 0), 1),
+            (.chest, Vec3(-chest.0 * 0.45, chestY, 0), Vec3(0, 0, 1), -1),
+            (.elbow, left.start + left.dir * (armLength * 0.55), Vec3(1, 0, -0.3), 1),
+            (.waist, Vec3(0, waistY, 0), Vec3(-1, 0, 0), -1),
+            (.wrist, left.start + left.dir * armLength, Vec3(1, 0, 0.2), 1),
+            (.hip, Vec3(0, hipY, 0), Vec3(1, 0, 0), 1),
+            (.crotch, Vec3(0, crotchY + 0.01 * h, 0), Vec3(0, -0.2, 1), -1),
+            (.thigh, leftLeg.hip + (leftLeg.knee - leftLeg.hip) * 0.25, Vec3(1, 0, 0.4), 1),
+            (.knee, leftLeg.knee, Vec3(0, 0, 1), 1),
+            (.ankle, rightLeg.ankle, Vec3(-1, 0, 0.2), -1),
+        ]
+        return specs.map { kind, inside, direction, side in
+            let dir = direction.normalized
+            var p = inside
+            for _ in 0..<120 {
+                let outside = distance(p) > 0 && (cover.map { $0(p) > 0 } ?? true)
+                if outside { break }
+                p = p + dir * 0.003
             }
+            let normal = gradient({ distance($0) }, at: p)
+            return Avatar.Landmark(kind: kind, position: p, normal: normal, side: side)
         }
-        return ClothPiece(rings: rings, centers: stations.map(\.0))
+    }
+}
+
+// MARK: - Garments
+
+/// The parts a garment is made of: each is an offset of a body part, with its open
+/// edges cut by planes (positive outside the garment).
+private struct GarmentPart {
+    var shape: (Vec3) -> Float
+    var planes: [(normal: Vec3, offset: Float)]
+
+    @inline(__always) func clip(_ p: Vec3) -> Float {
+        var c = -Float.greatestFiniteMagnitude
+        for plane in planes { c = max(c, plane.normal.dot(p) - plane.offset) }
+        return c
     }
 
-    /// The point of a ring furthest out to the side (+x), for labels.
-    private func edge(_ piece: ClothPiece, ring r: Int) -> Vec3 {
-        piece.positions[(r * piece.n)..<((r + 1) * piece.n)].max { $0.x < $1.x } ?? piece.centers[r]
+    @inline(__always) func distance(_ p: Vec3) -> Float { max(shape(p), clip(p)) }
+}
+
+extension BodyModel {
+    struct Dressed {
+        var mesh: Mesh
+        var seams: [Vec3]
+        var anchors: [Avatar.Anchor: Vec3]
+        /// The garment as cut, as a distance field.
+        var cut: (Vec3) -> Float
     }
 
-    private func nearestRing(_ piece: ClothPiece, to y: Float) -> Int {
-        piece.centers.indices.min { abs(piece.centers[$0].y - y) < abs(piece.centers[$1].y - y) } ?? 0
-    }
-
-    func garmentMesh(_ fit: Avatar.GarmentFit) -> (Mesh, [Avatar.Anchor: Vec3]) {
+    func dress(_ fit: Avatar.GarmentFit, cell: Float) -> Dressed {
         let fabric = fit.resolvedFabric
         func cm(_ v: Double) -> Float { Float(v / 100) }
-        var mesh = Mesh()
+        var parts: [GarmentPart] = []
+        var lo = Vec3(0, 0, 0), hi = Vec3(0, 0, 0)
+        var pinnedAbove: Float = 0
         var anchors: [Avatar.Anchor: Vec3] = [:]
-
-        func settle(_ piece: inout ClothPiece, on body: BodyCollider, pinned: Set<Int>, slack: (Int) -> Float) {
-            piece.drape(on: body, fabric: fabric, pinned: pinned)
-            piece.addDrapeFolds(slack: slack, fabric: fabric)
-            mesh.append(piece.mesh(fabric: fabric))
-        }
+        // Ripples for extra length: along `axis` from `start`, over `length`.
+        var stacks: [(part: Int, axis: Vec3, start: Vec3, length: Float)] = []
+        // Where loose fabric hangs in vertical folds (how loose, m), and round which axis.
+        var hang: (Int, Vec3) -> (amount: Float, axis: Vec3)? = { _, _ in nil }
+        let (bodyLo, bodyHi) = bounds
 
         switch fit.kind {
         case .trousers:
             let waistband = (waistY + hipY) / 2
-            let ease = { (y: Float) in self.interpolate([(self.hipY, cm(fit.hipEase)), (waistband, cm(fit.waistEase))], at: y) }
-            var (seat, seatSlack) = torsoPanel(from: crotchY - 0.01 * h, to: waistband, ease: ease)
-            settle(&seat, on: collider, pinned: [seat.ringCount - 1]) { seatSlack[$0] }
-            anchors[.waist] = edge(seat, ring: seat.ringCount - 1)
-            anchors[.hip] = edge(seat, ring: nearestRing(seat, to: hipY))
-
+            let seatEase = { (y: Float) -> Float in
+                self.interpolate([(self.hipY, cm(fit.hipEase)), (waistband, cm(fit.waistEase))], at: y) / (2 * .pi)
+            }
+            parts.append(GarmentPart(shape: { p in self.torso.distance(p) - seatEase(p.y) },
+                                     planes: [(Vec3(0, 1, 0), waistband)]))
             // Longer than the leg: the hem reaches the floor and the rest stacks in folds.
             // Shorter: the hem sits above the ankle.
             let extra = cm(fit.lengthDelta)
             let hemY = extra >= 0 ? max(0.012 * h, ankleY - extra) : ankleY - extra
             let stacked = max(0, extra - (ankleY - 0.012 * h))
-            let folds = min(5, Int((stacked * 100 / 1.8).rounded(.up)))
-            let stack = Float(folds) * 0.018
-            let thighOff = max(-0.01, cm(fit.thighEase) / (2 * .pi))
-            for leg in legs {
-                let top = Vec3(leg.top.x, crotchY + 0.005 * h, 0)
-                let bottom = Vec3(leg.bottom.x, hemY, 0)
-                let legSpan = leg.top.y - leg.bottom.y
-                func station(_ y: Float) -> (Vec3, Float) {
-                    let f = (top.y - y) / (top.y - bottom.y)
-                    let c = top + (bottom - top) * f
-                    return (c, radius(legRadii, at: (leg.top.y - y) / legSpan) + thighOff * (1 - 0.3 * f) + 0.006)
+            let thighOff = cm(fit.thighEase) / (2 * .pi)
+            for (i, leg) in legs.enumerated() {
+                var limb = leg.limb
+                if hemY < ankleY {
+                    limb.bones.append(Bone(a: leg.ankle, b: Vec3(leg.ankle.x, hemY, leg.ankle.z), ra: thighR * 0.36, rb: thighR * 0.36))
                 }
-                var stations = (0...16).map { station(top.y - (top.y - hemY - stack) * Float($0) / 16) }
-                let base = stations.last!.1
-                for j in stride(from: 1, through: folds * 2, by: 1) {
-                    let y = hemY + stack - stack * Float(j) / Float(folds * 2)
-                    stations.append((station(y).0, base * (j % 2 == 1 ? 1.35 : 1)))
+                let top = leg.hip.y
+                let legEase = { (y: Float) -> Float in
+                    let f = min(1, max(0, (top - y) / (top - hemY)))
+                    // Full thigh ease at the top, tapering towards the knee and hem.
+                    return thighOff * (1 - 0.4 * min(1, f * 1.6)) + 0.006 + 0.003 * f
                 }
-                var piece = tubePanel(stations, frame: Shapes.frame(leg.top, leg.bottom))
-                var body = limbCollider(leg.top, leg.bottom, legRadii)
-                body.limbs.append((Vec3(leg.bottom.x, 0.018 * h, -0.03 * h), Vec3(leg.bottom.x, 0.014 * h, 0.11 * h), [0.017 * h]))
-                let legSlack = stations.map { 2 * .pi * max(0, $0.1 - self.radius(legRadii, at: (leg.top.y - $0.0.y) / legSpan)) }
-                settle(&piece, on: body, pinned: [0]) { legSlack[$0] }
-                if leg.top.x > 0 { anchors[.hem] = edge(piece, ring: piece.ringCount - 1) }
+                parts.append(GarmentPart(shape: { p in limb.distance(p) - legEase(p.y) }, planes: [(Vec3(0, -1, 0), -hemY)]))
+                if stacked > 0 {
+                    stacks.append((i + 1, Vec3(0, 1, 0), Vec3(leg.ankle.x, hemY, 0), min(0.09, stacked * 1.4)))
+                }
             }
+            hang = { part, _ in
+                guard part > 0 else { return nil }
+                let leg = self.legs[part - 1]
+                return (thighOff - 0.02, Vec3(leg.knee.x, 0, leg.knee.z))
+            }
+            lo = Vec3(bodyLo.x, max(-0.01, hemY - 0.03), bodyLo.z)
+            hi = Vec3(bodyHi.x, waistband + 0.03, bodyHi.z)
+            pinnedAbove = waistband - 0.025 * h
+            anchors[.hem] = Vec3(legs[0].ankle.x + thighR * 0.4, hemY, 0)
+            anchors[.waist] = Vec3(waist.0 + cm(fit.waistEase) / (2 * .pi), waistband, 0)
+            anchors[.hip] = Vec3(hip.0 + cm(fit.hipEase) / (2 * .pi), hipY, 0)
 
         case let .top(longSleeves):
             // A regular top ends just below the hips; longer or shorter moves the hem.
             let hemY = max(0.38 * h, crotchY + 0.035 * h - cm(fit.lengthDelta))
+            let neckCut = neckY - 0.004 * h
             let dropped = Float(max(0, fit.shoulderDelta) / 200)
             let chestE = cm(fit.chestEase)
-            // The yoke rests on the shoulders, always just clear of them.
             let ease = { (y: Float) -> Float in
                 let e = self.interpolate([(self.hipY, cm(max(fit.hipEase, fit.waistEase))), (self.waistY, cm(fit.waistEase)),
-                                  (self.chestY, chestE), (self.armpitY, chestE), (self.shoulderY, chestE * 0.5),
-                                  (self.neckY, 0.015)], at: y)
-                return y >= self.shoulderY - 0.005 * self.h ? max(e, 0.012) : e
+                                          (self.chestY, chestE), (self.armpitY, chestE), (self.shoulderY, chestE * 0.5),
+                                          (self.neckY, 0.015)], at: y)
+                // The yoke rests on the shoulders, always just clear of them; a dropped
+                // shoulder widens it there.
+                let yoke = y >= self.shoulderY - 0.02 * self.h ? max(e, 0.012) : e
+                return yoke / (2 * .pi) + dropped * 0.5 * max(0, 1 - abs(y - self.shoulderY) / (0.05 * self.h))
             }
-            let widen = { (y: Float) in dropped * max(0, 1 - abs(y - self.shoulderY) / (0.04 * self.h)) }
-            var (shell, shellSlack) = torsoPanel(from: hemY, to: neckY - 0.004 * h, ease: ease, widen: widen)
-            // Loose fabric only falls into folds below the chest, where nothing holds it.
-            let foldSlack = shell.centers.indices.map { shell.centers[$0].y < chestY ? shellSlack[$0] : 0 }
-            let yoke = Set(shell.centers.indices.filter { shell.centers[$0].y >= shoulderY - 0.005 * h })
-            settle(&shell, on: collider, pinned: yoke) { foldSlack[$0] }
-            anchors[.hem] = edge(shell, ring: 0)
-            anchors[.chest] = edge(shell, ring: nearestRing(shell, to: chestY))
-            anchors[.waist] = edge(shell, ring: nearestRing(shell, to: waistY))
-            anchors[.shoulder] = Vec3(shoulderHalf + dropped, shoulderY, 0)
-
+            parts.append(GarmentPart(shape: { p in self.torso.distance(p) - ease(p.y) },
+                                     planes: [(Vec3(0, -1, 0), -hemY), (Vec3(0, 1, 0), neckCut)]))
             // Sleeves start at the shoulder seam: down the arm when the shoulder is dropped.
             let sleeveLength = longSleeves ? armLength + cm(fit.sleeveDelta) : 0.36 * armLength
             let reach = min(sleeveLength, armLength + 0.04 * h)
             let overHand = max(0, sleeveLength - armLength)
-            let folds = longSleeves ? min(4, Int((overHand * 100 / 1.5).rounded(.up))) : 0
-            let stack = Float(folds) * 0.012
-            let sleeveEase = upperArmR * 0.35 + max(0, chestE / (2 * .pi)) * 0.4
-            for arm in arms {
-                func station(_ s: Float) -> (Vec3, Float) {
-                    (arm.start + arm.dir * s, radius(armRadii, at: s / armLength) + sleeveEase)
+            let sleeveEase = upperArmR * 0.2 + max(0, chestE / (2 * .pi)) * 0.25
+            for (i, arm) in arms.enumerated() {
+                var limb = arm.limb
+                if reach > armLength {
+                    let wrist = arm.start + arm.dir * armLength
+                    limb.bones.append(Bone(a: wrist, b: wrist + arm.dir * (reach - armLength), ra: upperArmR * 0.6, rb: upperArmR * 0.6))
                 }
-                var stations = (0...12).map { station(dropped + (reach - stack - dropped) * Float($0) / 12) }
-                let base = stations.last!.1
-                for j in stride(from: 1, through: folds * 2, by: 1) {
-                    stations.append((station(reach - stack + stack * Float(j) / Float(folds * 2)).0, base * (j % 2 == 1 ? 1.3 : 1)))
+                let end = arm.start + arm.dir * reach
+                parts.append(GarmentPart(shape: { p in limb.distance(p) - sleeveEase },
+                                         planes: [(arm.dir, arm.dir.dot(end))]))
+                if overHand > 0, longSleeves {
+                    stacks.append((i + 1, arm.dir * -1, end, min(0.07, overHand * 1.5)))
                 }
-                let wrist = arm.start + arm.dir * armLength
-                var piece = tubePanel(stations, frame: Shapes.frame(arm.start, wrist))
-                var body = limbCollider(arm.start, wrist, armRadii)
-                body.limbs.append((wrist, wrist + arm.dir * (0.1 * h), [0.02 * h, 0.012 * h]))
-                body.floorY = -1
-                settle(&piece, on: body, pinned: [0]) { _ in 0 }
-                if anchors[.sleeveEnd] == nil { anchors[.sleeveEnd] = piece.centers[piece.ringCount - 1] }
+                if anchors[.sleeveEnd] == nil { anchors[.sleeveEnd] = end }
+            }
+            hang = { part, p in
+                guard part == 0, p.y < self.chestY else { return nil }
+                return (ease(p.y) - 0.012, Vec3(0, 0, 0))
+            }
+            let side = shoulderHalf + armLength * 0.26 + 0.06 * h
+            lo = Vec3(-side, hemY - 0.03, bodyLo.z)
+            hi = Vec3(side, neckCut + 0.03, bodyHi.z)
+            pinnedAbove = shoulderY - 0.02 * h
+            anchors[.hem] = Vec3(hip.0 + ease(hemY), hemY, 0)
+            anchors[.chest] = Vec3(chest.0 + ease(chestY), chestY, 0)
+            anchors[.waist] = Vec3(waist.0 + ease(waistY), waistY, 0)
+            anchors[.shoulder] = Vec3(shoulderHalf + dropped, shoulderY, 0)
+        }
+
+        let blend = 0.012 * h
+        let garmentParts = parts
+        // Limbs join the body part smoothly but never each other: trouser legs and
+        // sleeves stay separate tubes.
+        let cut = { (p: Vec3) -> Float in
+            var limbs = Float.greatestFiniteMagnitude
+            for part in garmentParts.dropFirst() { limbs = min(limbs, part.distance(p)) }
+            return smin(garmentParts[0].distance(p), limbs, blend)
+        }
+        /// The part that dominates at a point.
+        func owner(_ p: Vec3) -> Int {
+            var best = 0, bestD = Float.greatestFiniteMagnitude
+            for (i, part) in garmentParts.enumerated() {
+                let d = part.distance(p)
+                if d < bestD { best = i; bestD = d }
+            }
+            return best
+        }
+
+        // The cut surface, opened where the planes close it off.
+        let closed = SurfaceNets.mesh(from: lo, to: hi, cell: cell, sdf: cut)
+        var keep = [UInt32]()
+        for t in stride(from: 0, to: closed.indices.count - 2, by: 3) {
+            let a = closed.positions[Int(closed.indices[t])], b = closed.positions[Int(closed.indices[t + 1])]
+            let c = closed.positions[Int(closed.indices[t + 2])]
+            let centre = (a + b + c) * (1.0 / 3)
+            let part = garmentParts[owner(centre)]
+            if part.clip(centre) < part.shape(centre) - 0.0015 { keep += closed.indices[t..<(t + 3)] }
+        }
+        var mesh = Self.compact(closed, keeping: keep)
+        // Straighten the open edges onto their cutting plane.
+        let neighbours = Self.neighbours(mesh)
+        for i in Self.boundaryVertices(mesh) {
+            let p = mesh.positions[i]
+            let planes = garmentParts[owner(p)].planes
+            guard let plane = planes.max(by: { $0.normal.dot(p) - $0.offset < $1.normal.dot(p) - $1.offset }) else { continue }
+            mesh.positions[i] = p - plane.normal * (plane.normal.dot(p) - plane.offset)
+        }
+        let tags = mesh.positions.map(owner)
+
+        // Drape it.
+        var cloth = TriangleCloth(mesh)
+        let pinned = mesh.positions.map { $0.y >= pinnedAbove }
+        cloth.drape(body: { distance($0) }, fabric: fabric, pinned: pinned)
+        mesh.positions = cloth.positions
+        mesh.strain = fitValues(stretch: cloth.stretch, contact: cloth.contact, fabric: fabric, neighbours: neighbours)
+        if case .trousers = fit.kind {
+            // A hem resting on the shoe isn't a fit problem; the avatar has no shoes.
+            for i in mesh.strain.indices where cloth.rest[i].y < ankleY + 0.015 { mesh.strain[i] = min(mesh.strain[i], 0.5) }
+        }
+        mesh.computeNormals()
+
+        // Folds: loose fabric hanging in vertical folds, deepening towards the hem (more
+        // and deeper for fluid fabrics), and extra length bunched at hems and cuffs.
+        for i in mesh.positions.indices where !pinned[i] {
+            let p = mesh.positions[i]
+            var push: Float = 0
+            if let (amount, axis) = hang(tags[i], cloth.rest[i]), amount > 0.004 {
+                let top = tags[i] == 0 ? chestY : crotchY
+                let ramp = min(1, max(0, (top - p.y) / max(0.1, top - lo.y)))
+                let theta = atan2(p.z - axis.z, p.x - axis.x)
+                let wave = 0.5 * (1 + cos(Float(fabric.folds) * theta))
+                push += min(0.012, amount * 0.5) * (1.25 - fabric.drape) * ramp * wave
+            }
+            for stack in stacks where stack.part == tags[i] {
+                let along = (p - stack.start).dot(stack.axis)
+                guard along >= 0, along <= stack.length else { continue }
+                push += 0.007 * 0.5 * (1 + cos(along / 0.018 * 2 * .pi)) * (1 - along / stack.length * 0.5)
+            }
+            if push > 0 { mesh.positions[i] = mesh.positions[i] + mesh.normals[i] * push }
+        }
+        mesh.computeNormals()
+
+        let seams = stitches(fit, mesh: mesh, tags: tags)
+        if case .trousers = fit.kind, let lowest = mesh.positions.filter({ $0.x > 0 }).min(by: { $0.y < $1.y }) {
+            anchors[.hem] = Vec3(anchors[.hem]?.x ?? lowest.x, lowest.y, 0)
+        }
+        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: cut)
+    }
+
+    /// Stitch lines where the garment has them, as dash segments slightly off the
+    /// fabric: each is where a function over the surface crosses zero, kept on the
+    /// vertices of the given parts, dashed every 8 mm along `dash`.
+    private func stitches(_ fit: Avatar.GarmentFit, mesh: Mesh, tags: [Int]) -> [Vec3] {
+        typealias Line = (f: (Vec3) -> Float, parts: Set<Int>, dash: (Vec3) -> Float)
+        var lines: [Line] = []
+        let byHeight = { (p: Vec3) -> Float in p.y }
+        func around(_ axis: Vec3) -> (Vec3) -> Float { { p in atan2(p.z - axis.z, p.x - axis.x) * 0.12 } }
+        let mid = { (y: Float) -> Float in self.torso.ring(at: y).center.z }
+        switch fit.kind {
+        case .trousers:
+            let waistband = (waistY + hipY) / 2
+            let hems = mesh.positions.map(\.y).min() ?? 0
+            lines.append(({ $0.y - (waistband - 0.035) }, [0], around(Vec3(0, 0, 0))))
+            lines.append(({ $0.y - (waistband - 0.006) }, [0], around(Vec3(0, 0, 0))))
+            // Front and back rise down the middle.
+            lines.append(({ $0.x }, [0], byHeight))
+            for (i, leg) in legs.enumerated() {
+                let axis = Vec3(leg.knee.x, 0, leg.knee.z)
+                lines.append(({ $0.y - (hems + 0.018) }, [i + 1], around(axis)))
+                // Outside and inside leg seams.
+                lines.append(({ $0.z - axis.z }, [i + 1], byHeight))
+            }
+        case .top:
+            let hem = mesh.positions.map(\.y).min() ?? 0
+            let neckCut = neckY - 0.004 * h
+            lines.append(({ $0.y - (hem + 0.014) }, [0], around(Vec3(0, 0, 0))))
+            lines.append(({ $0.y - (neckCut - 0.01) }, [0], around(Vec3(0, 0, 0))))
+            // Side seams below the arms, shoulder seams over the top.
+            let armpit = armpitY - 0.01 * h, yoke = shoulderY - 0.015 * h
+            lines.append(({ p in p.y < armpit && abs(p.x) > 0.05 ? p.z - mid(p.y) : 1 }, [0], byHeight))
+            lines.append(({ p in p.y > yoke && abs(p.x) > 0.06 ? p.z - mid(p.y) : 1 }, [0], { $0.x }))
+            let dropped = Float(max(0, fit.shoulderDelta) / 200)
+            for (i, arm) in arms.enumerated() {
+                let seam = (arm.start + arm.dir * (dropped + 0.035 * h)).dot(arm.dir)
+                var end: Float = -1
+                for v in mesh.positions.indices where tags[v] == i + 1 { end = max(end, mesh.positions[v].dot(arm.dir)) }
+                let dir = arm.dir
+                let side = arm.dir.x > 0 ? Float(1) : -1, outer = shoulderHalf * 0.72
+                lines.append(({ p in p.x * side > outer ? p.dot(dir) - seam : 1 }, [0, i + 1], { $0.y + $0.z }))
+                lines.append(({ $0.dot(dir) - (end - 0.014) }, [i + 1], { $0.z + $0.y * 0.3 }))
             }
         }
-        return (mesh, anchors)
+        var out: [Vec3] = []
+        for line in lines {
+            for t in stride(from: 0, to: mesh.indices.count - 2, by: 3) {
+                let ids = [Int(mesh.indices[t]), Int(mesh.indices[t + 1]), Int(mesh.indices[t + 2])]
+                guard ids.allSatisfy({ line.parts.contains(tags[$0]) }) else { continue }
+                let v = ids.map { line.f(mesh.positions[$0]) }
+                var cross: [Vec3] = []
+                for e in 0..<3 {
+                    let a = e, b = (e + 1) % 3
+                    guard (v[a] < 0) != (v[b] < 0) else { continue }
+                    let s = v[a] / (v[a] - v[b])
+                    let pa = mesh.positions[ids[a]] + mesh.normals[ids[a]] * 0.0018
+                    let pb = mesh.positions[ids[b]] + mesh.normals[ids[b]] * 0.0018
+                    cross.append(pa + (pb - pa) * s)
+                }
+                guard cross.count == 2 else { continue }
+                let middle = (cross[0] + cross[1]) * 0.5
+                if Int((line.dash(middle) / 0.008).rounded(.down)) % 2 == 0 { out += cross }
+            }
+        }
+        return out
     }
-}
 
-private extension Vec3 {
-    init(repeating v: Float) { self.init(v, v, v) }
+    /// The mesh with only the given triangles, unused vertices dropped.
+    static func compact(_ mesh: Mesh, keeping indices: [UInt32]) -> Mesh {
+        var map = [Int32](repeating: -1, count: mesh.positions.count)
+        var out = Mesh()
+        for i in indices {
+            if map[Int(i)] < 0 {
+                map[Int(i)] = Int32(out.positions.count)
+                out.positions.append(mesh.positions[Int(i)])
+                out.normals.append(mesh.normals[Int(i)])
+            }
+            out.indices.append(UInt32(map[Int(i)]))
+        }
+        return out
+    }
+
+    static func neighbours(_ mesh: Mesh) -> [[Int]] {
+        var n = [Set<Int>](repeating: [], count: mesh.positions.count)
+        for t in stride(from: 0, to: mesh.indices.count - 2, by: 3) {
+            for e in 0..<3 {
+                let a = Int(mesh.indices[t + e]), b = Int(mesh.indices[t + (e + 1) % 3])
+                n[a].insert(b); n[b].insert(a)
+            }
+        }
+        return n.map { Array($0) }
+    }
+
+    /// Vertices on an edge only one triangle uses.
+    static func boundaryVertices(_ mesh: Mesh) -> Set<Int> {
+        var count: [Int: Int] = [:]
+        for t in stride(from: 0, to: mesh.indices.count - 2, by: 3) {
+            for e in 0..<3 {
+                let a = Int(mesh.indices[t + e]), b = Int(mesh.indices[t + (e + 1) % 3])
+                count[min(a, b) << 32 | max(a, b), default: 0] += 1
+            }
+        }
+        var out = Set<Int>()
+        for (key, c) in count where c == 1 { out.insert(key >> 32); out.insert(key & 0xFFFF_FFFF) }
+        return out
+    }
 }

@@ -49,160 +49,113 @@ public struct Fabric: Equatable, Sendable {
 
 /// Pushes a point out of the body; `thickness` is how far the fabric's midline sits off
 /// the skin.
-struct BodyCollider {
-    /// Torso sections, bottom to top.
-    var torso: [Ring] = []
-    /// Limbs as tapered capsules: radii spread evenly from `a` to `b`.
-    var limbs: [(a: Vec3, b: Vec3, radii: [Float])] = []
-    var floorY: Float = 0.003
-
-    /// The torso section at a height, interpolated.
-    func torsoRing(at y: Float) -> Ring? {
-        guard let first = torso.first, let last = torso.last else { return nil }
-        if y <= first.center.y { return first }
-        if y >= last.center.y { return last }
-        var lo = 0, hi = torso.count - 1
-        while hi - lo > 1 {
-            let mid = (lo + hi) / 2
-            if torso[mid].center.y <= y { lo = mid } else { hi = mid }
-        }
-        let a = torso[lo], b = torso[hi]
-        let span = b.center.y - a.center.y
-        return a.lerp(b, span > 0 ? (y - a.center.y) / span : 0)
-    }
-
-    func resolve(_ p: Vec3, thickness: Float) -> Vec3 {
-        var p = p
-        if let ring = torsoRing(at: p.y), p.y >= torso[0].center.y - 0.01 {
-            let dx = p.x - ring.center.x, dz = p.z - ring.center.z
-            let a = ring.halfWidth + thickness, b = ring.halfDepth + thickness
-            let across: Float = pow(abs(dx / a), ring.power)
-            let deep: Float = pow(abs(dz / b), ring.power)
-            let norm: Float = pow(across + deep, 1 / ring.power)
-            if norm < 1, norm > 1e-4 {
-                p.x = ring.center.x + dx / norm
-                p.z = ring.center.z + dz / norm
-            }
-        }
-        for limb in limbs {
-            let axis = limb.b - limb.a
-            let len = axis.length
-            guard len > 0 else { continue }
-            let dir = axis * (1 / len)
-            let t = min(1, max(0, (p - limb.a).dot(dir) / len))
-            let f = t * Float(limb.radii.count - 1)
-            let k = max(0, min(limb.radii.count - 2, Int(f)))
-            let r = (limb.radii.count > 1 ? limb.radii[k] + (limb.radii[k + 1] - limb.radii[k]) * (f - Float(k)) : limb.radii[0]) + thickness
-            let q = limb.a + axis * t
-            let d = p - q
-            let dist = d.length
-            if dist < r, dist > 1e-5 { p = q + d * (r / dist) }
-        }
-        if p.y < floorY { p.y = floorY }
-        return p
-    }
-}
-
-/// A garment panel as rings of particles wrapped around a body part: the rest shape is
-/// the garment as cut (its own circumference at each ring), the drape is where position-
-/// based dynamics (Müller et al. 2007) settles it on the body under gravity. Rings keep
-/// their cut lengths as distance constraints, a weaker skip-one constraint gives the
-/// fabric its bending stiffness, collisions keep it out of the body and the top ring is
-/// held where the garment hangs from (neckline, sleeve seam or waistband). What's left
-/// stretched past its cut length is the strain the fit map shows. Long-range attachments
-/// (Kim, Chentanez & Müller 2012) tether every particle to the held ring so the fabric
-/// can't creep longer under its own weight, as a real one doesn't.
-struct ClothPiece {
-    let n: Int
+/// A garment as a triangle mesh settled on the body with position-based dynamics
+/// (Müller et al. 2007). The rest shape is the garment as cut; every mesh edge keeps its
+/// cut length as a distance constraint, and the vertices across each pair of triangles
+/// resist folding flat into each other (bending, push only: cloth buckles rather than
+/// compressing). Gravity pulls it down, contacts with the body are resolved along the
+/// distance field's gradient with friction (fabric pressed on the body doesn't slide),
+/// and where it hangs from (shoulders, waistband) stays put. What's left stretched past
+/// its cut length is the strain; where it presses on the body is the contact.
+struct TriangleCloth {
     var positions: [Vec3]
-    /// Ring centres along the piece, for fold placement.
-    var centers: [Vec3]
-    private let rest: [Vec3]
-    /// Strain after draping, before cosmetic folds are added.
-    private(set) var strainMap: [Float] = []
-    var ringCount: Int { centers.count }
+    let rest: [Vec3]
+    let indices: [UInt32]
+    /// Per vertex after draping: stretch past the cut, as a fraction.
+    private(set) var stretch: [Float] = []
+    /// Per vertex after draping: resting on the body.
+    private(set) var contact: [Bool] = []
 
-    init(rings: [[Vec3]], centers: [Vec3]) {
-        n = rings.first?.count ?? 0
-        positions = rings.flatMap { $0 }
-        rest = positions
-        self.centers = centers
-    }
+    private struct Link { let a: Int, b: Int, length: Float }
+    private let edges: [Link]
+    private let bends: [Link]
 
-    private struct Link { let a: Int, b: Int, length: Float, stiffness: Float }
-
-    private func links(fabric: Fabric) -> (stretch: [Link], bend: [Link]) {
-        var stretch: [Link] = [], bend: [Link] = []
-        let bendK = 0.08 + 0.5 * fabric.drape
-        func link(_ a: Int, _ b: Int, _ k: Float) -> Link { Link(a: a, b: b, length: (rest[a] - rest[b]).length, stiffness: k) }
-        for r in 0..<ringCount {
-            for i in 0..<n {
-                let a = r * n + i
-                stretch.append(link(a, r * n + (i + 1) % n, 1))
-                if r + 1 < ringCount { stretch.append(link(a, a + n, 1)) }
-                if r + 2 < ringCount { bend.append(link(a, a + 2 * n, bendK)) }
-                bend.append(link(a, r * n + (i + 2) % n, bendK * 0.5))
+    init(_ mesh: Mesh) {
+        positions = mesh.positions
+        rest = mesh.positions
+        indices = mesh.indices
+        var edgeTriangles: [Int: [Int]] = [:]
+        for t in stride(from: 0, to: indices.count - 2, by: 3) {
+            for e in 0..<3 {
+                let a = Int(indices[t + e]), b = Int(indices[t + (e + 1) % 3])
+                edgeTriangles[min(a, b) << 32 | max(a, b), default: []].append(t)
             }
         }
-        return (stretch, bend)
+        var edges: [Link] = [], bends: [Link] = []
+        let rest = mesh.positions, indices = mesh.indices
+        for (key, triangles) in edgeTriangles {
+            let a = key >> 32, b = key & 0xFFFF_FFFF
+            edges.append(Link(a: a, b: b, length: (rest[a] - rest[b]).length))
+            guard triangles.count == 2 else { continue }
+            let opposite = triangles.map { t in (0..<3).map { Int(indices[t + $0]) }.first { $0 != a && $0 != b } ?? a }
+            bends.append(Link(a: opposite[0], b: opposite[1], length: (rest[opposite[0]] - rest[opposite[1]]).length))
+        }
+        self.edges = edges
+        self.bends = bends
     }
 
-    /// Settles the piece on the body. Pinned rings keep their rest positions.
-    mutating func drape(on body: BodyCollider, fabric: Fabric, pinned: Set<Int>, steps: Int = 30, iterations: Int = 6) {
-        guard n > 0 else { return }
-        let (stretch, bend) = links(fabric: fabric)
-        let thickness: Float = 0.0025
+    /// Settles the cloth on the body. `pinned` vertices don't fall or get pulled, but are
+    /// still pushed out of the body.
+    mutating func drape(body: (Vec3) -> Float, fabric: Fabric, pinned: [Bool], steps: Int = 18, iterations: Int = 4) {
+        let thickness: Float = 0.003
         let dt: Float = 1.0 / 60
         let gravity = Vec3(0, -9.81 * dt * dt, 0)
+        let bendStiffness: Float = 0.1 + 0.5 * fabric.drape
         var velocity = [Vec3](repeating: Vec3(0, 0, 0), count: positions.count)
-        var fixed = [Bool](repeating: false, count: positions.count)
-        for i in positions.indices { fixed[i] = pinned.contains(i / n) }
-        // Each particle's tether: the nearest held ring's particle in the same column, at
-        // the length down the column, not the straight line: the fabric may fall straight
-        // but never get longer.
-        var tethers = [(anchor: Int, length: Float)?](repeating: nil, count: positions.count)
-        for a in positions.indices where !fixed[a] {
-            let r = a / n, column = a % n
-            guard let ring = pinned.min(by: { abs($0 - r) < abs($1 - r) }) else { continue }
-            var path: Float = 0
-            for k in min(r, ring)..<max(r, ring) {
-                let step: Vec3 = rest[(k + 1) * n + column] - rest[k * n + column]
-                path += step.length
-            }
-            tethers[a] = (ring * n + column, path)
-        }
         var touching = [Bool](repeating: false, count: positions.count)
-        func project() {
-            for (set, pushOnly) in [(stretch, false), (bend, true)] {
-                for l in set {
-                    let d = positions[l.b] - positions[l.a]
-                    let len = d.length
-                    guard len > 1e-6 else { continue }
-                    // Cloth resists stretching far more than compression, which it
-                    // takes by buckling: bending links only push apart, never pull in.
-                    if pushOnly, len > l.length { continue }
-                    let wa: Float = fixed[l.a] ? 0 : 1, wb: Float = fixed[l.b] ? 0 : 1
-                    guard wa + wb > 0 else { continue }
-                    let corr = d * ((len - l.length) / len * l.stiffness / (wa + wb))
-                    positions[l.a] = positions[l.a] + corr * wa
-                    positions[l.b] = positions[l.b] - corr * wb
-                }
+
+        func solve(_ links: [Link], stiffness: Float, pushOnly: Bool) {
+            for l in links {
+                let d = positions[l.b] - positions[l.a]
+                let len = d.length
+                guard len > 1e-6, !(pushOnly && len > l.length) else { continue }
+                let wa: Float = pinned[l.a] ? 0 : 1, wb: Float = pinned[l.b] ? 0 : 1
+                guard wa + wb > 0 else { continue }
+                let corr = d * ((len - l.length) / len * stiffness / (wa + wb))
+                positions[l.a] = positions[l.a] + corr * wa
+                positions[l.b] = positions[l.b] - corr * wb
             }
-            for i in positions.indices where !fixed[i] {
+        }
+        // Long-range attachments (Kim, Chentanez & Müller 2012): every free vertex stays
+        // within its rest distance of the nearest held vertex, so the fabric can't creep
+        // longer under its own weight, as a real one doesn't.
+        let held = positions.indices.filter { pinned[$0] }
+        var tethers = [(anchor: Int, length: Float)?](repeating: nil, count: positions.count)
+        if !held.isEmpty {
+            for i in positions.indices where !pinned[i] {
+                var best = held[0], bestD = Float.greatestFiniteMagnitude
+                for j in held {
+                    let d = (rest[i] - rest[j]).length
+                    if d < bestD { best = j; bestD = d }
+                }
+                tethers[i] = (best, bestD)
+            }
+        }
+        func collide() {
+            for i in positions.indices {
                 if let tether = tethers[i] {
                     let d = positions[i] - positions[tether.anchor]
                     let len = d.length
                     if len > tether.length { positions[i] = positions[tether.anchor] + d * (tether.length / len) }
                 }
-                let free = positions[i]
-                positions[i] = body.resolve(free, thickness: thickness)
-                if positions[i] != free { touching[i] = true }
+                if positions[i].y < thickness { positions[i].y = thickness; touching[i] = true }
+                let d = body(positions[i]) - thickness
+                guard d < 0 else { continue }
+                positions[i] = positions[i] - gradient(body, at: positions[i]) * d
+                touching[i] = true
             }
         }
+        func project() {
+            solve(edges, stiffness: 1, pushOnly: false)
+            solve(bends, stiffness: bendStiffness, pushOnly: true)
+            collide()
+        }
+
+        collide()
         for _ in 0..<steps {
             let start = positions
             touching = [Bool](repeating: false, count: positions.count)
-            for i in positions.indices where !fixed[i] {
+            for i in positions.indices where !pinned[i] {
                 positions[i] = positions[i] + velocity[i] * dt + gravity
             }
             for _ in 0..<iterations { project() }
@@ -212,65 +165,35 @@ struct ClothPiece {
             }
         }
         // At rest: let the constraints settle what the last steps' weight left unresolved.
-        for _ in 0..<(iterations * 15) { project() }
-        strainMap = strain(fabric: fabric)
-        for r in 0..<ringCount {
-            let ring = positions[(r * n)..<((r + 1) * n)]
-            var sum = Vec3(0, 0, 0)
-            for p in ring { sum = sum + p }
-            centers[r] = sum * (1 / Float(n))
-        }
-    }
+        touching = [Bool](repeating: false, count: positions.count)
+        for _ in 0..<(iterations * 8) { project() }
+        contact = touching
 
-    /// Per-vertex strain round the body relative to the fabric's stretch limit: 0
-    /// relaxed, 1 at the limit, above 1 pulling. Mostly the whole ring's stretch (a
-    /// garment too small all round), partly the local one (a point it presses on), less
-    /// the 1% a fabric settles into on contact; lengthwise pull is left out.
-    private func strain(fabric: Fabric) -> [Float] {
-        var out = [Float](repeating: 0, count: positions.count)
-        for r in 0..<ringCount {
-            var local = [Float](repeating: 0, count: n)
-            var length: Float = 0, restLength: Float = 0
-            for i in 0..<n {
-                let a = r * n + i, b = r * n + (i + 1) % n
-                let l = (positions[a] - positions[b]).length, l0 = (rest[a] - rest[b]).length
-                length += l; restLength += l0
-                local[i] = l0 > 1e-6 ? l / l0 - 1 : 0
-            }
-            let ring = restLength > 0 ? length / restLength - 1 : 0
-            for i in 0..<n {
-                let here = max(local[i], local[(i + n - 1) % n])
-                out[r * n + i] = max(0, 0.7 * ring + 0.3 * here - 0.01) / fabric.stretchLimit
-            }
+        // The most stretched edge at each vertex: a garment pulled round the body
+        // stretches across, not along.
+        var most = [Float](repeating: 0, count: positions.count)
+        for l in edges where l.length > 1e-6 {
+            let e = max(0, (positions[l.a] - positions[l.b]).length / l.length - 1)
+            most[l.a] = max(most[l.a], e); most[l.b] = max(most[l.b], e)
         }
-        return out
+        stretch = most
     }
+}
 
-    /// Loose fabric hanging in vertical folds: ripples outward where the cut is at least
-    /// 5 cm wider than the body, deepening towards the free edge. Fluid fabrics make more,
-    /// deeper folds than stiff ones.
-    mutating func addDrapeFolds(slack: (Int) -> Float, fabric: Fabric) {
-        guard ringCount > 1 else { return }
-        for r in 0..<ringCount {
-            let extra = slack(r) - 0.05
-            guard extra > 0 else { continue }
-            let towardsEdge = Float(r) / Float(ringCount - 1)
-            let depth = min(0.014, extra * 0.12) * (1.25 - fabric.drape) * towardsEdge
-            for i in 0..<n {
-                let a = r * n + i
-                let radial = Vec3(positions[a].x - centers[r].x, 0, positions[a].z - centers[r].z).normalized
-                let t = Float(i) / Float(n) * 2 * .pi
-                positions[a] = positions[a] + radial * (depth * 0.5 * (1 + cos(Float(fabric.folds) * t)))
-            }
-        }
+/// How a garment sits at each point, for the fit map, after CLO 3D's fit maps: 0 loose
+/// (not touching), about 0.35 resting on the body, 0.6 tight (half the fabric's stretch
+/// limit used), 1 very tight (at the limit), above that it can't stretch that far.
+func fitValues(stretch: [Float], contact: [Bool], fabric: Fabric, neighbours: [[Int]]) -> [Float] {
+    let raw = stretch.indices.map { i -> Float in
+        let used = max(0, stretch[i] - 0.008) / fabric.stretchLimit
+        return contact[i] ? max(0.35, 0.35 + used * 0.65) : min(used, 0.3)
     }
-
-    func mesh(fabric: Fabric) -> Mesh {
-        var mesh = Mesh()
-        mesh.positions = positions
-        mesh.indices = Mesh.gridIndices(rings: ringCount, n: n)
-        mesh.strain = strainMap.count == positions.count ? strainMap : strain(fabric: fabric)
-        mesh.computeNormals()
-        return mesh
+    // One smoothing pass, so single vertices don't speckle.
+    var out = raw
+    for i in raw.indices where !neighbours[i].isEmpty {
+        var around: Float = 0
+        for j in neighbours[i] { around += raw[j] }
+        out[i] = 0.5 * raw[i] + 0.5 * around / Float(neighbours[i].count)
     }
+    return out
 }

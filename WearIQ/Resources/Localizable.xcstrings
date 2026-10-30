@@ -6401,12 +6401,122 @@
         }
       }
     },
-    "Draped with cloth physics: the garment is cut to the size chart and settles on your body under its own weight. The fit map shows where the fabric has to stretch, judged by what its fibres allow.": {
+    "Neck": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kumaş fiziğiyle giydirilir: kıyafet beden tablosuna göre kesilir ve kendi ağırlığıyla vücuduna oturur. Oturuş haritası kumaşın nerede esnemek zorunda kaldığını, liflerinin izin verdiği esnemeye göre gösterir."
+            "value": "Boyun"
+          }
+        }
+      }
+    },
+    "Shoulder point": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz başı"
+          }
+        }
+      }
+    },
+    "Elbow": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dirsek"
+          }
+        }
+      }
+    },
+    "Wrist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilek"
+          }
+        }
+      }
+    },
+    "Crotch": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ağ"
+          }
+        }
+      }
+    },
+    "Kneecap": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diz kapağı"
+          }
+        }
+      }
+    },
+    "Ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayak bileği"
+          }
+        }
+      }
+    },
+    "arm %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kol %@"
+          }
+        }
+      }
+    },
+    "inseam %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iç bacak %@"
+          }
+        }
+      }
+    },
+    "Labels": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Etiketler"
+          }
+        }
+      }
+    },
+    "On the body": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oturuyor"
+          }
+        }
+      }
+    },
+    "Draped with cloth physics: the garment is cut to the size chart, settles on your body under its own weight and stretches where it must, as far as its fibres allow. Dashed lines are its seams and hems.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumaş fiziğiyle giydirilir: kıyafet beden tablosuna göre kesilir, kendi ağırlığıyla vücuduna oturur ve gereken yerde, lifleri izin verdiği kadar esner. Kesikli çizgiler dikiş ve paça/etek yerleridir."
           }
         }
       }

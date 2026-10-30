@@ -19,22 +19,11 @@ public struct Mesh: Sendable {
     public var positions: [Vec3] = []
     public var normals: [Vec3] = []
     public var indices: [UInt32] = []
-    /// Per-vertex fabric strain for garments: 0 relaxed, 1 at the fabric's stretch limit
-    /// (and above when it would have to stretch further). Empty for the body.
+    /// Per-vertex fit for garments, for the fit map: 0 loose, about 0.35 resting on the
+    /// body, 1 at the fabric's stretch limit, above it pulling. Empty for the body.
     public var strain: [Float] = []
 
     public init() {}
-
-    mutating func append(_ other: Mesh) {
-        let offset = UInt32(positions.count)
-        positions += other.positions
-        normals += other.normals
-        indices += other.indices.map { $0 + offset }
-        if !other.strain.isEmpty || !strain.isEmpty {
-            strain += [Float](repeating: 0, count: max(0, positions.count - other.positions.count - strain.count))
-            strain += other.strain.isEmpty ? [Float](repeating: 0, count: other.positions.count) : other.strain
-        }
-    }
 
     public var minY: Float { positions.map(\.y).min() ?? 0 }
     public var maxY: Float { positions.map(\.y).max() ?? 0 }
@@ -48,19 +37,6 @@ public struct Mesh: Sendable {
             sums[a] = sums[a] + n; sums[b] = sums[b] + n; sums[c] = sums[c] + n
         }
         normals = sums.map(\.normalized)
-    }
-
-    /// Triangles for a grid of `rings` × `n` vertices wrapped around.
-    static func gridIndices(rings: Int, n: Int, start: Int = 0) -> [UInt32] {
-        var idx: [UInt32] = []
-        for r in 0..<(rings - 1) {
-            for i in 0..<n {
-                let a = UInt32(start + r * n + i), b = UInt32(start + r * n + (i + 1) % n)
-                let c = UInt32(start + (r + 1) * n + i), d = UInt32(start + (r + 1) * n + (i + 1) % n)
-                idx += [a, c, b, b, c, d]
-            }
-        }
-        return idx
     }
 }
 
@@ -106,8 +82,6 @@ struct Ring {
 }
 
 enum Shapes {
-    static let segments = 48
-
     /// Smooths a list of key sections with Catmull–Rom interpolation (`steps` per gap),
     /// so the body flows between the measured levels instead of showing kinks.
     static func smooth(_ keys: [Ring], steps: Int = 6) -> [Ring] {
@@ -131,101 +105,6 @@ enum Shapes {
         }
         out.append(keys[keys.count - 1])
         return out
-    }
-
-    /// A tube through horizontal sections (bottom to top), optionally capped.
-    static func loft(_ rings: [Ring], capped: Bool = true) -> Mesh {
-        var mesh = Mesh()
-        let n = segments
-        for ring in rings {
-            for i in 0..<n { mesh.positions.append(ring.point(Float(i) / Float(n) * 2 * .pi)) }
-        }
-        mesh.indices = Mesh.gridIndices(rings: rings.count, n: n)
-        if capped, let first = rings.first, let last = rings.last {
-            cap(&mesh, center: first.center, ringStart: 0, facingUp: false)
-            cap(&mesh, center: last.center, ringStart: (rings.count - 1) * n, facingUp: true)
-        }
-        mesh.computeNormals()
-        return mesh
-    }
-
-    private static func cap(_ mesh: inout Mesh, center: Vec3, ringStart: Int, facingUp: Bool) {
-        let c = UInt32(mesh.positions.count)
-        mesh.positions.append(center)
-        for i in 0..<segments {
-            let a = UInt32(ringStart + i), b = UInt32(ringStart + (i + 1) % segments)
-            mesh.indices += facingUp ? [c, b, a] : [c, a, b]
-        }
-    }
-
-    /// Frame of a segment: unit vectors across it.
-    static func frame(_ a: Vec3, _ b: Vec3) -> (u: Vec3, v: Vec3) {
-        let axis = (b - a).normalized
-        let helper = abs(axis.y) < 0.9 ? Vec3(0, 1, 0) : Vec3(1, 0, 0)
-        let u = axis.cross(helper).normalized
-        return (u, axis.cross(u).normalized)
-    }
-
-    /// A tapered tube along a segment; `radii` are spread evenly along it. `flatten`
-    /// squashes it across (hands, feet).
-    static func tube(from a: Vec3, to b: Vec3, radii: [Float], capped: Bool = true, flatten: Float = 1) -> Mesh {
-        let (u, v0) = frame(a, b)
-        let v = v0 * flatten
-        var mesh = Mesh()
-        let n = segments
-        for (k, r) in radii.enumerated() {
-            let f = radii.count > 1 ? Float(k) / Float(radii.count - 1) : 0
-            let c = a + (b - a) * f
-            for i in 0..<n {
-                let t = Float(i) / Float(n) * 2 * .pi
-                mesh.positions.append(c + u * (r * cos(t)) + v * (r * sin(t)))
-            }
-        }
-        mesh.indices = Mesh.gridIndices(rings: radii.count, n: n)
-        if capped {
-            cap(&mesh, center: a, ringStart: 0, facingUp: false)
-            cap(&mesh, center: b, ringStart: (radii.count - 1) * n, facingUp: true)
-        }
-        mesh.computeNormals()
-        return mesh
-    }
-
-    /// Radii smoothed between key values, `steps` per gap.
-    static func smoothRadii(_ keys: [Float], steps: Int = 4) -> [Float] {
-        guard keys.count > 1 else { return keys }
-        var out: [Float] = []
-        for i in 0..<(keys.count - 1) {
-            for s in 0..<steps {
-                let t = Float(s) / Float(steps)
-                // Smoothstep easing between keys.
-                let e = t * t * (3 - 2 * t)
-                out.append(keys[i] + (keys[i + 1] - keys[i]) * e)
-            }
-        }
-        out.append(keys[keys.count - 1])
-        return out
-    }
-
-    static func ellipsoid(center: Vec3, radii: Vec3, stacks: Int = 20) -> Mesh {
-        var mesh = Mesh()
-        let n = segments
-        for s in 0...stacks {
-            let phi = Float(s) / Float(stacks) * .pi
-            for i in 0..<n {
-                let t = Float(i) / Float(n) * 2 * .pi
-                mesh.positions.append(Vec3(center.x + radii.x * sin(phi) * cos(t), center.y + radii.y * cos(phi),
-                                           center.z + radii.z * sin(phi) * sin(t)))
-            }
-        }
-        for s in 0..<stacks {
-            for i in 0..<n {
-                let a = UInt32(s * n + i), b = UInt32(s * n + (i + 1) % n)
-                let c = UInt32((s + 1) * n + i), d = UInt32((s + 1) * n + (i + 1) % n)
-                mesh.indices += [a, b, c, b, d, c]
-            }
-        }
-        mesh.computeNormals()
-        return mesh
     }
 
     /// Half-width and half-depth of an ellipse with this circumference and depth/width
