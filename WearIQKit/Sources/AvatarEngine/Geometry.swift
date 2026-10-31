@@ -48,15 +48,32 @@ public struct Mesh: Sendable {
 }
 
 /// A horizontal cross-section: centre, half-width across (x), half-depth (z) and a
-/// superellipse exponent (2 = ellipse; torsos are a little boxier, about 2.4).
+/// superellipse exponent (2 = ellipse; torsos are a little boxier, about 2.4), or, for a
+/// body taken from a scanned shape model, the outline itself as radii from the centre.
 struct Ring {
     var center: Vec3
     var halfWidth: Float
     var halfDepth: Float
     var power: Float = 2
+    /// Radius at evenly spaced angles from +x towards +z, all the way round; when set it
+    /// is the outline and the superellipse is only its bounding size.
+    var radii: [Float]? = nil
+
+    /// The outline's radius at angle t, between the stored ones.
+    @inline(__always) static func radius(_ radii: [Float], at t: Float) -> Float {
+        let n = radii.count
+        var u = t / (2 * .pi) * Float(n)
+        u -= Float(n) * (u / Float(n)).rounded(.down)
+        let i = min(n - 1, Int(u)), f = u - Float(i)
+        return radii[i] + (radii[(i + 1) % n] - radii[i]) * f
+    }
 
     /// Point on the section at angle t (0 = towards +x).
     func point(_ t: Float, grow: Float = 0) -> Vec3 {
+        if let radii {
+            let r = Ring.radius(radii, at: t) + grow
+            return Vec3(center.x + r * cos(t), center.y, center.z + r * sin(t))
+        }
         let c = cos(t), s = sin(t), e = 2 / power
         let x = (halfWidth + grow) * copysign(pow(abs(c), e), c)
         let z = (halfDepth + grow) * copysign(pow(abs(s), e), s)
@@ -64,14 +81,19 @@ struct Ring {
     }
 
     func lerp(_ b: Ring, _ f: Float) -> Ring {
-        Ring(center: center + (b.center - center) * f, halfWidth: halfWidth + (b.halfWidth - halfWidth) * f,
-             halfDepth: halfDepth + (b.halfDepth - halfDepth) * f, power: power + (b.power - power) * f)
+        var out = Ring(center: center + (b.center - center) * f, halfWidth: halfWidth + (b.halfWidth - halfWidth) * f,
+                       halfDepth: halfDepth + (b.halfDepth - halfDepth) * f, power: power + (b.power - power) * f)
+        if let ra = radii, let rb = b.radii, ra.count == rb.count {
+            out.radii = zip(ra, rb).map { $0 + ($1 - $0) * f }
+        }
+        return out
     }
 
     /// The same shape scaled about its centre to this perimeter.
     func scaled(toPerimeter target: Float) -> Ring {
         let s = target / perimeter
-        return Ring(center: center, halfWidth: halfWidth * s, halfDepth: halfDepth * s, power: power)
+        return Ring(center: center, halfWidth: halfWidth * s, halfDepth: halfDepth * s, power: power,
+                    radii: radii?.map { $0 * s })
     }
 
     /// Perimeter, by summing the polygon.

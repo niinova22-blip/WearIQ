@@ -142,7 +142,7 @@ public struct Avatar: Sendable {
     /// Dressed in several garments: trousers first, then a top over them, resting on the
     /// trousers where it covers them.
     public init(_ m: Measurements, garments: [GarmentFit], detail: Detail = .standard) {
-        let model = BodyModel(m)
+        let model = BodyModel.make(m)
         body = model.mesh(cell: detail.body)
         anchors = model.bodyAnchors
         let order = garments.indices.sorted { a, b in
@@ -197,9 +197,28 @@ struct BodyModel: Sendable {
     /// Left (+x) then right.
     let arms: [(start: Vec3, dir: Vec3, limb: Limb, hand: Ellipsoid)]
     let legs: [(hip: Vec3, knee: Vec3, ankle: Vec3, limb: Limb, foot: Ellipsoid)]
+    /// The skin to show, when the body comes from the SOMA shape model; otherwise the
+    /// distance field's surface is shown.
+    let surface: Mesh?
+    /// Box around the whole body.
+    let bounds: (Vec3, Vec3)
+    /// Where a top's neckline is cut: points with normal·p above offset are open. Lower
+    /// at the front than at the back, as a crew neck is.
+    let neckline: (normal: Vec3, offset: Float)
+    /// The neckline's highest point, at the back.
+    let necklineTop: Float
+    /// How far garments are kept off the skin: a few millimetres over a scanned body's
+    /// coarse triangles, which would otherwise poke through fabric resting on them.
+    let skinMargin: Float
+
+    /// From the SOMA shape model when it's bundled, otherwise drawn from the measurements.
+    static func make(_ m: Avatar.Measurements) -> BodyModel {
+        SomaModel.shared.map { BodyModel(soma: $0, m) } ?? BodyModel(m)
+    }
 
     init(_ m: Avatar.Measurements) {
         self.m = m
+        surface = nil
         let h = Float(m.height / 100)
         self.h = h
         let crotchY = Float(m.inseam / 100)
@@ -299,6 +318,11 @@ struct BodyModel: Sendable {
             let foot = Ellipsoid(center: Vec3(ankle.x, 0.024 * h, 0.04 * h), radii: Vec3(0.027 * h, 0.024 * h, 0.076 * h))
             return (top, knee, ankle, limb, foot)
         }
+        let reach = shoulderHalf + armLength * 0.26 + 0.08 * h
+        bounds = (Vec3(-reach, -0.01, -0.13 * h), Vec3(reach, h + 0.01, 0.14 * h))
+        neckline = (Vec3(0, 1, 0), neckY - 0.004 * h)
+        necklineTop = neckY - 0.004 * h
+        skinMargin = 0
     }
 
     // MARK: Distance field
@@ -328,13 +352,8 @@ struct BodyModel: Sendable {
         return max(d, -p.y)
     }
 
-    /// Box around the whole body.
-    var bounds: (Vec3, Vec3) {
-        let reach = shoulderHalf + armLength * 0.26 + 0.08 * h
-        return (Vec3(-reach, -0.01, -0.13 * h), Vec3(reach, h + 0.01, 0.14 * h))
-    }
-
     func mesh(cell: Float) -> Mesh {
+        if let surface { return surface }
         let (lo, hi) = bounds
         return SurfaceNets.mesh(from: lo, to: hi, cell: cell) { distance($0) }
     }
@@ -435,6 +454,7 @@ extension BodyModel {
         var hang: (Int, Vec3) -> (amount: Float, axis: Vec3)? = { _, _ in nil }
         let (bodyLo, bodyHi) = bounds
         var shape = GarmentShape(fit: fit, hemY: 0)
+        let lift = skinMargin
 
         switch fit.kind {
         case .trousers:
@@ -442,7 +462,7 @@ extension BodyModel {
             let seatEase = { (y: Float) -> Float in
                 self.interpolate([(self.hipY, cm(fit.hipEase)), (waistband, cm(fit.waistEase))], at: y) / (2 * .pi)
             }
-            parts.append(GarmentPart(shape: { p in self.torso.distance(p) - seatEase(p.y) },
+            parts.append(GarmentPart(shape: { p in self.torso.distance(p) - seatEase(p.y) - lift },
                                      planes: [(Vec3(0, 1, 0), waistband)]))
             // Longer than the leg: the hem reaches the floor and the rest stacks in folds.
             // Shorter: the hem sits above the ankle.
@@ -462,7 +482,11 @@ extension BodyModel {
                     // Full thigh ease at the top, tapering towards the knee and hem.
                     return thighOff * (1 - 0.4 * min(1, f * 1.6)) + 0.006 + 0.003 * f
                 }
-                parts.append(GarmentPart(shape: { p in limb.distance(p) - legEase(p.y) }, planes: [(Vec3(0, -1, 0), -hemY)]))
+                // Each leg stays on its own side of the middle: where thighs meet, the two
+                // legs of the trousers meet too instead of merging into one tube.
+                let side: Float = leg.knee.x > 0 ? 1 : -1
+                parts.append(GarmentPart(shape: { p in max(limb.distance(p) - legEase(p.y) - lift, 0.003 - side * p.x) },
+                                         planes: [(Vec3(0, -1, 0), -hemY)]))
                 if stacked > 0 {
                     stacks.append((i + 1, Vec3(0, 1, 0), Vec3(leg.ankle.x, hemY, 0), min(0.09, stacked * 1.4)))
                 }
@@ -482,7 +506,6 @@ extension BodyModel {
         case let .top(longSleeves):
             // A regular top ends just below the hips; longer or shorter moves the hem.
             let hemY = max(0.38 * h, crotchY + 0.035 * h - cm(fit.lengthDelta))
-            let neckCut = neckY - 0.004 * h
             let dropped = Float(max(0, fit.shoulderDelta) / 200)
             let chestE = cm(fit.chestEase)
             let ease = { (y: Float) -> Float in
@@ -495,8 +518,8 @@ extension BodyModel {
                 let yoke = y >= self.shoulderY - 0.02 * self.h ? max(e, 0.012) : e
                 return yoke / (2 * .pi)
             }
-            parts.append(GarmentPart(shape: { p in self.torso.distance(p) - ease(p.y) },
-                                     planes: [(Vec3(0, -1, 0), -hemY), (Vec3(0, 1, 0), neckCut)]))
+            parts.append(GarmentPart(shape: { p in self.torso.distance(p) - ease(p.y) - lift },
+                                     planes: [(Vec3(0, -1, 0), -hemY), neckline]))
             // Sleeves start at the shoulder seam: down the arm when the shoulder is dropped.
             let sleeveLength = longSleeves ? armLength + cm(fit.sleeveDelta) : 0.36 * armLength
             let reach = min(sleeveLength, armLength + 0.04 * h)
@@ -513,7 +536,7 @@ extension BodyModel {
                     limb.bones.append(Bone(a: wrist, b: wrist + arm.dir * (reach - armLength), ra: upperArmR * 0.6, rb: upperArmR * 0.6))
                 }
                 let end = arm.start + arm.dir * reach
-                parts.append(GarmentPart(shape: { p in limb.distance(p) - sleeveEase },
+                parts.append(GarmentPart(shape: { p in limb.distance(p) - sleeveEase - lift },
                                          planes: [(arm.dir, arm.dir.dot(end))]))
                 if overHand > 0, longSleeves {
                     stacks.append((i + 1, arm.dir * -1, end, min(0.07, overHand * 1.5)))
@@ -524,9 +547,9 @@ extension BodyModel {
                 guard part == 0, p.y < self.chestY else { return nil }
                 return (ease(p.y) - 0.012, Vec3(0, 0, 0))
             }
-            let side = shoulderHalf + armLength * 0.26 + 0.06 * h
+            let side = shoulderHalf + armLength * max(0.26, abs(arms[0].dir.x)) + 0.06 * h
             lo = Vec3(-side, hemY - 0.03, bodyLo.z)
-            hi = Vec3(side, neckCut + 0.03, bodyHi.z)
+            hi = Vec3(side, necklineTop + 0.03, bodyHi.z)
             pinnedAbove = shoulderY - 0.02 * h
             anchors[.hem] = Vec3(hip.0 + ease(hemY), hemY, 0)
             anchors[.chest] = Vec3(chest.0 + ease(chestY), chestY, 0)
@@ -570,7 +593,10 @@ extension BodyModel {
             let p = mesh.positions[i]
             let planes = garmentParts[owner(p)].planes
             guard let plane = planes.max(by: { $0.normal.dot(p) - $0.offset < $1.normal.dot(p) - $1.offset }) else { continue }
-            mesh.positions[i] = p - plane.normal * (plane.normal.dot(p) - plane.offset)
+            // Only onto a plane it's beside: an edge far from every plane is no cut edge.
+            let off = plane.normal.dot(p) - plane.offset
+            guard abs(off) < 2 * cell else { continue }
+            mesh.positions[i] = p - plane.normal * off
         }
         let tags = mesh.positions.map(owner)
 
@@ -578,8 +604,9 @@ extension BodyModel {
         var cloth = TriangleCloth(mesh)
         let pinned = mesh.positions.map { $0.y >= pinnedAbove }
         let thickness = fabric.thickness
-        let rests: (Vec3) -> Float = under.map { inner in { p in min(self.distance(p), inner(p) - thickness) } }
-            ?? { p in self.distance(p) }
+        let margin = skinMargin
+        let rests: (Vec3) -> Float = under.map { inner in { p in min(self.distance(p) - margin, inner(p) - thickness) } }
+            ?? { p in self.distance(p) - margin }
         cloth.drape(body: rests, fabric: fabric, pinned: pinned, motion: animated ? .dressing : .settle)
         mesh.positions = cloth.positions
         mesh.strain = fitValues(stretch: cloth.stretch, contact: cloth.contact, fabric: fabric, neighbours: neighbours)
@@ -662,9 +689,9 @@ extension BodyModel {
         case .top:
             // The body part's lowest edge (long sleeves can hang lower).
             let hem = mesh.positions.indices.filter { tags[$0] == 0 }.map { mesh.positions[$0].y }.min() ?? 0
-            let neckCut = neckY - 0.004 * h
+            let neck = neckline
             lines.append(({ $0.y - (hem + 0.014) }, [0], around(Vec3(0, 0, 0))))
-            lines.append(({ $0.y - (neckCut - 0.01) }, [0], around(Vec3(0, 0, 0))))
+            lines.append(({ $0.dot(neck.normal) - (neck.offset - 0.01) }, [0], around(Vec3(0, 0, 0))))
             // Side seams below the arms, shoulder seams over the top.
             let armpit = armpitY - 0.01 * h, yoke = shoulderY - 0.015 * h
             lines.append(({ p in p.y < armpit && abs(p.x) > 0.05 ? p.z - mid(p.y) : .nan }, [0], byHeight))

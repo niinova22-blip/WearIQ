@@ -7490,6 +7490,86 @@
           }
         }
       }
+    },
+    "Acknowledgements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teşekkürler ve lisanslar"
+          }
+        }
+      }
+    },
+    "The 3D body is shaped with NVIDIA's SOMA-X body model, learned from thousands of body scans. Copyright NVIDIA Corporation, Apache License 2.0.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D vücut, binlerce vücut taramasından öğrenilmiş NVIDIA SOMA-X vücut modeliyle şekillendiriliyor. Telif hakkı NVIDIA Corporation, Apache Lisansı 2.0."
+          }
+        }
+      }
+    },
+    "Apache License 2.0": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apache Lisansı 2.0"
+          }
+        }
+      }
+    },
+    "SOMA-X": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SOMA-X"
+          }
+        }
+      }
+    },
+    "Measurement estimates use the public ANSUR II anthropometric survey (US Army) and NHANES (US CDC).": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçü tahminleri, herkese açık ANSUR II antropometri araştırmasını (ABD Ordusu) ve NHANES verisini (ABD CDC) kullanır."
+          }
+        }
+      }
+    },
+    "Body measurement data": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut ölçüsü verileri"
+          }
+        }
+      }
+    },
+    "The scan's voice was recorded with the open Chatterbox speech model (Resemble AI, MIT License).": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taramadaki ses, açık kaynak Chatterbox konuşma modeliyle (Resemble AI, MIT Lisansı) kaydedildi."
+          }
+        }
+      }
+    },
+    "Voice": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ses"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

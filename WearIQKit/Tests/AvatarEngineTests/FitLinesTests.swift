@@ -51,7 +51,7 @@ import Testing
         // Layers keep the order given; the first is the top.
         if case .top = avatar.layers[0].fit.kind {} else { Issue.record("first layer should be the top") }
         // Where the top covers the waistband it lies over it, not inside the trousers.
-        let model = BodyModel(me)
+        let model = BodyModel.make(me)
         let waistband = (model.waistY + model.hipY) / 2
         let shirt = avatar.layers[0].mesh.positions.filter { abs($0.y - (waistband - 0.03)) < 0.01 }
         let pants = avatar.layers[1].mesh.positions.filter { abs($0.y - (waistband - 0.03)) < 0.01 }

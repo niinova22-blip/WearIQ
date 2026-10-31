@@ -27,7 +27,9 @@ let package = Package(
         .target(name: "ScanQuota"),
         .target(name: "OutfitRecommendationEngine"),
         // 3D avatar from measurements, with garments drawn on it from the fit analysis.
-        .target(name: "AvatarEngine", dependencies: ["WearIQCore"]),
+        // Its body shape model is NVIDIA SOMA-X's (Apache-2.0), see scripts/build_soma_body.py.
+        .target(name: "AvatarEngine", dependencies: ["WearIQCore"],
+                resources: [.copy("Resources/SomaBody.bin"), .copy("Resources/SOMA-X-LICENSE.txt")]),
         .testTarget(name: "FitEngineTests", dependencies: ["FitEngine"]),
         .testTarget(name: "BodyMeasurementEngineTests", dependencies: ["BodyMeasurementEngine"]),
         .testTarget(name: "VisionIntegrationTests", dependencies: ["BodyScanVision", "BodyMeasurementEngine", "ProductMeasurementParser"],

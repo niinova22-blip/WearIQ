@@ -36,7 +36,7 @@ import Testing
 
     @Test func droppedGarmentEndsOutsideTheBody() {
         let avatar = Avatar(me, garment: looseTee(), detail: animatedPreview)
-        let model = BodyModel(me)
+        let model = BodyModel.make(me)
         let inside = avatar.garment!.positions.filter { model.distance($0) < -0.004 }
         #expect(Float(inside.count) / Float(avatar.garment!.positions.count) < 0.02)
         #expect(avatar.fitReport[.chest] != nil)
@@ -47,7 +47,7 @@ import Testing
         fit.fabric = .denim
         let avatar = Avatar(me, garment: fit, detail: animatedPreview)
         #expect(avatar.garmentFrames.count >= 55)
-        let model = BodyModel(me)
+        let model = BodyModel.make(me)
         let inside = avatar.garment!.positions.filter { model.distance($0) < -0.004 }
         #expect(Float(inside.count) / Float(avatar.garment!.positions.count) < 0.03)
     }

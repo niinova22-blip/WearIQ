@@ -64,7 +64,8 @@ struct Ellipsoid: Sendable {
     }
 }
 
-/// A torso lofted through horizontal superellipse sections, closed at both ends.
+/// A torso lofted through horizontal sections (superellipses, or outlines taken from a
+/// shape model), closed at both ends.
 struct LoftedTorso: Sendable {
     var rings: [Ring]
 
@@ -85,12 +86,17 @@ struct LoftedTorso: Sendable {
         let r = ring(at: p.y)
         let dx = p.x - r.center.x, dz = p.z - r.center.z
         let radial = (dx * dx + dz * dz).squareRoot()
+        let vertical = max(rings[0].center.y - p.y, p.y - rings[rings.count - 1].center.y)
+        if let radii = r.radii {
+            let side = radial - Ring.radius(radii, at: atan2(dz, dx))
+            if vertical > 0 { return (max(side, 0) * max(side, 0) + vertical * vertical).squareRoot() }
+            return max(side, vertical)
+        }
         let across: Float = pow(abs(dx) / r.halfWidth, r.power)
         let deep: Float = pow(abs(dz) / r.halfDepth, r.power)
         let norm: Float = pow(across + deep, 1 / r.power)
         // Distance along the ray from the centre to the outline.
         let side = norm > 1e-5 ? radial * (1 - 1 / norm) : -min(r.halfWidth, r.halfDepth)
-        let vertical = max(rings[0].center.y - p.y, p.y - rings[rings.count - 1].center.y)
         if vertical > 0 { return (max(side, 0) * max(side, 0) + vertical * vertical).squareRoot() }
         return max(side, vertical)
     }

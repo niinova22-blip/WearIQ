@@ -1,3 +1,4 @@
+import AvatarEngine
 import SwiftData
 import SwiftUI
 import WearIQCore
@@ -74,6 +75,9 @@ struct ProfileView: View {
                 Label("Your measurements are never shared with advertisers.", systemImage: "hand.raised")
             }
             Section {
+                NavigationLink("Acknowledgements") { AcknowledgementsView() }
+            }
+            Section {
                 Button("Delete all my data", role: .destructive) { confirmDelete = true }
             } footer: {
                 Text("Removes your body profile, saved analyses and wardrobe from this device.")
@@ -105,4 +109,35 @@ struct ProfileView: View {
 #Preview {
     NavigationStack { ProfileView() }
         .environment(AppContainer.preview())
+}
+
+/// Open-source work and public data the app is built on, with the licences that ask to
+/// travel with it.
+struct AcknowledgementsView: View {
+    var body: some View {
+        List {
+            Section {
+                Text("The 3D body is shaped with NVIDIA's SOMA-X body model, learned from thousands of body scans. Copyright NVIDIA Corporation, Apache License 2.0.")
+                if let text = AvatarNotices.somaLicense {
+                    NavigationLink("Apache License 2.0") {
+                        ScrollView { Text(text).font(.caption.monospaced()).padding() }
+                            .navigationTitle("Apache License 2.0")
+                    }
+                }
+            } header: {
+                Text("SOMA-X")
+            }
+            Section {
+                Text("Measurement estimates use the public ANSUR II anthropometric survey (US Army) and NHANES (US CDC).")
+            } header: {
+                Text("Body measurement data")
+            }
+            Section {
+                Text("The scan's voice was recorded with the open Chatterbox speech model (Resemble AI, MIT License).")
+            } header: {
+                Text("Voice")
+            }
+        }
+        .navigationTitle("Acknowledgements")
+    }
 }

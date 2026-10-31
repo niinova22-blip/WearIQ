@@ -39,7 +39,7 @@ import Testing
     }
 
     @Test func bodyKeepsTheMeasuredGirths() {
-        let model = BodyModel(me)
+        let model = BodyModel.make(me)
         // Walk out from the middle in 96 directions to the skin and add up the outline.
         func girth(_ y: Float) -> Float {
             let center = model.torso.ring(at: y).center
@@ -85,7 +85,12 @@ import Testing
         fit.chestEase = 30
         let oversized = Avatar(me, garment: fit, detail: quick)
         #expect(oversized.anchors[.shoulder]!.x > regular.anchors[.shoulder]!.x + 0.03)
-        let width = { (a: Avatar) in a.garment!.positions.filter { abs($0.y - 1.26) < 0.02 && abs($0.z) < 0.05 }.map(\.x).max()! }
+        // Across the body at the chest, not counting the sleeves.
+        let model = BodyModel.make(me)
+        let width = { (a: Avatar) in
+            a.garment!.positions.filter { abs($0.y - model.chestY) < 0.03 && abs($0.z) < 0.08 && abs($0.x) < model.shoulderHalf }
+                .map(\.x).max() ?? 0
+        }
         #expect(width(oversized) > width(regular))
     }
 
@@ -112,14 +117,14 @@ import Testing
         var fit = Avatar.GarmentFit(kind: .top(longSleeves: false))
         fit.chestEase = -6
         let avatar = Avatar(me, garment: fit, detail: quick)
-        let model = BodyModel(me)
+        let model = BodyModel.make(me)
         let inside = avatar.garment!.positions.filter { model.distance($0) < -0.004 }
         #expect(Float(inside.count) / Float(avatar.garment!.positions.count) < 0.02)
     }
 
     @Test func landmarksSitOnTheSurface() {
         let avatar = Avatar(me, detail: quick)
-        let model = BodyModel(me)
+        let model = BodyModel.make(me)
         #expect(avatar.landmarks.count == Avatar.Landmark.Kind.allCases.count)
         for l in avatar.landmarks { #expect(abs(model.distance(l.position)) < 0.006, "\(l.kind)") }
         let knee = avatar.landmarks.first { $0.kind == .knee }!
