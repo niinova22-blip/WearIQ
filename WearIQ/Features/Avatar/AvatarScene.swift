@@ -105,7 +105,7 @@ struct AvatarSceneView: UIViewRepresentable {
             let key = SCNNode()
             key.light = SCNLight()
             key.light?.type = .directional
-            key.light?.intensity = 820
+            key.light?.intensity = 700
             key.light?.castsShadow = true
             key.light?.shadowMode = .deferred
             key.light?.shadowSampleCount = 16
@@ -118,13 +118,13 @@ struct AvatarSceneView: UIViewRepresentable {
             let rim = SCNNode()
             rim.light = SCNLight()
             rim.light?.type = .directional
-            rim.light?.intensity = 480
+            rim.light?.intensity = 360
             rim.eulerAngles = SCNVector3(-0.35, .pi * 0.85, 0)
             scene.rootNode.addChildNode(rim)
             let fill = SCNNode()
             fill.light = SCNLight()
             fill.light?.type = .ambient
-            fill.light?.intensity = 400
+            fill.light?.intensity = 320
             fill.light?.color = UIColor(red: 0.93, green: 0.95, blue: 1, alpha: 1)
             scene.rootNode.addChildNode(fill)
             // A floor that only shows the shadow.
@@ -180,8 +180,11 @@ struct AvatarSceneView: UIViewRepresentable {
                 let bodyChanged = shownKey?.split(separator: "-").first != key.split(separator: "-").first
                 shownKey = key
                 if bodyChanged || bodyNode.geometry == nil {
-                    bodyNode.geometry = Self.geometry(avatar.body, color: UIColor(red: 0.8, green: 0.81, blue: 0.83, alpha: 1),
-                                                      roughness: 0.92)
+                    let skin = Self.geometry(avatar.body, color: UIColor(red: 0.74, green: 0.75, blue: 0.77, alpha: 1),
+                                             roughness: 0.92)
+                    // The scanned-shape body is a few thousand triangles: smoothed on the GPU.
+                    skin.subdivisionLevel = avatar.body.positions.count < 8000 ? 1 : 0
+                    bodyNode.geometry = skin
                 }
                 layersNode.childNodes.forEach { $0.removeFromParentNode() }
                 var materials: [SCNMaterial] = []
@@ -227,8 +230,12 @@ struct AvatarSceneView: UIViewRepresentable {
                 camera.camera = SCNCamera()
                 camera.camera?.fieldOfView = 34
                 camera.camera?.wantsHDR = true
+                // Only the fit lines glow: lit skin and fabric stay below the bloom
+                // threshold, and the exposure is fixed so a dark background can't brighten
+                // the figure until it washes out.
+                camera.camera?.wantsExposureAdaptation = false
                 camera.camera?.bloomIntensity = 0.9
-                camera.camera?.bloomThreshold = 0.85
+                camera.camera?.bloomThreshold = 1.1
                 camera.camera?.bloomBlurRadius = 6
                 camera.camera?.screenSpaceAmbientOcclusionIntensity = 0.9
                 camera.camera?.screenSpaceAmbientOcclusionRadius = 0.08
@@ -429,6 +436,7 @@ struct AvatarSceneView: UIViewRepresentable {
             material.lightingModel = .constant
             material.diffuse.contents = color
             material.emission.contents = glow ? color : UIColor.black
+            material.emission.intensity = glow ? 1.6 : 0
             material.isDoubleSided = true
             swayMaterial(material)
             geometry.materials = [material]
@@ -495,20 +503,25 @@ struct LandmarkOverlay: View {
                     .position(item.point)
                 Self.leader(from: CGPoint(x: item.point.x + sign * 5, y: item.point.y), to: end)
                     .stroke(color.opacity(0.75), style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
-                Text(item.text)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(.black.opacity(0.55), in: Capsule())
-                    .overlay(Capsule().stroke(color.opacity(item.tone == nil ? 0 : 0.9), lineWidth: 1))
-                    .fixedSize()
-                    .alignmentGuide(.leading) { d in item.rightward ? 0 : d.width }
-                    .alignmentGuide(.top) { d in d.height / 2 }
-                    .offset(x: end.x + sign * 3, y: end.y)
+                // Hung off a point that takes no room, so a long label can never widen
+                // the screen; it grows away from its leader.
+                Color.clear
+                    .frame(width: 0, height: 0)
+                    .overlay(alignment: item.rightward ? .leading : .trailing) {
+                        Text(item.text)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.black.opacity(0.55), in: Capsule())
+                            .overlay(Capsule().stroke(color.opacity(item.tone == nil ? 0 : 0.9), lineWidth: 1))
+                            .fixedSize()
+                    }
+                    .position(x: end.x + sign * 3, y: end.y)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clipped()
         .allowsHitTesting(false)
     }
 

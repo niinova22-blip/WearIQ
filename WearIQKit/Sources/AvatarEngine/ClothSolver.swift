@@ -30,6 +30,9 @@ struct TriangleCloth {
         /// Raised this far above where it ends up, then let go: it falls onto the body
         /// under gravity, swings and settles. 0 settles it in place.
         var lift: Float = 0
+        /// Which way each vertex is raised (unit vectors), when not straight up: sleeves
+        /// go up their arm, so a sleeve round a raised arm isn't lifted into it.
+        var directions: [Vec3]? = nil
         /// Simulated steps of 1/60 s.
         var steps = 18
         /// Velocity kept per step. Air drag on a garment is small; the heavy default
@@ -214,8 +217,11 @@ struct TriangleCloth {
         }
 
         // Raised to start with; the held parts come down with the hands putting it on.
-        let lift = Vec3(0, motion.lift, 0)
-        if motion.lift > 0 { positions = positions.map { $0 + lift } }
+        let lifts = positions.indices.map { i -> Vec3 in
+            let d = motion.directions.map { $0.indices.contains(i) ? $0[i] : Vec3(0, 1, 0) } ?? Vec3(0, 1, 0)
+            return d * motion.lift
+        }
+        if motion.lift > 0 { positions = positions.indices.map { positions[$0] + lifts[$0] } }
         frames = []
         collide()
         if motion.recordEvery > 0 { frames.append(positions) }
@@ -224,7 +230,7 @@ struct TriangleCloth {
             if motion.lift > 0 {
                 let f = motion.lowering > 0 ? min(1, Float(step + 1) / Float(motion.lowering)) : 1
                 let eased = f * f * (3 - 2 * f)
-                for i in positions.indices where pinned[i] { positions[i] = rest[i] + lift * (1 - eased) }
+                for i in positions.indices where pinned[i] { positions[i] = rest[i] + lifts[i] * (1 - eased) }
             }
             touching = [Bool](repeating: false, count: positions.count)
             resetLambdas()

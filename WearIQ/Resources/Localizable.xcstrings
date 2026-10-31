@@ -7570,6 +7570,396 @@
           }
         }
       }
+    },
+    "**%@**  %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**%1$@**  %2$@"
+          }
+        }
+      }
+    },
+    "Shoulder seam on the shoulder": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz dikişi tam omuz başında"
+          }
+        }
+      }
+    },
+    "Shoulders drop about %@ cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz %@ cm düşük"
+          }
+        }
+      }
+    },
+    "Shoulders drop": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz düşük"
+          }
+        }
+      }
+    },
+    "Shoulders narrow": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz dar"
+          }
+        }
+      }
+    },
+    "Chest tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs dar"
+          }
+        }
+      }
+    },
+    "Chest snug": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs hafif dar"
+          }
+        }
+      }
+    },
+    "Chest fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs tam oturuyor"
+          }
+        }
+      }
+    },
+    "Chest relaxed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs rahat"
+          }
+        }
+      }
+    },
+    "Chest roomy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs bol"
+          }
+        }
+      }
+    },
+    "Waist tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel dar"
+          }
+        }
+      }
+    },
+    "Waist snug": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel hafif dar"
+          }
+        }
+      }
+    },
+    "Waist fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel tam"
+          }
+        }
+      }
+    },
+    "Waist relaxed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel rahat"
+          }
+        }
+      }
+    },
+    "Waist loose, needs a belt": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel bol, kemer ister"
+          }
+        }
+      }
+    },
+    "Waist roomy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel bol"
+          }
+        }
+      }
+    },
+    "Seat tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basen dar"
+          }
+        }
+      }
+    },
+    "Seat snug": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basen hafif dar"
+          }
+        }
+      }
+    },
+    "Seat fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basen tam"
+          }
+        }
+      }
+    },
+    "Seat relaxed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basen rahat"
+          }
+        }
+      }
+    },
+    "Seat roomy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basen bol"
+          }
+        }
+      }
+    },
+    "Legs tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacaklar dar"
+          }
+        }
+      }
+    },
+    "Legs slim": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacaklar dar kesim"
+          }
+        }
+      }
+    },
+    "Legs fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacaklar tam"
+          }
+        }
+      }
+    },
+    "Legs relaxed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacaklar rahat"
+          }
+        }
+      }
+    },
+    "Legs loose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacaklar bol"
+          }
+        }
+      }
+    },
+    "Sleeves %@ cm long": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kol boyu %@ cm uzun"
+          }
+        }
+      }
+    },
+    "Sleeves long": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kol boyu uzun"
+          }
+        }
+      }
+    },
+    "Sleeves %@ cm short": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kol boyu %@ cm kısa"
+          }
+        }
+      }
+    },
+    "Sleeves short": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kol boyu kısa"
+          }
+        }
+      }
+    },
+    "Sleeve length right": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kol boyu tam"
+          }
+        }
+      }
+    },
+    "Body %@ cm long": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden boyu %@ cm uzun"
+          }
+        }
+      }
+    },
+    "Body long": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden boyu uzun"
+          }
+        }
+      }
+    },
+    "Body short, cropped": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden boyu kısa, crop gibi durur"
+          }
+        }
+      }
+    },
+    "Body length right": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden boyu tam"
+          }
+        }
+      }
+    },
+    "Hem %@ cm long, breaks at the ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paça %@ cm uzun, bilekte kırılır"
+          }
+        }
+      }
+    },
+    "Hem long, breaks at the ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paça uzun, bilekte kırılır"
+          }
+        }
+      }
+    },
+    "Hem short, ankle shows": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paça kısa, bilek açıkta kalır"
+          }
+        }
+      }
+    },
+    "Hem length right": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paça boyu tam"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

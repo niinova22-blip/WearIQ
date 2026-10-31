@@ -215,3 +215,58 @@ extension FitExplanation {
     }
 }
 
+
+extension FitExplanation {
+    /// How a size sits, the way a tailor would say it, one short phrase per region:
+    /// "Waist snug · Seat relaxed · Legs slim · Hem 3 cm long, breaks at the ankle".
+    static func tailorPhrases(_ regions: [RegionFit], trousers: Bool) -> [String] {
+        func cm(_ r: RegionFit) -> String? {
+            guard let o = r.estimatedOffsetCm else { return nil }
+            return String(Int(max(1, ((o.lowerBound + o.upperBound) / 2).rounded())))
+        }
+        let phrases = regions.compactMap { r -> String? in
+            switch (r.region, r.verdict) {
+            case (_, .insufficientData): return nil
+            case (.shoulder, .ideal): return String(localized: "Shoulder seam on the shoulder")
+            case (.shoulder, .slightlyLoose), (.shoulder, .loose):
+                return r.easeCm.map { String(localized: "Shoulders drop about \(String(Int(max(1, ($0 / 2).rounded())))) cm") }
+                    ?? String(localized: "Shoulders drop")
+            case (.shoulder, .slightlyTight), (.shoulder, .tight): return String(localized: "Shoulders narrow")
+            case (.chest, .tight): return String(localized: "Chest tight")
+            case (.chest, .slightlyTight): return String(localized: "Chest snug")
+            case (.chest, .ideal): return String(localized: "Chest fits")
+            case (.chest, .slightlyLoose): return String(localized: "Chest relaxed")
+            case (.chest, .loose): return String(localized: "Chest roomy")
+            case (.waist, .tight): return String(localized: "Waist tight")
+            case (.waist, .slightlyTight): return String(localized: "Waist snug")
+            case (.waist, .ideal): return String(localized: "Waist fits")
+            case (.waist, .slightlyLoose): return String(localized: "Waist relaxed")
+            case (.waist, .loose): return trousers ? String(localized: "Waist loose, needs a belt") : String(localized: "Waist roomy")
+            case (.hip, .tight): return String(localized: "Seat tight")
+            case (.hip, .slightlyTight): return String(localized: "Seat snug")
+            case (.hip, .ideal): return String(localized: "Seat fits")
+            case (.hip, .slightlyLoose): return String(localized: "Seat relaxed")
+            case (.hip, .loose): return String(localized: "Seat roomy")
+            case (.thigh, .tight): return String(localized: "Legs tight")
+            case (.thigh, .slightlyTight): return String(localized: "Legs slim")
+            case (.thigh, .ideal): return String(localized: "Legs fit")
+            case (.thigh, .slightlyLoose): return String(localized: "Legs relaxed")
+            case (.thigh, .loose): return String(localized: "Legs loose")
+            case (.sleeve, .long): return cm(r).map { String(localized: "Sleeves \($0) cm long") } ?? String(localized: "Sleeves long")
+            case (.sleeve, .short): return cm(r).map { String(localized: "Sleeves \($0) cm short") } ?? String(localized: "Sleeves short")
+            case (.sleeve, _): return String(localized: "Sleeve length right")
+            case (.bodyLength, .long): return cm(r).map { String(localized: "Body \($0) cm long") } ?? String(localized: "Body long")
+            case (.bodyLength, .short): return String(localized: "Body short, cropped")
+            case (.bodyLength, _): return String(localized: "Body length right")
+            case (.inseam, .long), (.outseam, .long):
+                return cm(r).map { String(localized: "Hem \($0) cm long, breaks at the ankle") } ?? String(localized: "Hem long, breaks at the ankle")
+            case (.inseam, .short), (.outseam, .short): return String(localized: "Hem short, ankle shows")
+            case (.inseam, _): return String(localized: "Hem length right")
+            default: return nil
+            }
+        }
+        // Inseam and outseam can say the same thing.
+        var seen = Set<String>()
+        return phrases.filter { seen.insert($0).inserted }
+    }
+}

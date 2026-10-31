@@ -607,7 +607,19 @@ extension BodyModel {
         let margin = skinMargin
         let rests: (Vec3) -> Float = under.map { inner in { p in min(self.distance(p) - margin, inner(p) - thickness) } }
             ?? { p in self.distance(p) - margin }
-        cloth.drape(body: rests, fabric: fabric, pinned: pinned, motion: animated ? .dressing : .settle)
+        var motion = animated ? TriangleCloth.Motion.dressing : .settle
+        if animated {
+            switch fit.kind {
+            case .top:
+                // Sleeves are pulled on up the arm, the body part from above.
+                motion.directions = tags.map { $0 > 0 && $0 <= arms.count ? arms[$0 - 1].dir * -1 : Vec3(0, 1, 0) }
+            case .trousers:
+                // Pulled up from below: started higher, the legs would sit on the wider
+                // thigh and stay stretched where friction holds them.
+                motion.directions = tags.map { _ in Vec3(0, -1, 0) }
+            }
+        }
+        cloth.drape(body: rests, fabric: fabric, pinned: pinned, motion: motion)
         mesh.positions = cloth.positions
         mesh.strain = fitValues(stretch: cloth.stretch, contact: cloth.contact, fabric: fabric, neighbours: neighbours)
         let report = self.report(cloth, tags: tags, fit: fit, fabric: fabric)

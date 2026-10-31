@@ -168,6 +168,7 @@ struct AvatarFitView: View {
                             VStack {
                                 legend.allowsHitTesting(false)
                                 Spacer()
+                                tailorCard.allowsHitTesting(false)
                                 viewButtons
                                 Label("Drag to turn", systemImage: "hand.draw")
                                     .font(.caption2)
@@ -176,7 +177,8 @@ struct AvatarFitView: View {
                                     .allowsHitTesting(false)
                             }
                         }
-                        .frame(maxHeight: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
                         .background(RadialGradient(colors: [Color(white: 0.32), Color(white: 0.1)], center: .center,
                                                    startRadius: 20, endRadius: 520))
                         panel
@@ -214,11 +216,38 @@ struct AvatarFitView: View {
             }
         }
         .font(.caption2.weight(.semibold))
+        .minimumScaleFactor(0.7)
         .foregroundStyle(.white)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(.black.opacity(0.45), in: Capsule())
         .padding(.top, 8)
+    }
+
+    /// How each piece sits, in a tailor's words, over the bottom of the scene.
+    private var tailorCard: some View {
+        let pieces: [(GarmentCategory, [RegionFit])] = [(spec.category, regions)]
+            + (companion.map { c in
+                [(c.spec.category, c.analysis.sizes.first { $0.label == c.size }?.regions ?? [])]
+            } ?? [])
+        let lines = pieces.compactMap { category, regions -> (String, String)? in
+            let phrases = FitExplanation.tailorPhrases(regions, trousers: !category.isTop)
+            return phrases.isEmpty ? nil : (category.title, phrases.joined(separator: " · "))
+        }
+        return VStack(alignment: .leading, spacing: 4) {
+            ForEach(lines, id: \.0) { line in
+                Text("**\(line.0)**  \(line.1)")
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 12)
+        .opacity(lines.isEmpty ? 0 : 1)
     }
 
     /// Front, side and back: turns the avatar there, the garment swinging as it goes.
