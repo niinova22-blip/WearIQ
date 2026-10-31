@@ -270,12 +270,15 @@ struct AvatarSceneView: UIViewRepresentable {
             lock.unlock()
             let node = figure.presentation
             let items = points.compactMap { l -> LandmarkLabels.Item? in
-                let p = node.convertPosition(SCNVector3(l.position.x, l.position.y, l.position.z), to: nil)
-                let n = node.convertVector(SCNVector3(l.normal.x, l.normal.y, l.normal.z), to: nil)
-                guard n.x * (camera.x - p.x) + n.y * (camera.y - p.y) + n.z * (camera.z - p.z) > 0 else { return nil }
-                let side = node.convertVector(SCNVector3(l.side * 0.1, 0, 0), to: nil)
-                let at = renderer.projectPoint(p)
-                let towards = renderer.projectPoint(SCNVector3(p.x + side.x, p.y + side.y, p.z + side.z))
+                let p: SCNVector3 = node.convertPosition(SCNVector3(l.position.x, l.position.y, l.position.z), to: nil)
+                let n: SCNVector3 = node.convertVector(SCNVector3(l.normal.x, l.normal.y, l.normal.z), to: nil)
+                let dx: Float = Float(camera.x - p.x), dy: Float = Float(camera.y - p.y), dz: Float = Float(camera.z - p.z)
+                let facing: Float = Float(n.x) * dx + Float(n.y) * dy + Float(n.z) * dz
+                guard facing > 0 else { return nil }
+                let side: SCNVector3 = node.convertVector(SCNVector3(l.side * 0.1, 0, 0), to: nil)
+                let at: SCNVector3 = renderer.projectPoint(p)
+                let tip = SCNVector3(p.x + side.x, p.y + side.y, p.z + side.z)
+                let towards: SCNVector3 = renderer.projectPoint(tip)
                 guard at.z > 0, at.z < 1 else { return nil }
                 return LandmarkLabels.Item(id: l.id, point: CGPoint(x: CGFloat(at.x), y: CGFloat(at.y)),
                                            rightward: towards.x >= at.x, text: l.text, tone: l.tone)
