@@ -7430,6 +7430,66 @@
           }
         }
       }
+    },
+    "Front view": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önden"
+          }
+        }
+      }
+    },
+    "Side view": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yandan"
+          }
+        }
+      }
+    },
+    "Back view": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arkadan"
+          }
+        }
+      }
+    },
+    "Your measurements for this fit are reliable.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu uyum için ölçülerin güvenilir."
+          }
+        }
+      }
+    },
+    "%@ could be %lld–%lld cm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$lld–%3$lld cm arasında olabilir"
+          }
+        }
+      }
+    },
+    "The fit may change within these ranges; measuring them with a tape makes it surer.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyum bu aralıklarda değişebilir; mezurayla ölçersen sonuç kesinleşir."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

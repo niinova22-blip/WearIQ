@@ -135,6 +135,9 @@ struct AvatarFitView: View {
     /// The other piece worn with this one.
     @State private var companion: Companion?
     @State private var choosingCompanion = false
+    /// The view last asked for with the buttons under the avatar.
+    @State private var facing: Float?
+    @State private var facingTurn = 0
 
     /// A garment analysed earlier, worn together with this one.
     struct Companion: Equatable {
@@ -156,20 +159,22 @@ struct AvatarFitView: View {
                         ZStack {
                             if let avatar {
                                 AvatarSceneView(avatar: avatar, revision: revision, frame: frame,
-                                                labels: frame == nil ? labels(avatar) : [], labelModel: labelModel)
+                                                labels: frame == nil ? labels(avatar) : [], labelModel: labelModel,
+                                                facing: facing, facingTurn: facingTurn)
                                 LandmarkOverlay(model: labelModel)
                             } else {
                                 ProgressView("Draping the fabric…")
                             }
                             VStack {
-                                legend
+                                legend.allowsHitTesting(false)
                                 Spacer()
+                                viewButtons
                                 Label("Drag to turn", systemImage: "hand.draw")
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                                     .padding(.bottom, 6)
+                                    .allowsHitTesting(false)
                             }
-                            .allowsHitTesting(false)
                         }
                         .frame(maxHeight: .infinity)
                         .background(RadialGradient(colors: [Color(white: 0.32), Color(white: 0.1)], center: .center,
@@ -214,6 +219,28 @@ struct AvatarFitView: View {
         .padding(.vertical, 6)
         .background(.black.opacity(0.45), in: Capsule())
         .padding(.top, 8)
+    }
+
+    /// Front, side and back: turns the avatar there, the garment swinging as it goes.
+    private var viewButtons: some View {
+        let views: [(LocalizedStringKey, Float)] = [("Front view", 0), ("Side view", -.pi / 2), ("Back view", .pi)]
+        return HStack(spacing: 8) {
+            ForEach(views.indices, id: \.self) { i in
+                Button {
+                    facing = views[i].1
+                    facingTurn += 1
+                } label: {
+                    Text(views[i].0)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(.black.opacity(0.45), in: Capsule())
+                }
+                .foregroundStyle(.white)
+            }
+        }
+        .padding(.bottom, 4)
+        .sensoryFeedback(.selection, trigger: facingTurn)
     }
 
     /// Each fit line that has something to say, labelled where it is.
@@ -284,6 +311,7 @@ struct AvatarFitView: View {
                     .pickerStyle(.segmented)
                 }
                 regionRows(regions)
+                if let body = profiles.first?.profile { reliability(body) }
                 companionSection
                 details
                 Text("Blue fits, yellow is loose, red is long, purple is tight, orange is short. Glowing lines are where the seams and hems fall; white dashes are where they belong on your body. The garment is cut to the size chart and settles on your body under its own weight, as far as its fibres stretch. Without the product's own pattern this is a model of the garment, not the real one.")
@@ -307,6 +335,37 @@ struct AvatarFitView: View {
                     Text(r.detailText).foregroundStyle(.secondary).multilineTextAlignment(.trailing)
                 }
                 .font(.subheadline)
+            }
+        }
+    }
+
+    /// How sure the measurements this fit rests on are: the ones whose range is wide
+    /// enough to change the verdict are named with their range.
+    @ViewBuilder
+    private func reliability(_ body: BodyProfile) -> some View {
+        let dims = regions.compactMap(\.region.dimension)
+        let unsure = dims.compactMap { d -> (BodyDimension, MeasurementAssessment)? in
+            guard let a = body.assessment(d), !a.verified, a.high - a.low > 4 else { return nil }
+            return (d, a)
+        }
+        .sorted { $0.1.high - $0.1.low > $1.1.high - $1.1.low }
+        if !dims.isEmpty {
+            if unsure.isEmpty {
+                Label("Your measurements for this fit are reliable.", systemImage: "checkmark.seal")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(Array(unsure.prefix(3)), id: \.0) { item in
+                        Text("\(item.0.title) could be \(Int(item.1.low.rounded()))–\(Int(item.1.high.rounded())) cm")
+                    }
+                    Text("The fit may change within these ranges; measuring them with a tape makes it surer.")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.footnote)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
             }
         }
     }

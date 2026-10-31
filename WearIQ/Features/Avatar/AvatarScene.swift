@@ -36,6 +36,10 @@ struct AvatarSceneView: UIViewRepresentable {
     var frame: Int?
     var labels: [SceneLabel] = []
     @ObservedObject var labelModel: LandmarkLabels
+    /// Turns the avatar to face this way (radians, 0 the front) whenever `facingTurn`
+    /// changes; the garment swings as it turns.
+    var facing: Float?
+    var facingTurn = 0
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -51,12 +55,14 @@ struct AvatarSceneView: UIViewRepresentable {
         view.addGestureRecognizer(UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pinch(_:))))
         context.coordinator.update(avatar, revision: revision, fitColors: fitColors, frame: frame, labels: labels,
                                    model: labelModel, in: view)
+        context.coordinator.turn(to: facing, turn: facingTurn)
         return view
     }
 
     func updateUIView(_ view: SCNView, context: Context) {
         context.coordinator.update(avatar, revision: revision, fitColors: fitColors, frame: frame, labels: labels,
                                    model: labelModel, in: view)
+        context.coordinator.turn(to: facing, turn: facingTurn)
     }
 
     final class Coordinator: NSObject, SCNSceneRendererDelegate, @unchecked Sendable {
@@ -78,6 +84,8 @@ struct AvatarSceneView: UIViewRepresentable {
         private var pendingYaw: Float = 0
         private var flingVelocity: Float?
         private var dragging = false
+        private var targetYaw: Float?
+        private var shownTurn = 0
 
         // Render thread only.
         private var yaw: Float = 0.25
@@ -136,7 +144,9 @@ struct AvatarSceneView: UIViewRepresentable {
             lock.lock()
             pendingYaw += dx * 0.011
             switch gesture.state {
-            case .began, .changed: dragging = true
+            case .began, .changed:
+                dragging = true
+                targetYaw = nil
             default:
                 dragging = false
                 flingVelocity = max(-9, min(9, Float(gesture.velocity(in: gesture.view).x) * 0.011))
@@ -148,6 +158,15 @@ struct AvatarSceneView: UIViewRepresentable {
             guard let camera = camera?.camera else { return }
             camera.fieldOfView = min(60, max(14, camera.fieldOfView / gesture.scale))
             gesture.scale = 1
+        }
+
+        @MainActor
+        func turn(to facing: Float?, turn: Int) {
+            guard turn != shownTurn else { return }
+            shownTurn = turn
+            lock.lock()
+            targetYaw = facing
+            lock.unlock()
         }
 
         // MARK: Content
@@ -235,11 +254,25 @@ struct AvatarSceneView: UIViewRepresentable {
                 flingVelocity = nil
             }
             let materials = swayMaterials
+            let target = targetYaw
             lock.unlock()
             let before = yaw
             if drag {
                 yaw += delta
                 yawVelocity = 0
+            } else if let target {
+                // Turned to a view: a critically damped spring to the nearest turn of it.
+                let goal = target + 2 * .pi * ((yaw - target) / (2 * .pi)).rounded()
+                let k: Float = 26
+                yawVelocity += (k * (goal - yaw) - 2 * k.squareRoot() * yawVelocity) * dt
+                yaw += yawVelocity * dt
+                if abs(goal - yaw) < 0.002, abs(yawVelocity) < 0.01 {
+                    yaw = goal
+                    yawVelocity = 0
+                    lock.lock()
+                    if targetYaw == target { targetYaw = nil }
+                    lock.unlock()
+                }
             } else {
                 yaw += delta + yawVelocity * dt
                 yawVelocity *= exp(-2.2 * dt)

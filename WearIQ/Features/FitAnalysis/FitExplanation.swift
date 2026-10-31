@@ -16,6 +16,21 @@ extension FitRegion {
         case .outseam: String(localized: "Outer leg length")
         }
     }
+
+    /// The body measurement the region is judged against.
+    var dimension: BodyDimension? {
+        switch self {
+        case .shoulder: .shoulderWidth
+        case .sleeve: .armLength
+        case .chest: .chest
+        case .waist: .waist
+        case .bodyLength: .torsoLength
+        case .hip: .hip
+        case .thigh: .thigh
+        case .inseam: .inseam
+        case .outseam: .outseam
+        }
+    }
 }
 
 extension FitVerdict {
