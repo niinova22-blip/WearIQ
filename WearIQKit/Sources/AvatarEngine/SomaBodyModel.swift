@@ -190,7 +190,8 @@ extension BodyModel {
             f <= upperShare ? start + (elbow - start) * (f / upperShare)
                 : elbow + (wrist - elbow) * ((f - upperShare) / max(1e-4, 1 - upperShare))
         }
-        let fractions: [Float] = [0.04] + (1...16).map { Float($0) / 16 }
+        var fractions: [Float] = [0.04]
+        for k in 1...16 { fractions.append(Float(k) / 16) }
         var centers: [Vec3] = [], radii: [Float] = []
         var last: Float = 0.028 * h
         for f in fractions {
@@ -222,7 +223,10 @@ extension BodyModel {
         let knee = model.centroid(rings.knee[i], v), ankle = model.centroid(rings.ankle[i], v)
         let top = Vec3(groin.x, max(groin.y, crotchY + 0.02 * h), groin.z)
         // Every ~5% of the way, thigh then shin; the knee is the 9th point.
-        let points = (0..<9).map { top + (knee - top) * (Float($0) / 8) } + (1...8).map { knee + (ankle - knee) * (Float($0) / 8) }
+        let thighStep = (knee - top) * (1 / 8), shinStep = (ankle - knee) * (1 / 8)
+        var points: [Vec3] = []
+        for k in 0..<9 { points.append(top + thighStep * Float(k)) }
+        for k in 1...8 { points.append(knee + shinStep * Float(k)) }
         var centers: [Vec3] = [], radii: [Float] = []
         var last = thighR
         for (j, p) in points.enumerated() {
