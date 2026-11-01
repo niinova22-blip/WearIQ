@@ -38,6 +38,7 @@ struct ProfileView: View {
                 NavigationLink("My 3D avatar") { AvatarEditorView() }
                 Button("Scan again") { showRescan = true }
                 NavigationLink("Measurement changes") { MeasurementTrackingView() }
+                NavigationLink("Measurement validation") { ValidationView() }
             } header: {
                 Text("Measurements")
             } footer: {

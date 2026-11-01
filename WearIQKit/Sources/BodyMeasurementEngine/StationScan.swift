@@ -21,13 +21,16 @@ public struct StationScan: Sendable {
 
     private var widths = [[BodyLevel: Double]](repeating: [:], count: StationScan.stationCount)
     public private(set) var captured: Set<Int> = []
+    /// Each stop's width profile, for measuring the same turn another way.
+    public private(set) var profiles: [Int: StopProfile] = [:]
 
     public init() {}
 
-    public mutating func record(_ levelWidths: [BodyLevel: Double], at station: Int) {
+    public mutating func record(_ levelWidths: [BodyLevel: Double], at station: Int, profile: StopProfile? = nil) {
         guard (0..<Self.stationCount).contains(station) else { return }
         widths[station] = levelWidths
         captured.insert(station)
+        if let profile { profiles[station] = profile } else { profiles[station] = nil }
     }
 
     public func count(_ level: BodyLevel) -> Int { widths.filter { $0[level] != nil }.count }

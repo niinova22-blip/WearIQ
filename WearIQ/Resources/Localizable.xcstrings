@@ -7990,6 +7990,386 @@
           }
         }
       }
+    },
+    "Validation mode": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doğrulama modu"
+          }
+        }
+      }
+    },
+    "Each body scan is also measured by the experimental engine (B) and kept here. Measure the same person with a tape right after, and enter the values. Your saved measurements always come from the current engine (A).": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her vücut taraması deneysel motorla (B) de ölçülür ve burada saklanır. Aynı kişiyi hemen ardından mezurayla ölçüp değerleri gir. Kaydedilen ölçülerin her zaman mevcut motordan (A) gelir."
+          }
+        }
+      }
+    },
+    "How to measure": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nasıl ölçülür"
+          }
+        }
+      }
+    },
+    "Same clothes as in the scan, standing relaxed, breathing out.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taramadaki kıyafetlerle, rahat dururken ve nefes verirken ölç."
+          }
+        }
+      }
+    },
+    "Chest at the nipples, waist at the navel, hips at the widest point of the seat, thigh just below the crotch, neck at its base, upper arm halfway to the elbow.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs meme hizasından, bel göbek hizasından, kalça basenin en geniş yerinden, uyluk kasığın hemen altından, boyun dibinden, üst kol dirseğe kadar olan yolun ortasından."
+          }
+        }
+      }
+    },
+    "At least 20–30 people; scanning someone twice shows how repeatable each engine is.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En az 20–30 kişi; aynı kişiyi iki kez taramak her motorun tekrarlanabilirliğini gösterir."
+          }
+        }
+      }
+    },
+    "Scans": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taramalar"
+          }
+        }
+      }
+    },
+    "No scans yet. Turn validation mode on and do a body scan.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz tarama yok. Doğrulama modunu aç ve bir vücut taraması yap."
+          }
+        }
+      }
+    },
+    "No tape yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezura girilmedi"
+          }
+        }
+      }
+    },
+    "%lld taped": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld mezura değeri"
+          }
+        }
+      }
+    },
+    "Export": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dışa aktar"
+          }
+        }
+      }
+    },
+    "Share as CSV": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CSV olarak paylaş"
+          }
+        }
+      }
+    },
+    "Share as JSON (with stop profiles)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON olarak paylaş (durak profilleriyle)"
+          }
+        }
+      }
+    },
+    "Measurement validation": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüm doğrulama"
+          }
+        }
+      }
+    },
+    "%lld scans of %lld people with tape values compared.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezura değeri olan %2$lld kişiden %1$lld tarama karşılaştırıldı."
+          }
+        }
+      }
+    },
+    "%lld synthetic record(s) left out.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sentetik kayıt hesaba katılmadı."
+          }
+        }
+      }
+    },
+    "No engine is chosen before %lld people; until then the current engine stays.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kişiye ulaşmadan motor seçilmez; o zamana kadar mevcut motor kalır."
+          }
+        }
+      }
+    },
+    "A error": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A hata"
+          }
+        }
+      }
+    },
+    "B error": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "B hata"
+          }
+        }
+      }
+    },
+    "Better": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha iyi"
+          }
+        }
+      }
+    },
+    "Results": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonuçlar"
+          }
+        }
+      }
+    },
+    "Error: mean absolute difference from the tape (bias in brackets: + reads large). Better: decided only with %lld+ people and a clear, consistent difference; otherwise the current engine stays.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hata: mezuradan ortalama mutlak fark (parantezde sapma: + büyük ölçüyor). Daha iyi: yalnızca %lld+ kişiyle ve net, tutarlı bir farkla karar verilir; yoksa mevcut motor kalır."
+          }
+        }
+      }
+    },
+    "%lld%% failed": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% başarısız"
+          }
+        }
+      }
+    },
+    "Average scan time: %lld s (the same turn for both engines)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ortalama tarama süresi: %lld sn (iki motor için aynı dönüş)"
+          }
+        }
+      }
+    },
+    "Underwear": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İç çamaşırı"
+          }
+        }
+      }
+    },
+    "Fitted clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar kıyafet"
+          }
+        }
+      }
+    },
+    "Everyday clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük kıyafet"
+          }
+        }
+      }
+    },
+    "Loose clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bol kıyafet"
+          }
+        }
+      }
+    },
+    "Participant code": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Katılımcı kodu"
+          }
+        }
+      }
+    },
+    "Device": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cihaz"
+          }
+        }
+      }
+    },
+    "Scan time": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarama süresi"
+          }
+        }
+      }
+    },
+    "Use a code, not a name. The same code for the same person makes their scans count as repeats.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İsim değil kod kullan. Aynı kişiye aynı kod verilirse taramaları tekrar olarak sayılır."
+          }
+        }
+      }
+    },
+    "Tape (cm) · A · B": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezura (cm) · A · B"
+          }
+        }
+      }
+    },
+    "A: current engine. B: silhouette fit. ◆ seen by the camera, ◇ from the body model, ○ from height and weight. The error is against your tape value.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A: mevcut motor. B: siluet oturtma. ◆ kameranın gördüğü, ◇ vücut modelinden, ○ boy ve kilodan. Hata, girdiğin mezura değerine göre."
+          }
+        }
+      }
+    },
+    "Engine B details": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motor B ayrıntıları"
+          }
+        }
+      }
+    },
+    "Delete this scan": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu taramayı sil"
+          }
+        }
+      }
+    },
+    "Delete this scan?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu tarama silinsin mi?"
+          }
+        }
+      }
+    },
+    "tape": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mezura"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

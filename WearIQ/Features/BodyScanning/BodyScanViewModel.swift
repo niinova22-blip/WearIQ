@@ -104,6 +104,8 @@ final class BodyScanViewModel {
     /// When the outline was last seen; a frame or two without it keeps the last one.
     private var lastReadingAt = Date.distantPast
     private var turnStart = Date()
+    /// When the first stop of the turn was asked for (retakes don't restart it).
+    private var scanBegan = Date()
     private var stationStart = Date()
     /// Arm span and shoulder separation at the front stop; later stops are judged against them.
     private var spanReference = 1.0
@@ -314,6 +316,7 @@ final class BodyScanViewModel {
         stillness.reset()
         turn = TurnState()
         turnStart = Date()
+        scanBegan = Date()
         stationStart = Date()
         spanReference = 1
         shoulderReference = nil
@@ -447,24 +450,31 @@ final class BodyScanViewModel {
                 if let image = camera.captureStill() { images.append(image) }
             }
             let stills = images
-            let precise = await Task.detached(priority: .userInitiated) { () -> [BodyLevel: Double]? in
-                let readings: [[BodyLevel: Double]] = stills.compactMap { image in
+            let precise = await Task.detached(priority: .userInitiated) { () -> (widths: [BodyLevel: Double], profile: StopProfile?)? in
+                var readings: [[BodyLevel: Double]] = []
+                // The stop's whole width profile too, for measuring the turn another way
+                // in validation mode; numbers only, no picture is kept.
+                var profiles: [StopProfile] = []
+                for image in stills {
                     guard let frame = VisionBodyAnalyzer().turnFrame(image, time: 0),
                           let reading = RotationScanAnalyzer().reading(frame, heightCm: heightCm, levelFractions: fractions),
-                          StopGuide.fullyVisible(reading) else { return nil }
-                    return reading.levels.mapValues(\.widthCm)
+                          StopGuide.fullyVisible(reading) else { continue }
+                    readings.append(reading.levels.mapValues(\.widthCm))
+                    if let profile = RotationScanAnalyzer().profile(frame, heightCm: heightCm, station: station) {
+                        profiles.append(profile)
+                    }
                 }
                 var widths: [BodyLevel: Double] = [:]
                 for level in BodyLevel.allCases {
                     let values = readings.compactMap { $0[level] }.sorted()
                     if !values.isEmpty { widths[level] = values[values.count / 2] }
                 }
-                return widths[.waist] != nil || widths[.hip] != nil ? widths : nil
+                return widths[.waist] != nil || widths[.hip] != nil ? (widths, StopProfile.median(profiles)) : nil
             }.value
             capturing = false
             turn.capturing = false
             guard case .turning = stage, turn.station == station else { return }
-            record(precise ?? fallback)
+            record(precise?.widths ?? fallback, profile: precise?.profile)
         }
     }
 
@@ -498,9 +508,9 @@ final class BodyScanViewModel {
         }
     }
 
-    private func record(_ widths: [BodyLevel: Double]) {
+    private func record(_ widths: [BodyLevel: Double], profile: StopProfile? = nil) {
         let station = turn.station
-        scan.record(widths, at: station)
+        scan.record(widths, at: station, profile: profile)
         turn.captured.insert(station)
         let measured = Set(scan.levels.filter { scan.isMeasured($0) })
         if !measured.subtracting(turn.measured).isEmpty { audio.play(.region) }
@@ -598,16 +608,39 @@ final class BodyScanViewModel {
         stage = .analyzing
         camera.onFrame = nil
 
+        let scanSeconds = Date().timeIntervalSince(scanBegan)
         Task {
             let outcome: Result<BodyProfile, Error>
+            var milliseconds = 0.0
             do {
                 let frontResult = try await front.value
                 let findings = clothingFindings
+                let clock = ContinuousClock()
+                let started = clock.now
                 outcome = await Task.detached(priority: .userInitiated) {
                     Result { try Self.measure(front: frontResult, scan: scan, basics: basics, findings: findings) }
                 }.value
+                let elapsed = clock.now - started
+                milliseconds = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
             } catch {
                 outcome = .failure(error)
+            }
+            if ValidationStore.isEnabled {
+                // Validation mode: the same turn measured by the experimental engine too,
+                // kept for comparing with a tape. What the app saves doesn't change.
+                let engineA = ValidationRun.EngineA(profile: try? outcome.get(), milliseconds: milliseconds,
+                                                    memoryMB: DeviceInfo.memoryFootprintMB)
+                let profiles = Array(scan.profiles.values)
+                let store = ValidationStore.shared
+                let participant = store.nextParticipant, device = DeviceInfo.model, lidar = DeviceInfo.hasLiDAR
+                // In the background: the result screen doesn't wait for it.
+                Task {
+                    let record = await Task.detached(priority: .utility) {
+                        ValidationRun.record(participant: participant, device: device, hasLiDAR: lidar, basics: basics,
+                                             engineA: engineA, profiles: profiles, scanSeconds: scanSeconds)
+                    }.value
+                    store.upsert(record)
+                }
             }
 
             // Photos are no longer needed once measured.

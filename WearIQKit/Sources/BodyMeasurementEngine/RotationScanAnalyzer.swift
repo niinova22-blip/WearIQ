@@ -150,6 +150,40 @@ public struct RotationScanAnalyzer: Sendable {
                             outline: outline(frame.mask, top: top, floor: floor))
     }
 
+    /// The stop as a width profile (see `StopProfile`): the run through the body's middle
+    /// on each torso row, and the legs below the crotch, in cm scaled by the person's
+    /// height in this frame. Nil when no person is visible.
+    public func profile(_ frame: RotationFrame, heightCm: Double, station: Int) -> StopProfile? {
+        guard let (top, floor) = verticalExtent(frame.mask), floor - top > frame.mask.height / 4 else { return nil }
+        let mask = frame.mask
+        let height = Double(floor - top)
+        let cm = heightCm / height
+        func row(_ fraction: Double) -> Int { top + Int((fraction * height).rounded()) }
+        // The body's middle: the hip joint when seen, else the widest run at the hips.
+        let hipRow = row(SilhouetteRows.torso.last ?? 0.5)
+        let center = Int((frame.centerX ?? Double(rowCenter(mask, y: hipRow) ?? -1)).rounded())
+        guard center >= 0 else { return nil }
+        let torso = SilhouetteRows.torso.map { f -> Double? in
+            let y = row(f)
+            guard let run = mask.run(inRow: y, containing: center) ?? nearestRun(mask, y: y, to: center),
+                  run.count >= minRowPixels else { return nil }
+            return Double(run.count) * cm
+        }
+        var legs: [[Double]] = [], outer: [Double?] = []
+        for f in SilhouetteRows.thigh {
+            let y = row(f)
+            // Runs near the middle (hands held out are far to the sides), specks left out.
+            let near = mask.runs(inRow: y).filter { run in
+                run.count >= max(minRowPixels, Int(0.02 * height))
+                    && abs((run.lowerBound + run.upperBound) / 2 - center) < Int(0.2 * height)
+            }
+            guard let first = near.first, let last = near.last else { legs.append([]); outer.append(nil); continue }
+            legs.append(near.count == 2 ? near.map { Double($0.count) * cm } : [])
+            outer.append(Double(last.upperBound - first.lowerBound) * cm)
+        }
+        return StopProfile(station: station, torso: torso, legs: legs, legsOuter: outer)
+    }
+
     /// The person's extent on about 100 evenly spaced rows; specks under 1% of the
     /// picture's width are left out of the spans.
     func outline(_ mask: BinaryMask, top: Int, floor: Int) -> [OutlineRow] {
