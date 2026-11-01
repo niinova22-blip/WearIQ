@@ -113,31 +113,37 @@ extension BodyModel {
     /// The length and shoulder verdicts that belong to a place on the garment, if any.
     private func region(_ shape: GarmentShape, _ r: Vec3, _ tag: Int) -> (FitTone, Float)? {
         let fit = shape.fit
+        let length = fit.shownLength
         switch fit.kind {
         case .trousers:
             guard tag > 0 else { return nil }
-            if fit.lengthDelta >= 1.5, r.y < ankleY + 0.005 { return (.long, 1) }
-            if fit.lengthDelta <= -1.5, r.y < shape.hemY + 0.04 { return (.short, 0.85) }
+            if length.delta >= length.threshold, r.y < ankleY + 0.005 { return (.long, 1) }
+            if length.delta <= -length.threshold, r.y < shape.hemY + 0.04 { return (.short, 0.85) }
             return nil
         case .top:
             if tag == 0 {
-                if fit.lengthDelta >= 2, r.y < regularHemY { return (.long, min(1, 0.6 + (regularHemY - r.y) / 0.05)) }
-                if fit.lengthDelta <= -2, r.y < shape.hemY + 0.04 { return (.short, 0.85) }
+                // Long: the fabric below where a top of this kind usually ends (or, when
+                // the garment is cut shorter than that, its lowest few centimetres).
+                let from = min(regularHemY, shape.hemY + 0.04)
+                if length.delta >= length.threshold, r.y < from { return (.long, min(1, 0.6 + (from - r.y) / 0.05)) }
+                if length.delta <= -length.threshold, r.y < shape.hemY + 0.04 { return (.short, 0.85) }
             }
             let i = r.x > 0 ? 0 : 1
             let arm = arms[i]
             let along = (r - arm.start).dot(arm.dir)
             if tag > 0, shape.longSleeves {
-                if fit.sleeveDelta >= 1.5, along > armLength + 0.01 { return (.long, 1) }
-                if fit.sleeveDelta <= -1.5, along > shape.sleeveReach - 0.04 { return (.short, 0.85) }
+                let sleeve = fit.shownSleeve
+                if sleeve.delta >= sleeve.threshold, along > min(armLength + 0.01, shape.sleeveReach - 0.04) { return (.long, 1) }
+                if sleeve.delta <= -sleeve.threshold, along > shape.sleeveReach - 0.04 { return (.short, 0.85) }
             }
             // Between the shoulder point and the seam: fabric hanging off the shoulder
             // (seam dropped) or a shoulder the garment doesn't reach (seam inside).
-            guard r.y > armpitY - 0.02 * h, abs(shape.dropped) >= 0.008 else { return nil }
+            let shoulder = fit.shownShoulderPerSide
+            guard r.y > armpitY - 0.02 * h, abs(shape.dropped) >= 0.008, abs(shoulder.delta) >= shoulder.threshold else { return nil }
             let a = armhole(i, r)
             let lo = min(0, shape.dropped), hi = max(0, shape.dropped)
             guard a >= lo - 0.004, a <= hi + 0.004 else { return nil }
-            return shape.dropped > 0 ? (.loose, 0.85) : (.tight, 0.85)
+            return shoulder.delta > 0 ? (.loose, 0.85) : (.tight, 0.85)
         }
     }
 
@@ -160,15 +166,18 @@ extension BodyModel {
         switch fit.kind {
         case .trousers:
             let waistband = (waistY + hipY) / 2
-            let waistTone: FitTone = switch report[.waist]?.tension {
-            case .tight?, .veryTight?, .slightlyTight?: .tight
-            case .loose?: .loose
-            default: .fits
-            }
+            let waistTone: FitTone = fit.judged.waist ?? {
+                switch report[.waist]?.tension {
+                case .tight?, .veryTight?, .slightlyTight?: return .tight
+                case .loose?: return .loose
+                default: return .fits
+                }
+            }()
             add(.waistband, tone: waistTone, delta: 0,
                 line: contour({ $0.y - (waistband - 0.006) }, parts: [0], mesh: mesh, tags: tags),
                 target: [], towards: Vec3(0.7, 0, 1))
-            let t = tone(fit.lengthDelta, 1.5, over: .long, under: .short)
+            let length = fit.shownLength
+            let t = tone(length.delta, length.threshold, over: .long, under: .short)
             let hems = mesh.positions.map(\.y).min() ?? 0
             var line: [Vec3] = [], target: [Vec3] = []
             for (i, leg) in legs.enumerated() {
@@ -177,14 +186,16 @@ extension BodyModel {
                     target += ring(center: Vec3(leg.ankle.x, ankleY, leg.ankle.z), axis: Vec3(0, 1, 0), cover: cover)
                 }
             }
-            add(.hem, tone: t, delta: fit.lengthDelta, line: line, target: target, towards: Vec3(1, 0, 0.6))
+            add(.hem, tone: t, delta: length.delta, line: line, target: target, towards: Vec3(1, 0, 0.6))
         case .top:
             // Shoulder seams: half the width difference each side.
-            let perSide = fit.shoulderDelta / 2
-            let shoulderTone = tone(perSide, 1, over: .loose, under: .tight)
+            let shoulder = fit.shownShoulderPerSide
+            let perSide = shoulder.delta
+            let shoulderTone = tone(perSide, shoulder.threshold, over: .loose, under: .tight)
             var seam: [Vec3] = [], seamTarget: [Vec3] = []
             var cuff: [Vec3] = [], cuffTarget: [Vec3] = []
-            let sleeveTone = shape.longSleeves ? tone(fit.sleeveDelta, 1.5, over: .long, under: .short) : .fits
+            let sleeve = fit.shownSleeve
+            let sleeveTone = shape.longSleeves ? tone(sleeve.delta, sleeve.threshold, over: .long, under: .short) : .fits
             for (i, arm) in arms.enumerated() {
                 let dir = arm.dir, dropped = shape.dropped
                 let pit = armpitY - 0.02 * h
@@ -203,14 +214,18 @@ extension BodyModel {
                 }
             }
             add(.shoulderSeam, tone: shoulderTone, delta: perSide, line: seam, target: seamTarget, towards: Vec3(1, 0.3, 0.4))
-            add(.sleeveEnd, tone: sleeveTone, delta: shape.longSleeves ? fit.sleeveDelta : 0, line: cuff, target: cuffTarget,
+            add(.sleeveEnd, tone: sleeveTone, delta: shape.longSleeves ? sleeve.delta : 0, line: cuff, target: cuffTarget,
                 towards: Vec3(1, -0.3, 0.5))
-            let hemTone = tone(fit.lengthDelta, 2, over: .long, under: .short)
+            let length = fit.shownLength
+            let hemTone = tone(length.delta, length.threshold, over: .long, under: .short)
             let hem = mesh.positions.indices.filter { tags[$0] == 0 }.map { mesh.positions[$0].y }.min() ?? 0
-            add(.hem, tone: hemTone, delta: fit.lengthDelta,
+            add(.hem, tone: hemTone, delta: length.delta,
                 line: contour({ $0.y - (hem + 0.006) }, parts: [0], mesh: mesh, tags: tags),
-                target: hemTone == .fits ? [] : ring(center: Vec3(0, regularHemY, torso.ring(at: regularHemY).center.z),
-                                                     axis: Vec3(0, 1, 0), cover: cover),
+                // Where the usual range ends: as far from the hem as the label says.
+                target: hemTone == .fits ? [] : {
+                    let y = fit.judged.length == nil ? regularHemY : hem + Float(length.delta / 100)
+                    return ring(center: Vec3(0, y, torso.ring(at: y).center.z), axis: Vec3(0, 1, 0), cover: cover)
+                }(),
                 towards: Vec3(0.6, 0, 1))
         }
         return out

@@ -7960,6 +7960,36 @@
           }
         }
       }
+    },
+    "Preparing your avatar…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avatarın hazırlanıyor…"
+          }
+        }
+      }
+    },
+    "Putting on size %@…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beden giydiriliyor…"
+          }
+        }
+      }
+    },
+    "This takes a few seconds.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu birkaç saniye sürebilir."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

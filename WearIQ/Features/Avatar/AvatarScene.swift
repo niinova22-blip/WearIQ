@@ -40,6 +40,11 @@ struct AvatarSceneView: UIViewRepresentable {
     /// changes; the garment swings as it turns.
     var facing: Float?
     var facingTurn = 0
+    /// The scene's height on screen and how much of its top and bottom other views
+    /// cover, in points: the camera frames the whole body in the space between them.
+    var viewHeight: CGFloat = 0
+    var coveredTop: CGFloat = 0
+    var coveredBottom: CGFloat = 0
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -56,6 +61,7 @@ struct AvatarSceneView: UIViewRepresentable {
         context.coordinator.update(avatar, revision: revision, fitColors: fitColors, frame: frame, labels: labels,
                                    model: labelModel, in: view)
         context.coordinator.turn(to: facing, turn: facingTurn)
+        context.coordinator.frameBody(height: avatar.body.maxY, viewHeight: viewHeight, top: coveredTop, bottom: coveredBottom)
         return view
     }
 
@@ -63,6 +69,7 @@ struct AvatarSceneView: UIViewRepresentable {
         context.coordinator.update(avatar, revision: revision, fitColors: fitColors, frame: frame, labels: labels,
                                    model: labelModel, in: view)
         context.coordinator.turn(to: facing, turn: facingTurn)
+        context.coordinator.frameBody(height: avatar.body.maxY, viewHeight: viewHeight, top: coveredTop, bottom: coveredBottom)
     }
 
     final class Coordinator: NSObject, SCNSceneRendererDelegate, @unchecked Sendable {
@@ -74,6 +81,7 @@ struct AvatarSceneView: UIViewRepresentable {
         private var camera: SCNNode?
         private var shownKey: String?
         private var placedCamera = false
+        private var framing: [Float] = []
         private weak var model: LandmarkLabels?
         /// Garment and line materials carrying the sway uniform.
         private var swayMaterials: [SCNMaterial] = []
@@ -245,6 +253,31 @@ struct AvatarSceneView: UIViewRepresentable {
                 view.pointOfView = camera
                 self.camera = camera
             }
+        }
+
+        /// Moves the camera so the whole figure, head to feet with a little room, fills
+        /// the part of the view nothing covers: the controls over the bottom of the scene
+        /// and the colour key over its top no longer hide the feet or the head.
+        @MainActor
+        func frameBody(height h: Float, viewHeight: CGFloat, top: CGFloat, bottom: CGFloat) {
+            guard let camera, h > 0, viewHeight > 1 else { return }
+            let key = [h, Float(viewHeight), Float(top), Float(bottom)]
+            guard key != framing else { return }
+            let first = framing.isEmpty
+            framing = key
+            let H = Float(viewHeight)
+            let band = max(0.4 * H, H - Float(top) - Float(bottom))
+            // World height the whole view shows, and where the free band's middle is.
+            let shown = h * 1.1 / (band / H)
+            let middle = (Float(top) + band / 2) / H
+            let centre = h * 0.5 + (middle - 0.5) * shown
+            let halfAngle: Float = 34 * .pi / 180 / 2
+            let distance = shown / 2 / tan(halfAngle)
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = first ? 0 : 0.3
+            camera.position = SCNVector3(0, centre + 0.05 * h, distance)
+            camera.look(at: SCNVector3(0, centre, 0))
+            SCNTransaction.commit()
         }
 
         // MARK: Motion
@@ -487,42 +520,56 @@ final class LandmarkLabels: ObservableObject {
 }
 
 /// The labels themselves: a ring on the point, a small jagged leader going outward,
-/// and the text; fit labels carry their tone's colour.
+/// and the text; fit labels carry their tone's colour. A label always stays on screen:
+/// it goes to whichever side has room and wraps onto a second line rather than run off
+/// the edge.
 struct LandmarkOverlay: View {
     @ObservedObject var model: LandmarkLabels
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(model.items) { item in
-                let sign: CGFloat = item.rightward ? 1 : -1
-                let end = CGPoint(x: item.point.x + sign * 40, y: item.point.y)
-                let color = item.tone?.color ?? .white
-                Circle()
-                    .stroke(color.opacity(0.9), style: StrokeStyle(lineWidth: item.tone == nil ? 1 : 2, dash: item.tone == nil ? [2, 2] : []))
-                    .frame(width: 9, height: 9)
-                    .position(item.point)
-                Self.leader(from: CGPoint(x: item.point.x + sign * 5, y: item.point.y), to: end)
-                    .stroke(color.opacity(0.75), style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
-                // Hung off a point that takes no room, so a long label can never widen
-                // the screen; it grows away from its leader.
-                Color.clear
-                    .frame(width: 0, height: 0)
-                    .overlay(alignment: item.rightward ? .leading : .trailing) {
-                        Text(item.text)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.black.opacity(0.55), in: Capsule())
-                            .overlay(Capsule().stroke(color.opacity(item.tone == nil ? 0 : 0.9), lineWidth: 1))
-                            .fixedSize()
-                    }
-                    .position(x: end.x + sign * 3, y: end.y)
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                ForEach(model.items) { item in
+                    label(item, width: geo.size.width)
+                }
             }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .clipped()
         .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func label(_ item: LandmarkLabels.Item, width: CGFloat) -> some View {
+        let margin: CGFloat = 6, leader: CGFloat = 34
+        let roomRight = width - item.point.x - leader - margin - 3
+        let roomLeft = item.point.x - leader - margin - 3
+        // Its own side unless that leaves too little room and the other side has more.
+        let rightward = item.rightward ? (roomRight >= 120 || roomRight >= roomLeft) : !(roomLeft >= 120 || roomLeft >= roomRight)
+        let sign: CGFloat = rightward ? 1 : -1
+        let room = max(60, min(240, rightward ? roomRight : roomLeft))
+        let end = CGPoint(x: item.point.x + sign * leader, y: item.point.y)
+        let color = item.tone?.color ?? .white
+        Circle()
+            .stroke(color.opacity(0.9), style: StrokeStyle(lineWidth: item.tone == nil ? 1 : 2, dash: item.tone == nil ? [2, 2] : []))
+            .frame(width: 9, height: 9)
+            .position(item.point)
+        Self.leader(from: CGPoint(x: item.point.x + sign * 5, y: item.point.y), to: end)
+            .stroke(color.opacity(0.75), style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
+        Text(item.text)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.white)
+            .lineLimit(2)
+            .minimumScaleFactor(0.85)
+            .multilineTextAlignment(rightward ? .leading : .trailing)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(color.opacity(item.tone == nil ? 0 : 0.9), lineWidth: 1))
+            // A box exactly as wide as the room on that side, the label hugging the
+            // leader's end: however long the text, it ends inside the screen.
+            .frame(width: room, alignment: rightward ? .leading : .trailing)
+            .position(x: end.x + sign * (3 + room / 2), y: end.y)
     }
 
     /// A zigzag with small teeth, then a short straight run.

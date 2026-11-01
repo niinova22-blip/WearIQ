@@ -29,9 +29,12 @@ extension Avatar.Landmark.Kind {
 /// charts give the ease directly; body charts describe the body a size suits, so the
 /// garment is taken as that body plus the usual ease for the fit (see EaseTable).
 enum AvatarFitMapper {
-    static func fit(spec: GarmentSpec, size: SizeEntry, body: BodyProfile) -> Avatar.GarmentFit {
+    /// With `regions` (the size-chart verdicts for this size), the avatar's colours,
+    /// lines and labels say what those verdicts say.
+    static func fit(spec: GarmentSpec, size: SizeEntry, body: BodyProfile, regions: [RegionFit] = []) -> Avatar.GarmentFit {
         let isTrousers = spec.category == .pants
         var fit = Avatar.GarmentFit(kind: isTrousers ? .trousers : .top(longSleeves: spec.category != .tshirt))
+        fit.judged = judged(regions, trousers: isTrousers)
         func diff(_ g: GarmentDimension, _ b: BodyDimension) -> Double? {
             guard let gv = size.values[g]?.cm, let bv = body[b]?.cm else { return nil }
             return gv - bv
@@ -64,6 +67,47 @@ enum AvatarFitMapper {
             }
         }
         return fit
+    }
+
+    /// The verdicts the avatar shows: how far each length is past the usual range, where
+    /// the shoulder seams sit, how the trouser waist sits. Nil where there's no verdict,
+    /// and the avatar judges by its own drape.
+    static func judged(_ regions: [RegionFit], trousers: Bool) -> Avatar.GarmentFit.Judged {
+        var j = Avatar.GarmentFit.Judged()
+        func by(_ r: FitRegion) -> RegionFit? { regions.first { $0.region == r && $0.verdict != .insufficientData } }
+        func length(_ r: RegionFit?) -> Double? {
+            guard let r else { return nil }
+            let amount = max(1, r.estimatedOffsetCm.map { ($0.lowerBound + $0.upperBound) / 2 } ?? 1)
+            switch r.verdict {
+            case .long: return amount
+            case .short: return -amount
+            default: return 0
+            }
+        }
+        if trousers {
+            j.length = length(by(.inseam) ?? by(.outseam))
+            if let w = by(.waist) {
+                switch w.verdict {
+                case .tight, .slightlyTight: j.waist = .tight
+                case .loose, .slightlyLoose: j.waist = .loose
+                default: j.waist = .fits
+                }
+            }
+        } else {
+            j.length = length(by(.bodyLength))
+            j.sleeve = length(by(.sleeve))
+            if let s = by(.shoulder) {
+                // Half the width difference falls on each side, as the verdict's own
+                // wording ("shoulder seams sit about 4 cm low") says.
+                switch s.verdict {
+                case .ideal: j.shoulderPerSide = 0
+                case .slightlyLoose, .loose: if let e = s.easeCm, e > 0 { j.shoulderPerSide = e / 2 }
+                case .slightlyTight, .tight: if let e = s.easeCm, e < 0 { j.shoulderPerSide = e / 2 }
+                default: break
+                }
+            }
+        }
+        return j
     }
 
     /// How the fabric stretches and drapes, from its composition when the product page
@@ -138,6 +182,14 @@ struct AvatarFitView: View {
     /// The view last asked for with the buttons under the avatar.
     @State private var facing: Float?
     @State private var facingTurn = 0
+    /// While a size or an outfit is being draped: the scene says so, so a wait of a few
+    /// seconds doesn't look like a frozen screen.
+    @State private var draping = true
+    /// The scene's height and what the colour key and the controls cover of it, for
+    /// framing the body in between.
+    @State private var sceneHeight: CGFloat = 0
+    @State private var legendBottom: CGFloat = 0
+    @State private var controlsHeight: CGFloat = 0
 
     /// A garment analysed earlier, worn together with this one.
     struct Companion: Equatable {
@@ -159,24 +211,37 @@ struct AvatarFitView: View {
                         ZStack {
                             if let avatar {
                                 AvatarSceneView(avatar: avatar, revision: revision, frame: frame,
-                                                labels: frame == nil ? labels(avatar) : [], labelModel: labelModel,
-                                                facing: facing, facingTurn: facingTurn)
+                                                labels: frame == nil && !draping ? labels(avatar) : [], labelModel: labelModel,
+                                                facing: facing, facingTurn: facingTurn,
+                                                viewHeight: sceneHeight, coveredTop: legendBottom, coveredBottom: controlsHeight)
                                 LandmarkOverlay(model: labelModel)
-                            } else {
-                                ProgressView("Draping the fabric…")
                             }
-                            VStack {
+                            VStack(spacing: 0) {
                                 legend.allowsHitTesting(false)
-                                Spacer()
-                                tailorCard.allowsHitTesting(false)
-                                viewButtons
-                                Label("Drag to turn", systemImage: "hand.draw")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.bottom, 6)
+                                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("avatarScene")).maxY } action: {
+                                        legendBottom = $0
+                                    }
+                                Spacer(minLength: 0)
+                                VStack(spacing: 0) {
+                                    tailorCard.allowsHitTesting(false)
+                                    viewButtons
+                                    Label("Drag to turn", systemImage: "hand.draw")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.bottom, 6)
+                                        .allowsHitTesting(false)
+                                }
+                                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { controlsHeight = $0 }
+                            }
+                            if draping || avatar == nil {
+                                loadingBadge
+                                    .transition(.opacity)
                                     .allowsHitTesting(false)
                             }
                         }
+                        .animation(.easeInOut(duration: 0.2), value: draping)
+                        .coordinateSpace(.named("avatarScene"))
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { sceneHeight = $0 }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .clipped()
                         .background(RadialGradient(colors: [Color(white: 0.32), Color(white: 0.1)], center: .center,
@@ -203,6 +268,31 @@ struct AvatarFitView: View {
 
     private var regions: [RegionFit] {
         analysis.sizes.first { $0.label == sizeLabel }?.regions.filter { $0.verdict != .insufficientData } ?? []
+    }
+
+    private var companionRegions: [RegionFit] {
+        guard let companion else { return [] }
+        return companion.analysis.sizes.first { $0.label == companion.size }?.regions.filter { $0.verdict != .insufficientData } ?? []
+    }
+
+    /// Said over the scene while the garments are cut and draped (a few seconds).
+    private var loadingBadge: some View {
+        VStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.large)
+                .tint(.white)
+            Text(avatar == nil ? String(localized: "Preparing your avatar…") : String(localized: "Putting on size \(sizeLabel)…"))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+            Text("This takes a few seconds.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.7))
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 16)
+        .background(.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .combine)
     }
 
     /// The colour key, over the top of the scene.
@@ -276,8 +366,15 @@ struct AvatarFitView: View {
     private func labels(_ avatar: Avatar) -> [SceneLabel] {
         avatar.layers.enumerated().flatMap { index, layer in
             let trousers = layer.fit.kind == .trousers
+            // The layers are this garment, then the one worn with it.
+            let verdicts = index == 0 ? regions : companionRegions
             return layer.fitLines.compactMap { line -> SceneLabel? in
-                guard let text = line.text(trousers: trousers) else { return nil }
+                var text = line.text(trousers: trousers)
+                // The waistband says the verdict in the panel's own words.
+                if line.kind == .waistband, let waist = verdicts.first(where: { $0.region == .waist }) {
+                    text = waist.verdict == .ideal ? nil : FitZone.waist.title + ": " + waist.verdictTitle
+                }
+                guard let text else { return nil }
                 return SceneLabel(id: "\(index)-\(line.kind.rawValue)", position: line.anchor, normal: line.normal,
                                   side: line.anchor.x >= 0 ? 1 : -1, text: text, tone: line.tone)
             }
@@ -299,13 +396,17 @@ struct AvatarFitView: View {
 
     /// Runs the cloth simulation off the main thread.
     private func drape(_ body: BodyProfile) async {
-        guard let m = Avatar.Measurements(body), let size = spec.sizes.first(where: { $0.label == sizeLabel }) else { return }
+        draping = true
+        guard let m = Avatar.Measurements(body), let size = spec.sizes.first(where: { $0.label == sizeLabel }) else {
+            draping = false
+            return
+        }
         var fits: [Avatar.GarmentFit] = []
-        var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body)
+        var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body, regions: regions)
         fit.fabric = AvatarFitMapper.fabric(spec: spec, material: material)
         fits.append(fit)
         if let companion, let size = companion.spec.sizes.first(where: { $0.label == companion.size }) {
-            var other = AvatarFitMapper.fit(spec: companion.spec, size: size, body: body)
+            var other = AvatarFitMapper.fit(spec: companion.spec, size: size, body: body, regions: companionRegions)
             other.fabric = AvatarFitMapper.fabric(spec: companion.spec, material: companion.material)
             fits.append(other)
         }
@@ -318,6 +419,7 @@ struct AvatarFitView: View {
         let worn = fits
         let draped = await Task.detached(priority: .userInitiated) { Avatar(m, garments: worn, detail: .animated) }.value
         guard !Task.isCancelled else { return }
+        draping = false
         frame = draped.layers.contains { !$0.frames.isEmpty } ? 0 : nil
         show(draped)
         await play()
@@ -475,7 +577,10 @@ struct AvatarFitView: View {
     }
 
     private func pick(_ item: SavedAnalysis) {
-        guard let spec = item.spec, let analysis = item.analysis else { return }
+        guard let spec = item.spec, let saved = item.analysis else { return }
+        // Judged again on the body as it is now: a saved verdict may predate a rescan or
+        // a fix in the fit engine, and the avatar is built from the current body.
+        let analysis = profiles.first?.profile.map { FitEngine().analyze(body: $0, garment: spec) } ?? saved
         let size = analysis.recommendedSize?.label ?? analysis.ranked.first?.label ?? spec.sizes.first?.label
         guard let size else { return }
         companion = Companion(key: item.productKey, name: item.productName ?? String(localized: "Garment"), spec: spec,

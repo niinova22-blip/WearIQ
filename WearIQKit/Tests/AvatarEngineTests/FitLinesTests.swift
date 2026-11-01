@@ -68,6 +68,42 @@ import Testing
         #expect(top.max()! < 0.05)
         #expect(hem.reduce(0, +) / Float(hem.count) > 0.3)
     }
+
+    /// The size-chart verdict wins over the drape's own reading: a tee whose length is
+    /// 8 cm past the middle of the usual range but only 2 cm past its end says 2 cm, and
+    /// a waist the verdict calls fine isn't drawn tight.
+    @Test func linesSayWhatTheVerdictSays() {
+        var tee = Avatar.GarmentFit(kind: .top(longSleeves: false))
+        tee.chestEase = 10; tee.waistEase = 12; tee.hipEase = 12; tee.lengthDelta = 8; tee.shoulderDelta = 4
+        tee.judged = .init(length: 2, shoulderPerSide: 0)
+        let top = Avatar(me, garment: tee, detail: .preview).layers[0]
+        let hem = top.fitLines.first { $0.kind == .hem }!
+        #expect(hem.tone == .long && hem.deltaCm == 2)
+        #expect(top.fitLines.first { $0.kind == .shoulderSeam }?.tone == .fits)
+        // The dropped shoulder isn't coloured loose when the verdict says it fits.
+        var unjudged = tee
+        unjudged.judged = .init()
+        #expect(share(top.mesh, .loose) < share(Avatar(me, garment: unjudged, detail: .preview).layers[0].mesh, .loose))
+        tee.judged = .init(length: 0)
+        #expect(Avatar(me, garment: tee, detail: .preview).layers[0].fitLines.first { $0.kind == .hem }?.tone == .fits)
+
+        var trousers = Avatar.GarmentFit(kind: .trousers)
+        trousers.waistEase = -4; trousers.hipEase = 7; trousers.thighEase = 9
+        trousers.judged = .init(waist: .fits)
+        let pants = Avatar(me, garment: trousers, detail: .preview).layers[0]
+        #expect(pants.fitLines.first { $0.kind == .waistband }?.tone == .fits)
+    }
+
+    /// Wide trouser legs hang off the body: whatever they stretch under their own weight
+    /// isn't tightness.
+    @Test func hangingLegsAreNotTight() {
+        var trousers = Avatar.GarmentFit(kind: .trousers)
+        trousers.waistEase = 3; trousers.hipEase = 12; trousers.thighEase = 20; trousers.fabric = .woven
+        let report = Avatar(me, garment: trousers, detail: .preview).fitReport
+        for zone in [FitZone.knee, .hem] {
+            #expect((report[zone]?.tension ?? ZoneTension.comfortable) <= ZoneTension.comfortable, "\(zone)")
+        }
+    }
 }
 
 extension Avatar { typealias Line = [Vec3] }

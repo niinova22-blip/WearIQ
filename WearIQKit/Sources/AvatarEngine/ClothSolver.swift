@@ -254,13 +254,20 @@ struct TriangleCloth {
             }
             if motion.recordEvery > 0, (step + 1) % motion.recordEvery == 0 { frames.append(positions) }
         }
-        // At rest: let the constraints settle what the last steps' weight left unresolved.
-        touching = [Bool](repeating: false, count: positions.count)
+        // At rest: let the constraints settle what the last steps' weight left unresolved,
+        // still against the body: settled without it, fabric pulled round the body sinks
+        // into the skin, and the skin shows through.
         resetLambdas()
-        for _ in 0..<(iterations * 8) { project() }
+        for _ in 0..<8 {
+            for _ in 0..<iterations { project() }
+            touching = [Bool](repeating: false, count: positions.count)
+            collide()
+        }
         if motion.recordEvery > 0 { frames.append(positions) }
-        contact = touching
-        gap = positions.indices.map { touching[$0] ? 0 : max(0, body(positions[$0]) - thickness) }
+        // Resting on the body: pushed back out of it just now, or lying within 1.5 mm of it.
+        let clearance = positions.indices.map { body(positions[$0]) - thickness }
+        contact = positions.indices.map { touching[$0] || clearance[$0] < 0.0015 }
+        gap = positions.indices.map { contact[$0] ? 0 : max(0, clearance[$0]) }
 
         // The most stretched edge at each vertex: a garment pulled round the body
         // stretches across, not along.

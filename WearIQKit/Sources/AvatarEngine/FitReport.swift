@@ -67,18 +67,25 @@ extension BodyModel {
         }
     }
 
-    func report(_ cloth: TriangleCloth, tags: [Int], fit: Avatar.GarmentFit, fabric: Fabric) -> [FitZone: ZoneReport] {
+    func report(_ cloth: TriangleCloth, contact pressing: [Bool], tags: [Int], fit: Avatar.GarmentFit, fabric: Fabric) -> [FitZone: ZoneReport] {
         var members: [FitZone: [Int]] = [:]
         for i in cloth.rest.indices {
             members[zone(of: cloth.rest[i], part: tags[i], kind: fit.kind), default: []].append(i)
         }
         var out: [FitZone: ZoneReport] = [:]
         for (zone, ids) in members where ids.count >= 6 {
-            let stretch = ids.map { Double(cloth.stretch[$0]) }.sorted()
-            let p90 = stretch[min(stretch.count - 1, Int(Double(stretch.count) * 0.9))]
+            // Only fabric held against the body is pulled by it: loose fabric stretches a
+            // little under its own weight (a trouser leg hanging from the seat), which is
+            // no tightness. As in the fit map, which colours only touching fabric tight.
+            // A trouser hem resting on the foot isn't a fit problem either (no shoes).
+            let trousers: Bool = if case .trousers = fit.kind { true } else { false }
+            let touching = ids.filter { pressing[$0] && !(trousers && cloth.rest[$0].y < ankleY + 0.015) }
+            let stretch = touching.map { Double(cloth.stretch[$0]) }.sorted()
+            let p90 = touching.count * 10 >= ids.count && !stretch.isEmpty
+                ? stretch[min(stretch.count - 1, Int(Double(stretch.count) * 0.9))] : 0
             // The first 0.8% is the mesh settling, not the fabric pulling (as in the fit map).
             let used = max(0, p90 - 0.008) / Double(fabric.stretchLimit)
-            let contact = Double(ids.filter { cloth.contact[$0] }.count) / Double(ids.count)
+            let contact = Double(touching.count) / Double(ids.count)
             let gaps = ids.filter { !cloth.contact[$0] }.map { Double(cloth.gap[$0]) * 100 }.sorted()
             let gap = gaps.isEmpty ? 0 : gaps[gaps.count / 2]
             var length: Double?

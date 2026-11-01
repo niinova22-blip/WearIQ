@@ -111,8 +111,44 @@ public struct Avatar: Sendable {
         public var shoulderDelta: Double = 0
         /// The fabric; without one, tops drape as a plain knit and trousers as a woven.
         public var fabric: Fabric?
+        /// What the size-chart check concluded, where it concluded something. The drape
+        /// keeps the garment's real dimensions; the colours, lines and labels say what
+        /// this says, so the avatar and the verdicts beside it never disagree.
+        public var judged = Judged()
+
+        /// Verdicts from the size-chart check. Lengths are how far beyond the usual
+        /// range the garment is, cm (+ long, − short, 0 within it); the shoulder is how
+        /// far each seam sits from the shoulder point (+ down the arm, − inside it).
+        public struct Judged: Equatable, Sendable {
+            public var length: Double?
+            public var sleeve: Double?
+            public var shoulderPerSide: Double?
+            public var waist: FitTone?
+
+            public init(length: Double? = nil, sleeve: Double? = nil, shoulderPerSide: Double? = nil, waist: FitTone? = nil) {
+                self.length = length
+                self.sleeve = sleeve
+                self.shoulderPerSide = shoulderPerSide
+                self.waist = waist
+            }
+        }
 
         public init(kind: Kind) { self.kind = kind }
+
+        /// The length to colour and label by, and how far past "usual" it must be to count.
+        var shownLength: (delta: Double, threshold: Double) {
+            if let j = judged.length { return (j, 0.5) }
+            if case .trousers = kind { return (lengthDelta, 1.5) }
+            return (lengthDelta, 2)
+        }
+
+        var shownSleeve: (delta: Double, threshold: Double) {
+            judged.sleeve.map { ($0, 0.5) } ?? (sleeveDelta, 1.5)
+        }
+
+        var shownShoulderPerSide: (delta: Double, threshold: Double) {
+            judged.shoulderPerSide.map { ($0, 0.5) } ?? (shoulderDelta / 2, 1)
+        }
 
         var resolvedFabric: Fabric {
             if let fabric { return fabric }
@@ -432,7 +468,10 @@ extension BodyModel {
         var mesh: Mesh
         var seams: [Vec3]
         var anchors: [Avatar.Anchor: Vec3]
-        /// The garment as cut, as a distance field.
+        /// The space the draped garment takes up, as a distance field: its cut, and
+        /// wherever it covers the body at least the skin plus the fabric (a garment cut
+        /// smaller than the body is stretched out over it). What goes on over it rests
+        /// on this.
         var cut: (Vec3) -> Float
         var report: [FitZone: ZoneReport]
         var frames: [[Vec3]] = []
@@ -621,8 +660,13 @@ extension BodyModel {
         }
         cloth.drape(body: rests, fabric: fabric, pinned: pinned, motion: motion)
         mesh.positions = cloth.positions
-        mesh.strain = fitValues(stretch: cloth.stretch, contact: cloth.contact, fabric: fabric, neighbours: neighbours)
-        let report = self.report(cloth, tags: tags, fit: fit, fabric: fabric)
+        // Tightness is the body pressing on the fabric. Over another garment, a top
+        // stretched round the trousers' loose fabric isn't tight: that fabric gives.
+        let pressing = under == nil ? cloth.contact : cloth.positions.indices.map { i in
+            cloth.contact[i] && self.distance(cloth.positions[i]) - margin - thickness < 0.004
+        }
+        mesh.strain = fitValues(stretch: cloth.stretch, contact: pressing, fabric: fabric, neighbours: neighbours)
+        let report = self.report(cloth, contact: pressing, tags: tags, fit: fit, fabric: fabric)
         if case .trousers = fit.kind {
             // A hem resting on the shoe isn't a fit problem; the avatar has no shoes.
             for i in mesh.strain.indices where cloth.rest[i].y < ankleY + 0.015 { mesh.strain[i] = min(mesh.strain[i], 0.5) }
@@ -663,7 +707,7 @@ extension BodyModel {
         }
 
         (mesh.tones, mesh.toneWeight) = tones(shape, rest: cloth.rest, tags: tags, stretch: cloth.stretch,
-                                              contact: cloth.contact, gap: cloth.gap, fabric: fabric,
+                                              contact: pressing, gap: cloth.gap, fabric: fabric,
                                               neighbours: neighbours)
         mesh.sway = sway(shape, rest: cloth.rest, tags: tags, gap: cloth.gap, pinnedAbove: pinnedAbove, fabric: fabric)
         let cover: (Vec3) -> Float = under.map { inner in { p in min(cut(p), inner(p)) } } ?? cut
@@ -672,7 +716,15 @@ extension BodyModel {
         if case .trousers = fit.kind, let lowest = mesh.positions.filter({ $0.x > 0 }).min(by: { $0.y < $1.y }) {
             anchors[.hem] = Vec3(anchors[.hem]?.x ?? lowest.x, lowest.y, 0)
         }
-        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: cut, report: report, frames: frames, lines: lines)
+        // Over its height, the skin it covers plus the margin and the fabric; the gap
+        // keeps whatever goes over it from resting in the same place.
+        let top: Float = if case .trousers = fit.kind { (waistY + hipY) / 2 } else { necklineTop }
+        let bottom = shape.hemY
+        let covered = { (p: Vec3) -> Float in
+            max(self.distance(p) - margin - thickness - 0.002, p.y - top, bottom - p.y)
+        }
+        let shell = { (p: Vec3) -> Float in min(cut(p), covered(p)) }
+        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: shell, report: report, frames: frames, lines: lines)
     }
 
     /// Stitch lines where the garment has them, as dash segments slightly off the

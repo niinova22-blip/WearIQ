@@ -111,4 +111,23 @@ import Testing
         shirt.chestEase = 18; shirt.waistEase = 22; shirt.hipEase = 22; shirt.sleeveDelta = 5; shirt.lengthDelta = 6
         render(Avatar(me, garment: shirt), yaw: -0.4, fitMap: true, name: "shirt_map")
     }
+    /// The outfit from the device screenshots: a slim tee with wide shoulders over trousers.
+    @Test func screenshotOutfit() {
+        guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
+        var tee = Avatar.GarmentFit(kind: .top(longSleeves: false))
+        tee.chestEase = 5; tee.waistEase = 8; tee.hipEase = 8; tee.shoulderDelta = 9; tee.lengthDelta = 8
+        tee.fabric = .knit
+        for (label, waist) in [("33", 3.0), ("28", -7.0)] {
+            var pants = Avatar.GarmentFit(kind: .trousers)
+            pants.waistEase = waist; pants.hipEase = 7; pants.thighEase = 9; pants.lengthDelta = 2
+            let p = Avatar(me, garment: pants)
+            render(p, yaw: .pi, fitMap: true, name: "shot_pants\(label)_back")
+            render(p, yaw: 0, fitMap: true, name: "shot_pants\(label)_front")
+            print("zones \(label):", p.fitReport.map { "\($0.key) \($0.value.tension) \(Int($0.value.stretchPercent))% c\(Int($0.value.contactShare * 100))" }.sorted())
+            let o = Avatar(me, garments: [tee, pants])
+            render(o, yaw: 0, fitMap: true, name: "shot_outfit\(label)_front")
+            render(o, yaw: -.pi / 2, fitMap: true, name: "shot_outfit\(label)_side")
+            render(o, yaw: .pi, fitMap: true, name: "shot_outfit\(label)_back")
+        }
+    }
 }
