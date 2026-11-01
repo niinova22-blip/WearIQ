@@ -307,8 +307,14 @@ public enum GarmentClassifier {
     public static func category(from text: String) -> GarmentCategory? {
         let t = SizeChartParser.fold(text)
         let rules: [(GarmentCategory, [String])] = [
-            (.pants, ["pantolon", "jean", "kot ", "chino", "trouser", "pants", "jogger", "esofman alti"]),
-            (.jacket, ["ceket", "mont", "blazer", "jacket", "coat", "kaban", "parka"]),
+            // Most specific first: "elbise" before "gomlek" (a shirt dress is a dress),
+            // "palto" and "trenchcoat" before "coat" in "coat"-less jackets.
+            (.shirt, ["dress shirt"]),
+            (.dress, ["elbise", "dress", "abiye"]),
+            (.skirt, ["etek", "skirt"]),
+            (.pants, ["pantolon", "jean", "kot ", "chino", "trouser", "pants", "jogger", "esofman alti", "tayt", "legging"]),
+            (.coat, ["palto", "kaban", "trenckot", "trenchcoat", "trench", "overcoat", "parka", "pardesu", "coat"]),
+            (.jacket, ["ceket", "mont", "blazer", "jacket", "yelek", "hirka", "cardigan"]),
             (.tshirt, ["t-shirt", "tisort", "tshirt", "tee", "polo"]),
             (.shirt, ["gomlek", "shirt", "bluz", "blouse"]),
         ]

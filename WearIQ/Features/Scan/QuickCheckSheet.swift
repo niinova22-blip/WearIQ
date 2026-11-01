@@ -117,6 +117,9 @@ extension GarmentCategory {
         case .tshirt: "tshirt.fill"
         case .jacket: "jacket"
         case .pants: "figure.walk"
+        case .coat: "coat"
+        case .dress: "figure.stand.dress"
+        case .skirt: "figure.stand.dress"
         }
     }
 }

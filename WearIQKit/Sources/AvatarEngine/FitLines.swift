@@ -99,7 +99,7 @@ extension BodyModel {
                 weights[i] = min(1, 0.65 + max(0, used - 0.6))
                 continue
             }
-            if used >= (verdict == nil ? 0.6 : 1), contact[i] {
+            if used >= (verdict == nil ? 0.6 : 1), contact[i], stretchCounts(part: tag, kind: kind) {
                 tones[i] = .tight
                 weights[i] = min(1, 0.6 + (used - 0.6))
                 continue
@@ -109,7 +109,7 @@ extension BodyModel {
                 weights[i] = weight
                 continue
             }
-            guard let threshold = Self.looseEase(zone, kind) else { continue }
+            guard let threshold = Self.looseEase(zone, kind, style: shape.fit.style) else { continue }
             let e = ease[i]
             switch verdict {
             case .loose?:
@@ -148,11 +148,15 @@ extension BodyModel {
             if length.delta >= length.threshold, r.y < ankleY + 0.005 { return (.long, 1) }
             if length.delta <= -length.threshold, r.y < shape.hemY + 0.04 { return (.short, 0.85) }
             return nil
+        case .skirt:
+            if length.delta >= length.threshold, r.y < min(regularHem(fit), shape.hemY + 0.04) { return (.long, 0.9) }
+            if length.delta <= -length.threshold, r.y < shape.hemY + 0.04 { return (.short, 0.85) }
+            return nil
         case .top:
             if tag == 0 {
                 // Long: the fabric below where a top of this kind usually ends (or, when
                 // the garment is cut shorter than that, its lowest few centimetres).
-                let from = min(regularHemY, shape.hemY + 0.04)
+                let from = min(regularHem(fit), shape.hemY + 0.04)
                 if length.delta >= length.threshold, r.y < from { return (.long, min(1, 0.6 + (from - r.y) / 0.05)) }
                 if length.delta <= -length.threshold, r.y < shape.hemY + 0.04 { return (.short, 0.85) }
             }
@@ -174,13 +178,15 @@ extension BodyModel {
     /// there (the fit engine's regular ranges: chest 9–16, a top's waist 12–19, trouser
     /// waist up to about 4, seat 4–11, thigh 6–12). Nil where looseness isn't judged:
     /// shoulders, sleeves, knees and hems hang as they're cut.
-    static func looseEase(_ zone: FitZone, _ kind: Avatar.GarmentFit.Kind) -> Float? {
-        switch (kind, zone) {
-        case (.trousers, .waist): 5
-        case (.trousers, .hip): 12
+    static func looseEase(_ zone: FitZone, _ kind: Avatar.GarmentFit.Kind, style: Avatar.GarmentFit.Style = .plain) -> Float? {
+        // A jacket or coat goes over other clothes and is cut with that much more room.
+        let over: Float = style.isOuter ? 8 : 0
+        return switch (kind, zone) {
+        case (.trousers, .waist), (.skirt, .waist): 5
+        case (.trousers, .hip), (.skirt, .hip): 12
         case (.trousers, .thigh): 13
-        case (.top, .chest), (.top, .back): 17
-        case (.top, .waist), (.top, .abdomen), (.top, .hip): 19
+        case (.top, .chest), (.top, .back): 17 + over
+        case (.top, .waist), (.top, .abdomen), (.top, .hip): 19 + over
         default: nil
         }
     }
@@ -225,6 +231,19 @@ extension BodyModel {
                 }
             }
             add(.hem, tone: t, delta: length.delta, line: line, target: target, towards: Vec3(1, 0, 0.6))
+        case .skirt:
+            let waistband = (waistY + hipY) / 2
+            add(.waistband, tone: fit.judged.waist ?? .fits, delta: 0,
+                line: contour({ $0.y - (waistband - 0.006) }, parts: [0], mesh: mesh, tags: tags),
+                target: [], towards: Vec3(0.7, 0, 1))
+            let length = fit.shownLength
+            let t = tone(length.delta, length.threshold, over: .long, under: .short)
+            let hem = mesh.positions.map(\.y).min() ?? 0
+            let middle = torso.ring(at: hipY).center
+            add(.hem, tone: t, delta: length.delta,
+                line: contour({ $0.y - (hem + 0.006) }, parts: [0], mesh: mesh, tags: tags),
+                target: t == .fits ? [] : ring(center: Vec3(middle.x, regularHem(fit), middle.z), axis: Vec3(0, 1, 0), cover: cover),
+                towards: Vec3(0.6, 0, 1))
         case .top:
             // Shoulder seams: half the width difference each side.
             let shoulder = fit.shownShoulderPerSide
@@ -261,7 +280,7 @@ extension BodyModel {
                 line: contour({ $0.y - (hem + 0.006) }, parts: [0], mesh: mesh, tags: tags),
                 // Where the usual range ends: as far from the hem as the label says.
                 target: hemTone == .fits ? [] : {
-                    let y = fit.judged.length == nil ? regularHemY : hem + Float(length.delta / 100)
+                    let y = fit.judged.length == nil ? regularHem(fit) : hem + Float(length.delta / 100)
                     return ring(center: Vec3(0, y, torso.ring(at: y).center.z), axis: Vec3(0, 1, 0), cover: cover)
                 }(),
                 towards: Vec3(0.6, 0, 1))

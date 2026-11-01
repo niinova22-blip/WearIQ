@@ -4,6 +4,7 @@ import WearIQCore
 
 struct BodyScanView: View {
     @State private var model: BodyScanViewModel
+    @Environment(\.scenePhase) private var scenePhase
     let onFinished: (BodyProfile) -> Void
     let onManualEntry: () -> Void
 
@@ -59,6 +60,13 @@ struct BodyScanView: View {
         }
         .task { await model.start() }
         .onDisappear { model.stop() }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background: model.suspend()
+            case .active: Task { await model.resume() }
+            default: break
+            }
+        }
         .onChange(of: model.stage) { _, stage in
             if stage == .finished, let profile = model.result { onFinished(profile) }
         }

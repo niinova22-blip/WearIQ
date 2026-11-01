@@ -1,5 +1,6 @@
 import AVFoundation
 import CryptoKit
+import UIKit
 
 /// Voice and sound cues for the hands-free scan.
 ///
@@ -140,7 +141,9 @@ final class ScanAudio {
     }
 
     private func speak(_ text: String) {
-        ensureRunning()
+        // A player started on a stopped engine raises an exception that ends the app;
+        // the engine can't run while the app is in the background.
+        guard ensureRunning() else { return }
         silenceSpeech()
         if let clips = ScanVoice.clips(for: text) {
             var seconds = 0.0
@@ -183,8 +186,7 @@ final class ScanAudio {
     }
 
     func play(_ cue: Cue) {
-        guard isEnabled else { return }
-        ensureRunning()
+        guard isEnabled, ensureRunning() else { return }
         guard let buffer = Self.render(cue, format: toneFormat) else { return }
         tonePlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
         if !tonePlayer.isPlaying { tonePlayer.play() }
@@ -209,15 +211,20 @@ final class ScanAudio {
         speakingUntil = .distantPast
     }
 
-    private func ensureRunning() {
-        guard !engine.isRunning else { return }
+    /// Starts the engine if it stopped (an interruption, a route change); false if it
+    /// can't run now, as in the background. Nothing may be played then.
+    @discardableResult
+    private func ensureRunning() -> Bool {
+        if engine.isRunning { return true }
+        guard UIApplication.shared.applicationState != .background else { return false }
         try? AVAudioSession.sharedInstance().setActive(true)
         engine.prepare()
         try? engine.start()
+        return engine.isRunning
     }
 
     private func schedule(_ buffer: AVAudioPCMBuffer, token: Int) {
-        guard let converted = convert(buffer) else { return }
+        guard engine.isRunning, let converted = convert(buffer) else { return }
         speechPlayer.scheduleBuffer(converted, at: nil, options: [], completionHandler: nil)
         if !speechPlayer.isPlaying { speechPlayer.play() }
         let seconds = Double(converted.frameLength) / speechFormat.sampleRate

@@ -68,6 +68,13 @@ public enum StandardSizeCharts {
         case .shirt?, .jacket?:
             lengths[.bodyLength] = 0.262 * h
             lengths[.sleeveLength] = 0.3375 * h
+        case .coat?:
+            // Above the knee on the model: shoulder to knee less a hand's width.
+            lengths[.bodyLength] = 0.5 * h
+            lengths[.sleeveLength] = 0.3375 * h
+        case .dress?, .skirt?:
+            // A dress's or skirt's length is its style; without a stated one, none.
+            break
         case nil: break
         }
         for i in chart.sizes.indices {

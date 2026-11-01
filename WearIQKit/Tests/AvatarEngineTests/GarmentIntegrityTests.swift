@@ -48,6 +48,30 @@ import Testing
         #expect(stray.isEmpty, "open edge away from the neck, hem and cuffs at \(stray.prefix(3).map { "(\($0.x), \($0.y), \($0.z))" })")
     }
 
+    /// A skirt, a coat and a dress hang round both legs: open only at the waist or neck,
+    /// the hem and the cuffs.
+    @Test(arguments: ["skirt", "coat", "dress"])
+    func longGarmentsOpenOnlyAtTheirEdges(_ name: String) {
+        var f: Avatar.GarmentFit
+        switch name {
+        case "skirt": f = Avatar.GarmentFit(kind: .skirt); f.waistEase = 1; f.hipEase = 10
+        case "coat": f = Avatar.GarmentFit(kind: .top(longSleeves: true)); f.style = .coat; f.chestEase = 20; f.waistEase = 24; f.hipEase = 26
+        default: f = Avatar.GarmentFit(kind: .top(longSleeves: false)); f.style = .dress; f.chestEase = 8; f.waistEase = 6; f.hipEase = 12
+        }
+        let model = BodyModel.make(user)
+        let mesh = Avatar(user, garment: f, detail: .preview).layers[0].mesh
+        let lowest = mesh.positions.map(\.y).min() ?? 0
+        // It reaches below the crotch, round both legs.
+        #expect(lowest < model.crotchY - 0.1)
+        let waistband = (model.waistY + model.hipY) / 2
+        let stray = Self.openVertices(mesh).filter { p in
+            guard p.y > lowest + 0.06, abs(p.x) < model.chest.0 + 0.04 else { return false }
+            if f.kind == .skirt { return abs(p.y - waistband) > 0.03 }
+            return model.neckline.normal.dot(p) < model.neckline.offset - 0.03
+        }
+        #expect(stray.isEmpty, "\(name): open edge at \(stray.prefix(3).map { "(\($0.x), \($0.y), \($0.z))" })")
+    }
+
     /// The box-clipping hole, put back: with the old box (the body's bounds only) very
     /// loose trousers did open at the back. Kept as a check that the test can see it.
     @Test func looseSeatStaysClosedAtTheBack() {

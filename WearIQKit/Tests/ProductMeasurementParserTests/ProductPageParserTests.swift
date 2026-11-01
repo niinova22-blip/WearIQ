@@ -88,6 +88,17 @@ import WearIQCore
         #expect(info.category == .jacket)
     }
 
+    @Test func categoriesFromTheName() {
+        #expect(GarmentClassifier.category(from: "Kadın Yün Karışımlı Uzun Palto") == .coat)
+        #expect(GarmentClassifier.category(from: "Kaşe Kaban") == .coat)
+        #expect(GarmentClassifier.category(from: "Erkek Trençkot") == .coat)
+        #expect(GarmentClassifier.category(from: "Slim Fit Blazer Ceket") == .jacket)
+        #expect(GarmentClassifier.category(from: "Gömlek Elbise") == .dress)
+        #expect(GarmentClassifier.category(from: "Midi Pileli Etek") == .skirt)
+        #expect(GarmentClassifier.category(from: "Pamuklu Bluz") == .shirt)
+        #expect(GarmentClassifier.category(from: "Men's Oxford Dress Shirt") == .shirt)
+    }
+
     @Test func compositionStretch() {
         #expect(GarmentClassifier.stretch(fromComposition: "100% Cotton") == FabricStretch.none)
         #expect(GarmentClassifier.stretch(fromComposition: "98% cotton, 2% elastane") == .low)

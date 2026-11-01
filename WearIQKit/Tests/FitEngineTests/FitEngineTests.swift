@@ -96,6 +96,29 @@ private let regularShirt = shirt([
         #expect(a.sizes[1].region(.inseam)?.verdict == .long) // +5 vs. max +1
         #expect(a.recommendedSize?.label == "34")
     }
+
+    /// A skirt is sized by its waist and has to pass the hips; it has no legs to judge.
+    @Test func skirtWaistAndHips() {
+        let skirt = GarmentSpec(category: .skirt, chartKind: .garment, sizes: [
+            SizeEntry(label: "38", values: [.waist: m(79), .hip: m(102), .bodyLength: m(55)]),
+            SizeEntry(label: "40", values: [.waist: m(87), .hip: m(108), .bodyLength: m(56)]),
+        ])
+        let a = FitEngine().analyze(body: body, garment: skirt)
+        #expect(Set(a.sizes[0].regions.map(\.region)) == [.waist, .hip])
+        #expect(a.sizes[0].region(.waist)?.verdict == .tight)
+        #expect(a.recommendedSize?.label == "40")
+    }
+
+    /// A coat is cut to go over other clothes: a chest that would be loose in a shirt fits.
+    @Test func coatIsRoomierThanAShirt() {
+        func spec(_ c: GarmentCategory) -> GarmentSpec {
+            GarmentSpec(category: c, chartKind: .garment, sizes: [SizeEntry(label: "M", values: [.chest: m(120)])])
+        }
+        let shirt = FitEngine().analyze(body: body, garment: spec(.shirt)).sizes[0].region(.chest)?.verdict
+        let coat = FitEngine().analyze(body: body, garment: spec(.coat)).sizes[0].region(.chest)?.verdict
+        #expect(shirt != .ideal)
+        #expect(coat == .ideal)
+    }
 }
 
 @Suite struct MissingData {

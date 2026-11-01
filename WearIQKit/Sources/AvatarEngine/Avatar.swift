@@ -76,11 +76,14 @@ public struct Avatar: Sendable {
         public var shoulderWidth: Double
         public var armLength: Double
         public var inseam: Double
+        /// Shapes the bust; nil is a body between the two.
+        public var sex: BodySex?
 
         public init(height: Double, chest: Double, waist: Double, hip: Double, thigh: Double,
-                    shoulderWidth: Double, armLength: Double, inseam: Double) {
+                    shoulderWidth: Double, armLength: Double, inseam: Double, sex: BodySex? = nil) {
             self.height = height; self.chest = chest; self.waist = waist; self.hip = hip; self.thigh = thigh
             self.shoulderWidth = shoulderWidth; self.armLength = armLength; self.inseam = inseam
+            self.sex = sex
         }
 
         /// From a body profile; missing values fall back to typical stature fractions.
@@ -89,7 +92,7 @@ public struct Avatar: Sendable {
             self.init(height: h, chest: p[.chest]?.cm ?? 0.55 * h, waist: p[.waist]?.cm ?? 0.48 * h,
                       hip: p[.hip]?.cm ?? 0.55 * h, thigh: p[.thigh]?.cm ?? 0.32 * h,
                       shoulderWidth: p[.shoulderWidth]?.cm ?? 0.23 * h, armLength: p[.armLength]?.cm ?? 0.34 * h,
-                      inseam: p[.inseam]?.cm ?? 0.47 * h)
+                      inseam: p[.inseam]?.cm ?? 0.47 * h, sex: p.sex)
         }
     }
 
@@ -99,9 +102,33 @@ public struct Avatar: Sendable {
         public enum Kind: Equatable, Sendable {
             case top(longSleeves: Bool)
             case trousers
+            /// From the waist down over both legs, with no legs of its own.
+            case skirt
+
+            /// Worn from the waist down, under a top.
+            public var isBottom: Bool {
+                switch self {
+                case .trousers, .skirt: true
+                case .top: false
+                }
+            }
+        }
+
+        /// What kind of top, where it differs from a plain T-shirt or shirt: a jacket or
+        /// coat is a heavier woven, open down the front, with lapels; a coat and a dress
+        /// hang on past the hips over both legs, flaring out a little.
+        public enum Style: Equatable, Sendable {
+            case plain, jacket, coat, dress
+
+            var isOuter: Bool { self == .jacket || self == .coat }
         }
 
         public var kind: Kind
+        public var style: Style = .plain
+        /// How much wider the garment gets below the hips, metres of radius per metre
+        /// down: 0 straight, about 0.1 for a coat, 0.15–0.3 for an A-line skirt or dress.
+        /// Nil takes the style's usual one.
+        public var flare: Double?
         public var chestEase: Double = 10
         public var waistEase: Double = 8
         public var hipEase: Double = 8
@@ -151,6 +178,17 @@ public struct Avatar: Sendable {
             return (lengthDelta, 2)
         }
 
+        /// Radius added per metre below the hips.
+        var resolvedFlare: Float {
+            if let flare { return Float(max(0, flare)) }
+            switch (kind, style) {
+            case (.skirt, _): return 0.12
+            case (.top, .dress): return 0.16
+            case (.top, .coat): return 0.08
+            default: return 0
+            }
+        }
+
         var shownSleeve: (delta: Double, threshold: Double) {
             judged.sleeve.map { ($0, 0.5) } ?? (sleeveDelta, 1.5)
         }
@@ -161,7 +199,8 @@ public struct Avatar: Sendable {
 
         var resolvedFabric: Fabric {
             if let fabric { return fabric }
-            if case .trousers = kind { return .woven }
+            if kind.isBottom { return .woven }
+            if style.isOuter { return .outerwear }
             return .knit
         }
     }
@@ -191,7 +230,7 @@ public struct Avatar: Sendable {
         body = model.mesh(cell: detail.body)
         anchors = model.bodyAnchors
         let order = garments.indices.sorted { a, b in
-            func inner(_ i: Int) -> Int { if case .trousers = garments[i].kind { return 0 }; return 1 }
+            func inner(_ i: Int) -> Int { garments[i].kind.isBottom ? 0 : 1 }
             return inner(a) < inner(b)
         }
         var cover: ((Vec3) -> Float)?
@@ -566,9 +605,43 @@ extension BodyModel {
             anchors[.waist] = Vec3(waist.0 + cm(fit.waistEase) / (2 * .pi), waistband, 0)
             anchors[.hip] = Vec3(hip.0 + cm(fit.hipEase) / (2 * .pi), hipY, 0)
 
+        case .skirt:
+            // From the waistband over the seat, then on down round both legs together.
+            let waistband = (waistY + hipY) / 2
+            let hemY = max(0.05 * h, regularHem(fit) - cm(fit.lengthDelta))
+            let seat = { (y: Float) -> Float in
+                self.interpolate([(self.hipY, cm(fit.hipEase)), (waistband, cm(fit.waistEase))], at: y) / (2 * .pi)
+            }
+            let flare = fit.resolvedFlare
+            let tube = self.tube(ease: cm(fit.hipEase) / (2 * .pi), flare: flare)
+            parts.append(GarmentPart(shape: { p in
+                min(self.torso.distance(p) - seat(p.y), tube(p)) - lift
+            }, planes: [(Vec3(0, 1, 0), waistband), (Vec3(0, -1, 0), -hemY)]))
+            shape.hemY = hemY
+            let middle = torso.ring(at: hipY).center
+            hang = { _, p in
+                guard p.y < self.hipY else { return nil }
+                return (cm(fit.hipEase) / (2 * .pi) + flare * (self.hipY - p.y), Vec3(middle.x, 0, middle.z))
+            }
+            cutEase = { _, y in
+                let base = self.interpolate([(self.hipY, Float(fit.hipEase)), (waistband, Float(fit.waistEase))], at: y)
+                // The flare is the style, not room for the body: not counted.
+                return base
+            }
+            let reach = max(0, cm(fit.hipEase) / (2 * .pi)) + flare * max(0, hipY - hemY)
+            let pad = reach + lift + 0.04
+            lo = Vec3(bodyLo.x - pad, max(-0.01, hemY - 0.03), bodyLo.z - pad)
+            hi = Vec3(bodyHi.x + pad, waistband + 0.03, bodyHi.z + pad)
+            pinnedAbove = waistband - 0.025 * h
+            anchors[.hem] = Vec3(hip.0 + reach, hemY, 0)
+            anchors[.waist] = Vec3(waist.0 + cm(fit.waistEase) / (2 * .pi), waistband, 0)
+            anchors[.hip] = Vec3(hip.0 + cm(fit.hipEase) / (2 * .pi), hipY, 0)
+
         case let .top(longSleeves):
-            // A regular top ends just below the hips; longer or shorter moves the hem.
-            let hemY = max(0.38 * h, crotchY + 0.035 * h - cm(fit.lengthDelta))
+            // A regular top ends just below the hips (a coat above the knee, a dress at
+            // it); longer or shorter moves the hem.
+            let long = fit.style == .coat || fit.style == .dress
+            let hemY = max(long ? 0.06 * h : 0.38 * h, regularHem(fit) - cm(fit.lengthDelta))
             let dropped = Float(max(0, fit.shoulderDelta) / 200)
             let chestE = cm(fit.chestEase)
             let ease = { (y: Float) -> Float in
@@ -581,8 +654,14 @@ extension BodyModel {
                 let yoke = y >= self.shoulderY - 0.02 * self.h ? max(e, 0.012) : e
                 return yoke / (2 * .pi)
             }
-            parts.append(GarmentPart(shape: { p in self.torso.distance(p) - ease(p.y) - lift },
-                                     planes: [(Vec3(0, -1, 0), -hemY), neckline]))
+            // Past the hips a long top hangs round both legs together, as a skirt does.
+            let flare = fit.resolvedFlare
+            let below: ((Vec3) -> Float)? = hemY < crotchY + 0.02 * h
+                ? tube(ease: cm(max(fit.hipEase, fit.waistEase)) / (2 * .pi), flare: flare) : nil
+            parts.append(GarmentPart(shape: { p in
+                let body = self.torso.distance(p) - ease(p.y)
+                return (below.map { min(body, $0(p)) } ?? body) - lift
+            }, planes: [(Vec3(0, -1, 0), -hemY), neckline]))
             // Sleeves start at the shoulder seam: down the arm when the shoulder is dropped.
             let sleeveLength = longSleeves ? armLength + cm(fit.sleeveDelta) : 0.36 * armLength
             let reach = min(sleeveLength, armLength + 0.04 * h)
@@ -591,7 +670,11 @@ extension BodyModel {
             shape.sleeveReach = reach
             shape.longSleeves = longSleeves
             shape.dropped = Float(fit.shoulderDelta / 200)
-            let sleeveEase = upperArmR * 0.2 + max(0, chestE / (2 * .pi)) * 0.25
+            // Room round the arm: most at the armhole, tapering to the cuff as a sleeve is
+            // cut (a loose top's sleeves used to stay as wide as the armhole down to the
+            // wrist and flared like bells). A jacket's sleeve is roomier, to go over another.
+            let sleeveTop = upperArmR * (fit.style.isOuter ? 0.45 : 0.2) + max(0, chestE / (2 * .pi)) * 0.25
+            let sleeveCuff = min(sleeveTop, max(sleeveTop * 0.6, upperArmR * (fit.style.isOuter ? 0.6 : 0.3) + 0.004))
             for (i, arm) in arms.enumerated() {
                 var limb = arm.limb
                 if reach > armLength {
@@ -599,8 +682,11 @@ extension BodyModel {
                     limb.bones.append(Bone(a: wrist, b: wrist + arm.dir * (reach - armLength), ra: upperArmR * 0.6, rb: upperArmR * 0.6))
                 }
                 let end = arm.start + arm.dir * reach
-                parts.append(GarmentPart(shape: { p in limb.distance(p) - sleeveEase - lift },
-                                         planes: [(arm.dir, arm.dir.dot(end))]))
+                let start = arm.start, dir = arm.dir
+                parts.append(GarmentPart(shape: { p in
+                    let f = min(1, max(0, (p - start).dot(dir) / reach))
+                    return limb.distance(p) - (sleeveTop + (sleeveCuff - sleeveTop) * f) - lift
+                }, planes: [(arm.dir, arm.dir.dot(end))]))
                 if overHand > 0, longSleeves {
                     stacks.append((i + 1, arm.dir * -1, end, min(0.07, overHand * 1.5)))
                 }
@@ -608,7 +694,7 @@ extension BodyModel {
             }
             hang = { part, p in
                 guard part == 0, p.y < self.chestY else { return nil }
-                return (ease(p.y) - 0.012, Vec3(0, 0, 0))
+                return (ease(p.y) - 0.012 + flare * max(0, self.hipY - p.y), Vec3(0, 0, 0))
             }
             cutEase = { part, y in
                 guard part == 0 else { return 0 }
@@ -618,7 +704,8 @@ extension BodyModel {
             let side = shoulderHalf + armLength * max(0.26, abs(arms[0].dir.x)) + 0.06 * h
             // Past the body by the garment's room, as for trousers.
             let pad = max(0, cm(max(fit.chestEase, fit.waistEase, fit.hipEase))) / (2 * .pi) + lift + 0.03
-            lo = Vec3(-side, hemY - 0.03, bodyLo.z - pad)
+                + flare * max(0, hipY - hemY)
+            lo = Vec3(-side, max(-0.01, hemY - 0.03), bodyLo.z - pad)
             hi = Vec3(side, necklineTop + 0.03, bodyHi.z + pad)
             pinnedAbove = shoulderY - 0.02 * h
             anchors[.hem] = Vec3(hip.0 + ease(hemY), hemY, 0)
@@ -683,7 +770,7 @@ extension BodyModel {
             case .top:
                 // Sleeves are pulled on up the arm, the body part from above.
                 motion.directions = tags.map { $0 > 0 && $0 <= arms.count ? arms[$0 - 1].dir * -1 : Vec3(0, 1, 0) }
-            case .trousers:
+            case .trousers, .skirt:
                 // Pulled up from below: started higher, the legs would sit on the wider
                 // thigh and stay stretched where friction holds them.
                 motion.directions = tags.map { _ in Vec3(0, -1, 0) }
@@ -758,13 +845,45 @@ extension BodyModel {
         }
         // Over its height, the skin it covers plus the margin and the fabric; the gap
         // keeps whatever goes over it from resting in the same place.
-        let top: Float = if case .trousers = fit.kind { (waistY + hipY) / 2 } else { necklineTop }
+        let top: Float = fit.kind.isBottom ? (waistY + hipY) / 2 : necklineTop
         let bottom = shape.hemY
         let covered = { (p: Vec3) -> Float in
             max(self.distance(p) - margin - thickness - 0.002, p.y - top, bottom - p.y)
         }
         let shell = { (p: Vec3) -> Float in min(cut(p), covered(p)) }
         return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: shell, report: report, frames: frames, lines: lines)
+    }
+
+    /// Where a garment of this kind usually ends, before its length moves it: a top just
+    /// below the hips, a coat a little above the knee, a dress at the knee, a skirt just
+    /// above it.
+    func regularHem(_ fit: Avatar.GarmentFit) -> Float {
+        switch (fit.kind, fit.style) {
+        case (.skirt, _): kneeY + 0.03 * h
+        case (.top, .coat): kneeY + 0.05 * h
+        case (.top, .dress): kneeY
+        default: crotchY + 0.035 * h
+        }
+    }
+
+    /// A tube round both legs below the hips, as a skirt or a coat's skirt hangs: the hip
+    /// section (half-width and depth from the torso's ring there) plus `ease`, widening by
+    /// `flare` metres per metre down. Infinite above the hips, where the torso takes over.
+    func tube(ease: Float, flare: Float) -> (Vec3) -> Float {
+        let ring = torso.ring(at: hipY)
+        let top = hipY
+        let legsOut = legs.map { abs($0.ankle.x) + thighR * 0.5 }.max() ?? 0
+        let knee = kneeY
+        return { p in
+            guard p.y < top else { return .greatestFiniteMagnitude }
+            let grow = ease + flare * (top - p.y)
+            // Never narrower than the stance (the legs stand apart a little), widening to
+            // it gradually down to the knee so there's no shelf under the hips.
+            let ramp = min(1, max(0, (top - p.y) / max(0.05, top - knee)))
+            let a = ring.halfWidth + max(0, legsOut - ring.halfWidth) * ramp + grow, b = ring.halfDepth + grow
+            let dx = (p.x - ring.center.x) / a, dz = (p.z - ring.center.z) / b
+            return ((dx * dx + dz * dz).squareRoot() - 1) * min(a, b)
+        }
     }
 
     /// Stitch lines where the garment has them, as dash segments slightly off the
@@ -790,6 +909,13 @@ extension BodyModel {
                 // Outside and inside leg seams.
                 lines.append(({ $0.z - axis.z }, [i + 1], byHeight))
             }
+        case .skirt:
+            let waistband = (waistY + hipY) / 2
+            let hem = mesh.positions.map(\.y).min() ?? 0
+            lines.append(({ $0.y - (waistband - 0.035) }, [0], around(Vec3(0, 0, 0))))
+            lines.append(({ $0.y - (hem + 0.014) }, [0], around(Vec3(0, 0, 0))))
+            // Side seams.
+            lines.append(({ p in p.z - mid(max(p.y, self.hipY)) }, [0], byHeight))
         case .top:
             // The body part's lowest edge (long sleeves can hang lower).
             let hem = mesh.positions.indices.filter { tags[$0] == 0 }.map { mesh.positions[$0].y }.min() ?? 0
@@ -808,6 +934,20 @@ extension BodyModel {
                 let pit = armpitY - 0.02 * h
                 lines.append(({ p in p.y > pit ? self.armhole(i, p) - dropped : .nan }, [0, i + 1], { $0.y + $0.z }))
                 lines.append(({ $0.dot(dir) - (end - 0.014) }, [i + 1], { $0.z + $0.y * 0.3 }))
+            }
+            if fit.style.isOuter {
+                // Open down the front: a front edge each side of the middle from the lapels'
+                // V to the hem, and the lapels from the collar down to the V.
+                let vBottom = chestY - 0.03 * h, collarY = necklineTop - 0.02 * h
+                let front = { (p: Vec3) -> Bool in p.z > mid(p.y) }
+                for side: Float in [1, -1] {
+                    lines.append(({ p in front(p) && p.y < vBottom ? p.x - side * 0.01 : .nan }, [0], byHeight))
+                    lines.append(({ p in
+                        guard front(p), p.y >= vBottom, p.y <= collarY, side * p.x >= 0 else { return .nan }
+                        let t = (p.y - vBottom) / max(0.01, collarY - vBottom)
+                        return abs(p.x) - (0.01 + t * 0.065)
+                    }, [0], byHeight))
+                }
             }
         }
         return lines.flatMap { contour($0.f, parts: $0.parts, mesh: mesh, tags: tags, dash: $0.dash) }

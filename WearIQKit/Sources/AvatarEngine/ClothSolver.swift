@@ -276,12 +276,13 @@ struct TriangleCloth {
 
         // The most stretched edge at each vertex: a garment pulled round the body
         // stretches across, not along, so edges running along the part's axis (within
-        // about 50° of it) are left out.
+        // about 65° of it) are left out: a sleeve or leg hanging from the shoulder or seat
+        // pulls its diagonal edges too.
         var most = [Float](repeating: 0, count: positions.count)
         for l in edges where l.length > 1e-6 {
             if axes.count == positions.count {
                 let along = abs((rest[l.a] - rest[l.b]).normalized.dot(axes[l.a]))
-                if along > 0.64 { continue }
+                if along > 0.42 { continue }
             }
             let e = max(0, (positions[l.a] - positions[l.b]).length / l.length - 1)
             most[l.a] = max(most[l.a], e); most[l.b] = max(most[l.b], e)

@@ -76,8 +76,9 @@ extension WardrobeCategory {
     init(_ garment: GarmentCategory) {
         switch garment {
         case .shirt, .tshirt: self = .top
-        case .jacket: self = .outerwear
-        case .pants: self = .bottom
+        case .jacket, .coat: self = .outerwear
+        case .pants, .skirt: self = .bottom
+        case .dress: self = .top
         }
     }
 }

@@ -118,6 +118,34 @@ import WearIQCore
         #expect(StopGuide.fit(station: 2, spanRatio: span(20), shoulderRatio: nil) == .turnFurther)
     }
 
+    /// Coming to a diagonal from the side, the span grows as the user turns: too little
+    /// turn is "further", too much "back" (it used to say "back" for too little).
+    @Test func directionDependsOnWhichSideTheDiagonalIsApproachedFrom() {
+        for station in [3, 7] {
+            #expect(StopGuide.fit(station: station, spanRatio: span(100), shoulderRatio: 0.2) == .turnFurther, "stop \(station)")
+            #expect(StopGuide.fit(station: station, spanRatio: span(165), shoulderRatio: 0.2) == .turnBack, "stop \(station)")
+        }
+        for station in [1, 5] {
+            #expect(StopGuide.fit(station: station, spanRatio: span(15), shoulderRatio: 0.9) == .turnFurther, "stop \(station)")
+            #expect(StopGuide.fit(station: station, spanRatio: span(80), shoulderRatio: 0.2) == .turnBack, "stop \(station)")
+        }
+    }
+
+    /// A stop is only taken near its angle: well short of a diagonal, side or back isn't it.
+    @Test func halfwayIsNotAStop() {
+        #expect(StopGuide.fit(station: 1, spanRatio: span(20), shoulderRatio: nil) != .ok)
+        #expect(StopGuide.fit(station: 2, spanRatio: span(60), shoulderRatio: nil) != .ok)
+        #expect(StopGuide.fit(station: 4, spanRatio: span(150), shoulderRatio: nil) != .ok)
+    }
+
+    /// Standing still with the arms drifting isn't a turn; 45° to the next stop is.
+    @Test func aNewStopNeedsATurn() {
+        for i in 0..<8 {
+            #expect(StopGuide.turned(from: span(Double(i) * 45), to: span(Double(i + 1) * 45)), "stop \(i)")
+            #expect(!StopGuide.turned(from: span(Double(i) * 45), to: span(Double(i) * 45 + 8)), "stop \(i)")
+        }
+    }
+
     @Test func droppedArmsAreCalledOut() {
         // Facing the camera with the arms down: narrow outline but wide shoulders.
         #expect(StopGuide.fit(station: 2, spanRatio: 0.3, shoulderRatio: 1) == .openArms)

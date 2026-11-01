@@ -134,9 +134,19 @@ struct SomaModel: Sendable {
     /// well the model predicts it, with every component pulled towards the average body,
     /// then corrected twice against the body it gives. Components stay within ±3.5 SD,
     /// so impossible combinations come back as the nearest plausible body.
-    func coefficients(for target: [Double]) -> [Double] {
+    func coefficients(for target: [Double], bust: Double? = nil) -> [Double] {
         let k = components, m = Self.measurementCount
         let w = residualSD.map { 1 / pow(max($0, 0.4), 2) }
+        // The bust, when asked for, as one more row: linear about the average body.
+        let bustRow: (b0: Double, g: [Double])? = bust.map { _ in
+            let b0 = self.bust(mean)
+            return (b0, (0..<k).map { j in
+                var c = [Double](repeating: 0, count: k)
+                c[j] = 1
+                return self.bust(vertices(c)) - b0
+            })
+        }
+        let wb = 1 / (1.5 * 1.5)
         // Normal equations (Bᵀ W B + I) c = Bᵀ W (t − m0).
         var a = [Double](repeating: 0, count: k * k)
         for i in 0..<k {
@@ -144,22 +154,36 @@ struct SomaModel: Sendable {
             for j in 0..<k {
                 var s = 0.0
                 for r in 0..<m { s += b[r * k + i] * w[r] * b[r * k + j] }
+                if let row = bustRow { s += row.g[i] * wb * row.g[j] }
                 a[i * k + j] += s
             }
         }
-        func solve(_ goal: [Double]) -> [Double] {
+        func solve(_ goal: [Double], _ bustGoal: Double?) -> [Double] {
             var rhs = [Double](repeating: 0, count: k)
             for i in 0..<k { for r in 0..<m { rhs[i] += b[r * k + i] * w[r] * (goal[r] - m0[r]) } }
+            if let row = bustRow, let bustGoal {
+                for i in 0..<k { rhs[i] += row.g[i] * wb * (bustGoal - row.b0) }
+            }
             return Self.choleskySolve(a, rhs, k).map { max(-3.5, min(3.5, $0)) }
         }
         var goal = target
-        var c = solve(goal)
+        var bustGoal = bust
+        var c = solve(goal, bustGoal)
         for _ in 0..<2 {
-            let got = measure(vertices(c))
+            let v = vertices(c)
+            let got = measure(v)
             for r in 0..<m { goal[r] += target[r] - got[r] }
-            c = solve(goal)
+            if let bust, let g = bustGoal { bustGoal = g + bust - self.bust(v) }
+            c = solve(goal, bustGoal)
         }
         return c
+    }
+
+    /// The usual bust (`bust(_:)`, chest minus underbust, cm): a man's chest is little
+    /// more than his ribcage, a woman's is about a B to C cup over it. On the shape
+    /// model's own measure, whose average body sits at 11 cm with a spread of about 3.
+    static func typicalBust(female: Bool, chest: Double) -> Double {
+        female ? min(20, max(13, 15 + 0.08 * (chest - 90))) : 8
     }
 
     static func choleskySolve(_ a: [Double], _ b: [Double], _ n: Int) -> [Double] {
@@ -268,6 +292,19 @@ struct SomaModel: Sendable {
             thigh, abs(a0.x - a1.x) - 2 * Self.shoulderSkin, arm, v[points.crotch].y - floor,
         ]
         return raw.enumerated().map { Double($1) * 100 * calibration[$0] }
+    }
+}
+
+extension SomaModel {
+    /// How far the breasts stand out, cm: the chest girth at the nipples minus the girth
+    /// `drop` × stature below them, under the breasts (a bra's "cup" difference).
+    func bust(_ v: [Vec3], drop: Float = 0.05) -> Double {
+        let floor = v.map(\.y).min() ?? 0
+        let height = v[points.top].y - floor
+        let y = v[points.nipple].y
+        let at = Self.hullPerimeter(slice(v, at: y, parts: [.torso]))
+        let under = Self.hullPerimeter(slice(v, at: y - drop * height, parts: [.torso]))
+        return Double(at - under) * 100
     }
 }
 

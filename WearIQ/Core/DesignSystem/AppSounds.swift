@@ -28,14 +28,16 @@ final class AppSounds {
     }
 
     func play(_ sound: Sound) {
-        guard Self.isEnabled else { return }
+        // A player started on a stopped engine raises an exception that ends the app,
+        // and the engine can't start in the background.
+        guard Self.isEnabled, UIApplication.shared.applicationState != .background else { return }
         if !started || !engine.isRunning {
             // The scan's voice guidance uses playback (audible in silent mode); don't undo that.
             let session = AVAudioSession.sharedInstance()
             if session.category != .playback { try? session.setCategory(.ambient, options: [.mixWithOthers]) }
             engine.prepare()
             started = (try? engine.start()) != nil
-            guard started else { return }
+            guard started, engine.isRunning else { return }
         }
         guard let buffer = buffers[sound] ?? render(sound) else { return }
         buffers[sound] = buffer

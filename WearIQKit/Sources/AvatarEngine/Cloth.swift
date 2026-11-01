@@ -34,6 +34,8 @@ public struct Fabric: Equatable, Sendable {
 
     public static let woven = Fabric(stretchLimit: 0.035, drape: 0.6, density: 130, thickness: 0.0003)
     public static let knit = Fabric(stretchLimit: 0.12, drape: 0.45, density: 160, thickness: 0.0006)
+    /// A jacket or coat: a heavy, stiff woven (wool coating) that barely stretches.
+    public static let outerwear = Fabric(stretchLimit: 0.05, drape: 0.75, density: 280, thickness: 0.002)
 
     /// Typical fabrics of each kind, from the composition rules below: a cotton jersey
     /// T-shirt, a cotton poplin shirt, 12 oz denim, a linen shirt, a wool suiting, a

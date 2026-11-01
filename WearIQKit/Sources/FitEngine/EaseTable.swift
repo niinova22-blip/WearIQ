@@ -44,17 +44,20 @@ struct RegionRule {
 enum EaseTable {
     static func rules(for category: GarmentCategory, fit: FitStyle) -> [RegionRule] {
         switch category {
-        case .shirt, .tshirt, .jacket: topRules(category, fit)
+        case .shirt, .tshirt, .jacket, .coat, .dress: topRules(category, fit)
         case .pants: pantsRules(fit)
+        case .skirt: skirtRules(fit)
         }
     }
 
     private static func topRules(_ c: GarmentCategory, _ f: FitStyle) -> [RegionRule] {
+        // A coat goes over a jacket or a jumper: everything about 6 cm roomier.
+        let over: Double = c == .coat ? 6 : 0
         let chestEase: ClosedRange<Double> = switch f {
-        case .slim: 5...10
-        case .regular: 9...16
-        case .relaxed: 14...24
-        case .oversized: 22...40
+        case .slim: (5 + over)...(10 + over)
+        case .regular: (9 + over)...(16 + over)
+        case .relaxed: (14 + over)...(24 + over)
+        case .oversized: (22 + over)...(40 + over)
         }
         let waistEase: ClosedRange<Double> = switch f {
         case .slim: 4...12
@@ -68,10 +71,13 @@ enum EaseTable {
         case .relaxed: 0...4
         case .oversized: 3...12 // dropped shoulders are intentional
         }
-        let sleeveEase: ClosedRange<Double> = c == .jacket ? 0...3 : 1...4
+        let sleeveEase: ClosedRange<Double> = c.isOuterwear ? 0...3 : 1...4
+        // A coat's or a dress's length is its style (hip, knee, midi), not a fit: wide.
         let lengthEase: ClosedRange<Double> = switch c {
         case .tshirt: 12...24
         case .jacket: 18...32
+        case .coat: 30...75
+        case .dress: 30...80
         default: 15...28
         }
 
@@ -88,12 +94,39 @@ enum EaseTable {
         ]
         // A T-shirt hangs straight from the chest; its waist doesn't decide the size.
         if c == .tshirt { rules.removeAll { $0.region == .waist } }
+        // A dress is also sized by the hips, where it has to pass over them.
+        if c == .dress {
+            let hipEase: ClosedRange<Double> = switch f {
+            case .slim: 3...8
+            case .regular: 5...14
+            case .relaxed: 10...24
+            case .oversized: 18...60
+            }
+            rules.append(.init(region: .hip, kind: .girth, garment: .hip, body: .hip,
+                               weight: 0.7, critical: false, ease: hipEase, bodyChartTolerance: 2.5))
+        }
         // T-shirt sleeves are short by design; arm length is irrelevant there.
         if c != .tshirt {
             rules.insert(.init(region: .sleeve, kind: .length, garment: .sleeveLength, body: .armLength,
                                weight: 0.4, critical: false, ease: sleeveEase, bodyChartTolerance: 2), at: 1)
         }
         return rules
+    }
+
+    /// A skirt is sized by the waist and has to pass over the hips; its length is style.
+    private static func skirtRules(_ f: FitStyle) -> [RegionRule] {
+        let hipEase: ClosedRange<Double> = switch f {
+        case .slim: 2...7
+        case .regular: 4...12
+        case .relaxed: 8...24
+        case .oversized: 14...60
+        }
+        return [
+            .init(region: .waist, kind: .girth, garment: .waist, body: .waist,
+                  weight: 1.0, critical: true, ease: 0...3, bodyChartTolerance: 2),
+            .init(region: .hip, kind: .girth, garment: .hip, body: .hip,
+                  weight: 0.9, critical: false, ease: hipEase, bodyChartTolerance: 2.5, bodyChartLooseAllowance: 8),
+        ]
     }
 
     private static func pantsRules(_ f: FitStyle) -> [RegionRule] {

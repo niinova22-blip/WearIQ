@@ -2,8 +2,16 @@ import Foundation
 
 public enum GarmentCategory: String, Codable, CaseIterable, Sendable {
     case shirt, tshirt, jacket, pants
+    /// A long outer layer: overcoat, trench, parka. Hangs past the hips.
+    case coat
+    case dress, skirt
 
-    public var isTop: Bool { self != .pants }
+    /// Worn on the upper body (a dress counts: it's sized by the chest).
+    public var isTop: Bool { !isBottom }
+    /// Worn from the waist down.
+    public var isBottom: Bool { self == .pants || self == .skirt }
+    /// Goes over other clothes.
+    public var isOuterwear: Bool { self == .jacket || self == .coat }
 }
 
 public enum FitStyle: String, Codable, CaseIterable, Sendable {

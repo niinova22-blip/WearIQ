@@ -6,7 +6,10 @@ extension BodyModel {
     /// from it: the torso as level outlines of the skin every centimetre or so, arms and
     /// legs as tapered capsules through the joint seams, as wide as the skin round them.
     init(soma model: SomaModel, _ m: Avatar.Measurements) {
-        var v = model.vertices(model.coefficients(for: m.somaTarget))
+        // The sex, when known, sets how far the breasts stand out from the ribcage: the
+        // measurements alone (a chest girth) can't tell a full bust from a broad chest.
+        let bust = m.sex.map { SomaModel.typicalBust(female: $0 == .female, chest: m.chest) }
+        var v = model.vertices(model.coefficients(for: m.somaTarget, bust: bust))
         let floor = v.map(\.y).min() ?? 0
         v = v.map { Vec3($0.x, $0.y - floor, $0.z) }
         let pts = model.points, rings = model.rings

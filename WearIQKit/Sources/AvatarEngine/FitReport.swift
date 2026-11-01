@@ -60,6 +60,11 @@ extension BodyModel {
             if y >= kneeY + 0.06 * h { return .thigh }
             if y >= kneeY - 0.06 * h { return .knee }
             return .hem
+        case .skirt:
+            if y >= (waistY + hipY) / 2 - 0.04 * h { return .waist }
+            if y >= crotchY { return .hip }
+            if y >= kneeY + 0.06 * h { return .thigh }
+            return .hem
         case .top:
             if part > 0 {
                 let arm = arms[part - 1]
@@ -74,6 +79,23 @@ extension BodyModel {
         }
     }
 
+    /// A sleeve past the wrist, lying on the hand: the hand stretches it, which says
+    /// nothing about the fit (a long sleeve read "very tight" from this).
+    func onHand(_ rest: Vec3, part: Int, kind: Avatar.GarmentFit.Kind) -> Bool {
+        guard case .top = kind, part > 0, part <= arms.count else { return false }
+        let arm = arms[part - 1]
+        return (rest - arm.start).dot(arm.dir) > armLength - 0.02
+    }
+
+    /// Whether the drape's stretch can say a part is tight. Not a sleeve: size charts
+    /// give no sleeve width, so a sleeve is always cut with room round the arm, and what
+    /// stretches it in the drape is its own weight hanging off an arm held out (every
+    /// long sleeve read "very tight, 14–17%" on the phone, even in XXL).
+    func stretchCounts(part: Int, kind: Avatar.GarmentFit.Kind) -> Bool {
+        if case .top = kind, part > 0 { return false }
+        return true
+    }
+
     func report(_ cloth: TriangleCloth, contact pressing: [Bool], ease: [Float], tags: [Int], fit: Avatar.GarmentFit,
                 fabric: Fabric) -> [FitZone: ZoneReport] {
         var members: [FitZone: [Int]] = [:]
@@ -86,8 +108,9 @@ extension BodyModel {
             // little under its own weight (a trouser leg hanging from the seat), which is
             // no tightness. As in the fit map, which colours only touching fabric tight.
             // A trouser hem resting on the foot isn't a fit problem either (no shoes).
-            let trousers: Bool = if case .trousers = fit.kind { true } else { false }
-            let touching = ids.filter { pressing[$0] && !(trousers && cloth.rest[$0].y < ankleY + 0.015) }
+            let trousers = fit.kind.isBottom
+            let touching = ids.filter { pressing[$0] && !(trousers && cloth.rest[$0].y < ankleY + 0.015)
+                && stretchCounts(part: tags[$0], kind: fit.kind) }
             let stretch = touching.map { Double(cloth.stretch[$0]) }.sorted()
             // The 75th percentile: a garment pulled round the body stretches all over the
             // zone, while a few edges caught in a fold or on a bony point (the kneecap)
@@ -96,19 +119,22 @@ extension BodyModel {
                 ? stretch[min(stretch.count - 1, Int(Double(stretch.count) * 0.75))] : 0
             // The first 0.8% is the mesh settling, not the fabric pulling (as in the fit map).
             let used = max(0, p90 - 0.008) / Double(fabric.stretchLimit)
-            let contact = Double(touching.count) / Double(ids.count)
+            let contact = Double(ids.filter { pressing[$0] }.count) / Double(ids.count)
             let gaps = ids.filter { !cloth.contact[$0] }.map { Double(cloth.gap[$0]) * 100 }.sorted()
             let gap = gaps.isEmpty ? 0 : gaps[gaps.count / 2]
             var length: Double?
             switch (zone, fit.kind) {
             case (.sleeve, .top(longSleeves: true)): length = fit.sleeveDelta
-            case (.hem, .trousers), (.abdomen, .top), (.hip, .top): length = fit.lengthDelta
+            case (.hem, .trousers), (.hem, .skirt), (.abdomen, .top), (.hip, .top): length = fit.lengthDelta
             default: length = nil
             }
             let eases = ids.map { Double(ease[$0]) }.sorted()
             let zoneEase = eases[eases.count / 2]
             // Trouser knees and hems hang off the leg as they're cut: never "loose".
-            let threshold = Self.looseEase(zone, fit.kind).map(Double.init) ?? (trousers ? .infinity : nil)
+            // Nor sleeves: they hang off an arm held out, and the chart has no sleeve width.
+            let sleeve = zone == .sleeve || zone == .elbow
+            let threshold = Self.looseEase(zone, fit.kind, style: fit.style).map(Double.init)
+                ?? (trousers || sleeve ? .infinity : nil)
             var tension = ZoneReport.classify(stretchUsed: used, contactShare: contact, gapCm: gap,
                                               easeCm: threshold == nil ? nil : zoneEase, looseAbove: threshold)
             // Where the size chart judged the zone, the report says the same; only a

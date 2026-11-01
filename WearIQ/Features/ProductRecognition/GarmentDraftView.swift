@@ -292,6 +292,9 @@ extension GarmentCategory {
         case .tshirt: String(localized: "T-shirt")
         case .jacket: String(localized: "Jacket")
         case .pants: String(localized: "Trousers")
+        case .coat: String(localized: "Coat")
+        case .dress: String(localized: "Dress")
+        case .skirt: String(localized: "Skirt")
         }
     }
 }

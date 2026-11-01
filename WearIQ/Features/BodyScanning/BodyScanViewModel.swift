@@ -53,6 +53,9 @@ final class BodyScanViewModel {
         var capturing = false
         /// Edges of the picture the user runs off.
         var cutEdges: StopGuide.Edges = []
+        /// Arm span ratio at the last stop taken or passed: the next one needs a real turn
+        /// from there.
+        var lastRatio: Double?
     }
 
     private(set) var pose: ScanPose = .front
@@ -93,7 +96,7 @@ final class BodyScanViewModel {
         var detector = StillnessDetector()
         // Standing still with the arms out, people sway a little; a stop shouldn't keep
         // them waiting for perfect stillness.
-        detector.window = 0.5
+        detector.window = 0.8
         detector.tolerance = 0.045
         return detector
     }()
@@ -121,6 +124,8 @@ final class BodyScanViewModel {
     /// A stop's still is being measured.
     private var capturing = false
     private var lastHintAt = Date.distantPast
+    /// Stopped while the app is in the background.
+    private var suspended = false
 
     /// Pose problems are spoken once they have lasted this long, so flickering
     /// detections don't produce a stream of half-finished sentences.
@@ -159,6 +164,32 @@ final class BodyScanViewModel {
         camera.onFrame = nil
         camera.stop()
         audio.stop()
+    }
+
+    /// The app went to the background: the camera and the voice can't run there (a sound
+    /// started then ended the app), so the scan stops where it is.
+    func suspend() {
+        guard !suspended else { return }
+        suspended = true
+        countdownTask?.cancel()
+        camera.onFrame = nil
+        camera.stop()
+        audio.stop()
+    }
+
+    /// Back in the foreground: a scan that was under way starts again from the front
+    /// photo, since the user has moved since; a finished or analysing one is left be.
+    func resume() async {
+        guard suspended else { return }
+        suspended = false
+        switch stage {
+        case .analyzing, .completed, .clothesSuspected, .finished, .failed:
+            return
+        default:
+            break
+        }
+        retry()
+        await start()
     }
 
     func retry() {
@@ -366,8 +397,9 @@ final class BodyScanViewModel {
             return
         }
         stillness.add(reading, time: time)
-        // A moment to hear the instruction and start moving.
-        guard Date().timeIntervalSince(stationStart) > 1.0, let span = reading.armSpan else { return }
+        // Time to hear the instruction and start moving: nothing is taken while it is
+        // still being said, so stops can't be ticked off faster than they're asked for.
+        guard Date().timeIntervalSince(stationStart) > 2.0, !audio.isSpeaking, let span = reading.armSpan else { return }
         let station = turn.station
         let shoulders = Self.shoulderSeparation(reading)
         // Judged on every frame, so the voice guides while the user moves ("come closer",
@@ -389,8 +421,15 @@ final class BodyScanViewModel {
         } else if station == 0 {
             fit = span >= StopGuide.openArmSpan ? .ok : .openArms
         } else {
-            fit = StopGuide.fit(station: station, spanRatio: span / spanReference,
-                                shoulderRatio: shoulders.flatMap { s in shoulderReference.map { s / $0 } })
+            let ratio = span / spanReference
+            let at = StopGuide.fit(station: station, spanRatio: ratio,
+                                   shoulderRatio: shoulders.flatMap { s in shoulderReference.map { s / $0 } })
+            // In the band but hardly moved from the last stop: not turned yet.
+            if at == .ok, let last = turn.lastRatio, !StopGuide.turned(from: last, to: ratio) {
+                fit = .turnFurther
+            } else {
+                fit = at
+            }
         }
         // Right place: hold still for the capture.
         let shown = shownFit.update(fit)
@@ -403,9 +442,18 @@ final class BodyScanViewModel {
         turn.fit = fit == .ok ? .ok : shown
         turn.holding = fit == .ok
         guard fit == .ok else { return nudge(fit) }
+        // The outline must have changed from the last stop too (neighbouring stops differ
+        // by 10–20% at the waist or hips), or this is the same position again.
+        if station > 0, !turn.retaking, !scan.differs(widths, from: station - 1, threshold: 0.04) {
+            turn.fit = .turnFurther
+            turn.holding = false
+            return nudge(.turnFurther)
+        }
+        let ratio = span / spanReference
         // Going round again: stops that measured well are passed by.
         if turn.retaking, !retakeQueue.contains(station) {
             audio.play(.tick)
+            turn.lastRatio = ratio
             return advance()
         }
         if station == 0, !turn.retaking {
@@ -427,6 +475,7 @@ final class BodyScanViewModel {
             spanReference = span
             shoulderReference = shoulders
         }
+        turn.lastRatio = station == 0 ? 1 : ratio
         capturePrecise(fallback: widths)
     }
 

@@ -212,20 +212,42 @@ public enum StopGuide {
         return false
     }
 
+    /// Arm span over the front stop's, where each kind of stop is accepted: front or back
+    /// from cos 28°, diagonal between cos 57° and cos 33°, side-on up to cos 63°. A stop
+    /// turned 15° or more off is refused, not just one that is half-way to the next.
+    public static let squareOn = 0.88
+    public static let diagonal = 0.5...0.84
+    public static let sideOn = 0.45
+
+    /// Whether the user stands at this stop, and if not which way to go. The user turns
+    /// clockwise and the span tells how far they are round, but not on which side: coming
+    /// up to a diagonal from the front or back (stops 1 and 5) the span shrinks as they
+    /// turn, coming up to one from the side (3 and 7) it grows. So too wide a span at
+    /// stop 1 is "turn further" and at stop 3 "turn back", and the other way round.
     public static func fit(station: Int, spanRatio r: Double, shoulderRatio: Double?) -> StopFit {
         let shouldersWide = (shoulderRatio ?? 0) > 0.75
         switch station % 4 {
         case 0:  // facing or backing onto the camera: full span
-            if r >= 0.85 { return .ok }
+            if r >= squareOn { return .ok }
             return shouldersWide && r < 0.6 ? .openArms : .turnFurther
         case 2:  // side-on: the arms point at and away from the camera
-            if r <= 0.5 { return shouldersWide ? .openArms : .ok }
+            if r <= sideOn { return shouldersWide ? .openArms : .ok }
             return .turnFurther
         default:  // diagonal: about cos 45° of the span
-            if r > 0.85 { return .turnFurther }
-            if r >= 0.45 { return .ok }
-            return shouldersWide ? .openArms : .turnBack
+            let fromSquare = station % 8 == 1 || station % 8 == 5
+            if diagonal.contains(r) { return .ok }
+            if r > diagonal.upperBound { return fromSquare ? .turnFurther : .turnBack }
+            if shouldersWide { return .openArms }
+            return fromSquare ? .turnBack : .turnFurther
         }
+    }
+
+    /// Whether the span moved enough since the last stop for this to be a new one. Neighbouring
+    /// stops are about 45° apart, which changes the span by 0.29 or more (1 to cos 45°, cos
+    /// 45° to the body's depth); arms drifting while standing still change it far less.
+    /// Without this a sloppy span at one stop let the next pass with no turn at all.
+    public static func turned(from previous: Double, to r: Double) -> Bool {
+        abs(r - previous) >= 0.15
     }
 }
 

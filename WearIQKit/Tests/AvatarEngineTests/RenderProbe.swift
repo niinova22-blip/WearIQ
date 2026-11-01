@@ -112,6 +112,34 @@ import Testing
         shirt.chestEase = 18; shirt.waistEase = 22; shirt.hipEase = 22; shirt.sleeveDelta = 5; shirt.lengthDelta = 6
         render(Avatar(me, garment: shirt), yaw: -0.4, fitMap: true, name: "shirt_map")
     }
+    /// Garment kinds and the body by sex: a coat, a jacket, a dress, a skirt; the same
+    /// measurements as a man and as a woman.
+    @Test func styles() {
+        guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
+        let only = ProcessInfo.processInfo.environment["VARIANTS"].map { Set($0.split(separator: ",").map(String.init)) }
+        let her = Avatar.Measurements(height: 165, chest: 92, waist: 72, hip: 98, thigh: 56,
+                                      shoulderWidth: 35, armLength: 53, inseam: 76, sex: .female)
+        var him = me; him.sex = .male
+        var coat = Avatar.GarmentFit(kind: .top(longSleeves: true)); coat.style = .coat
+        coat.chestEase = 18; coat.waistEase = 22; coat.hipEase = 24; coat.sleeveDelta = 2
+        var jacket = coat; jacket.style = .jacket; jacket.chestEase = 14; jacket.waistEase = 16; jacket.hipEase = 16
+        var dress = Avatar.GarmentFit(kind: .top(longSleeves: false)); dress.style = .dress
+        dress.chestEase = 8; dress.waistEase = 6; dress.hipEase = 12
+        var skirt = Avatar.GarmentFit(kind: .skirt); skirt.waistEase = 1; skirt.hipEase = 8
+        var blouse = Avatar.GarmentFit(kind: .top(longSleeves: true)); blouse.chestEase = 10; blouse.waistEase = 12; blouse.hipEase = 12
+        let cases: [(String, Avatar.Measurements, [Avatar.GarmentFit])] = [
+            ("body_him", him, []), ("body_her", her, []),
+            ("coat", him, [coat]), ("jacket", him, [jacket]),
+            ("dress", her, [dress]), ("skirt", her, [skirt, blouse]), ("coat_her", her, [coat]),
+        ]
+        for (name, m, garments) in cases where only?.contains(name) ?? true {
+            let a = Avatar(m, garments: garments)
+            render(a, yaw: 0, fitMap: true, name: "style_\(name)_front")
+            render(a, yaw: -.pi / 2, fitMap: true, name: "style_\(name)_side")
+            print(name, a.fitReport.map { "\($0.key) \($0.value.tension)" }.sorted())
+        }
+    }
+
     /// The outfit from the device screenshots: a slim tee with wide shoulders over trousers.
     @Test func screenshotOutfit() {
         guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }

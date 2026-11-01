@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import AvatarEngine
+import WearIQCore
 
 @Suite struct AvatarTests {
     // The device scan: 173 cm man.
@@ -139,5 +140,48 @@ import Testing
         #expect(viscose.drape < denim.drape)
         // Fluid fabrics fall into more folds (Cusick).
         #expect(viscose.folds > denim.folds)
+    }
+}
+
+@Suite struct BodyBySexAndGarmentKinds {
+    let m = Avatar.Measurements(height: 168, chest: 92, waist: 74, hip: 98, thigh: 56,
+                                shoulderWidth: 36, armLength: 54, inseam: 77)
+
+    /// The same girths as a woman and as a man: her breasts stand out from the ribcage,
+    /// his chest is the ribcage; the chest girth stays what was measured either way.
+    @Test func aWomansBustStandsOut() throws {
+        let soma = try #require(SomaModel.shared)
+        func body(_ sex: BodySex) -> [Vec3] {
+            var x = m; x.sex = sex
+            return soma.vertices(soma.coefficients(for: x.somaTarget, bust: SomaModel.typicalBust(female: sex == .female, chest: x.chest)))
+        }
+        let her = body(.female), him = body(.male)
+        #expect(soma.bust(her) > soma.bust(him) + 4)
+        #expect(abs(soma.measure(her)[1] - 92) < 1.5)
+        #expect(abs(soma.measure(him)[1] - 92) < 1.5)
+    }
+
+    /// Long sleeves on a top that fits aren't tight: they hang off an arm held out, and
+    /// that pull isn't the arm (every long sleeve read "very tight" before).
+    @Test func sleevesOfAFittingTopAreNotTight() {
+        for style in [Avatar.GarmentFit.Style.plain, .jacket, .coat] {
+            var f = Avatar.GarmentFit(kind: .top(longSleeves: true)); f.style = style
+            f.chestEase = 14; f.waistEase = 16; f.hipEase = 16; f.sleeveDelta = 2
+            let report = Avatar(m, garment: f, detail: .preview).fitReport
+            for zone in [FitZone.sleeve, .elbow] {
+                #expect((report[zone]?.tension ?? .comfortable) < .slightlyTight, "\(style) \(zone)")
+            }
+        }
+    }
+
+    /// A coat ends above the knee and a T-shirt below the hips, with no length given.
+    @Test func coatsAreLong() {
+        var tee = Avatar.GarmentFit(kind: .top(longSleeves: false))
+        var coat = Avatar.GarmentFit(kind: .top(longSleeves: true)); coat.style = .coat
+        tee.chestEase = 12; coat.chestEase = 20
+        func hem(_ f: Avatar.GarmentFit) -> Float { Avatar(m, garment: f, detail: .preview).layers[0].mesh.positions.map(\.y).min() ?? 0 }
+        let model = BodyModel.make(m)
+        #expect(hem(tee) > model.crotchY - 0.05)
+        #expect(hem(coat) < model.kneeY + 0.15)
     }
 }

@@ -62,7 +62,7 @@ final class GarmentDraft {
     }
 
     static func criticalDimension(for category: GarmentCategory) -> GarmentDimension {
-        category == .pants ? .waist : .chest
+        category.isBottom ? .waist : .chest
     }
 
     /// Dimensions worth asking for, in table order.
@@ -70,7 +70,9 @@ final class GarmentDraft {
         switch category {
         case .pants: [.waist, .hip, .thigh, .inseam, .outseam]
         case .tshirt: [.chest, .shoulderWidth, .waist, .bodyLength]
-        case .shirt, .jacket: [.chest, .shoulderWidth, .sleeveLength, .waist, .bodyLength]
+        case .shirt, .jacket, .coat: [.chest, .shoulderWidth, .sleeveLength, .waist, .bodyLength]
+        case .dress: [.chest, .waist, .hip, .shoulderWidth, .bodyLength]
+        case .skirt: [.waist, .hip, .bodyLength]
         }
     }
 
