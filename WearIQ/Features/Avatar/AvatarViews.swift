@@ -80,6 +80,17 @@ enum AvatarFitMapper {
                 fit.hemOffset = hint([("mini", -0.065), ("midi", 0.15), ("maxi", 0.25), ("maksi", 0.25), ("uzun", 0.2)]) * height
                     + steps * 1.0
             }
+        } else if spec.category == .shorts {
+            fit.waistEase = ease(.waist, .waist, typical: 1.5)
+            fit.hipEase = ease(.hip, .hip, typical: [FitStyle.slim: 4, .regular: 8, .relaxed: 14, .oversized: 22][style] ?? 8)
+            fit.thighEase = ease(.thigh, .thigh, typical: [FitStyle.slim: 6, .regular: 12, .relaxed: 20, .oversized: 30][style] ?? 12)
+            // Legs end mid-thigh unless the chart gives the inseam ("bermuda" to the knee).
+            fit.lengthFromChart = size.values[.inseam] != nil
+            if let inseam = size.values[.inseam]?.cm, let body = body[.inseam]?.cm {
+                fit.hemOffset = inseam - body
+            } else {
+                fit.hemOffset = -(words.contains("bermuda") ? 0.25 : 0.335) * height
+            }
         } else if isTrousers {
             fit.waistEase = ease(.waist, .waist, typical: 1.5)
             fit.hipEase = ease(.hip, .hip, typical: [FitStyle.slim: 4, .regular: 7, .relaxed: 12, .oversized: 20][style] ?? 7)
@@ -107,6 +118,9 @@ enum AvatarFitMapper {
                     fit.hemOffset = named * height + steps * 1.5
                 }
             default:
+                // Cut short or long by design: a crop top ends about the navel, a longline
+                // or oversize one a hand lower than usual.
+                fit.hemOffset = hint([("crop", -0.075), ("longline", 0.06), ("uzun", 0.05), ("oversize", 0.03)]) * height
                 let lengthEase: Double = spec.category == .tshirt ? 18 : spec.category == .jacket ? 25 : 21
                 if graded(.bodyLength) != nil, let d = diff(.bodyLength, .torsoLength) {
                     fit.lengthDelta = spec.chartKind == .garment ? d - lengthEase : d
@@ -144,11 +158,11 @@ enum AvatarFitMapper {
     /// the chart (a sleeve over 30 cm is a long one).
     static func kind(_ spec: GarmentSpec, _ size: SizeEntry) -> Avatar.GarmentFit.Kind {
         switch spec.category {
-        case .pants: .trousers
+        case .pants, .shorts: .trousers
         case .skirt: .skirt
         case .tshirt: .top(longSleeves: false)
         case .dress: .top(longSleeves: (size.values[.sleeveLength]?.cm ?? 0) > 30)
-        case .shirt, .jacket, .coat: .top(longSleeves: true)
+        case .shirt, .jacket, .coat, .sweater: .top(longSleeves: true)
         }
     }
 
@@ -222,7 +236,7 @@ enum AvatarFitMapper {
     /// How the fabric stretches and drapes, from its composition when the product page
     /// gave one, otherwise from the category and the chart's stretch setting.
     static func fabric(spec: GarmentSpec, material: String?) -> Fabric {
-        let knit = spec.category == .tshirt
+        let knit = spec.category == .tshirt || spec.category == .sweater
         let fibres = FabricAdvice.fibres(in: material ?? "")
         guard !fibres.isEmpty else {
             var fabric: Fabric = spec.category.isOuterwear ? .outerwear : knit ? .knit : .woven
@@ -312,6 +326,8 @@ struct AvatarFitView: View {
     @State private var sceneHeight: CGFloat = 0
     @State private var legendBottom: CGFloat = 0
     @State private var controlsHeight: CGFloat = 0
+    /// Pieces taken off the view to see the one under them (a skirt under a coat).
+    @State private var hiddenLayers: Set<Int> = []
 
     /// A garment analysed earlier, worn together with this one.
     struct Companion: Equatable {
@@ -335,11 +351,13 @@ struct AvatarFitView: View {
                                 AvatarSceneView(avatar: avatar, revision: revision, frame: frame,
                                                 labels: frame == nil && !draping ? labels(avatar) : [], labelModel: labelModel,
                                                 facing: facing, facingTurn: facingTurn,
-                                                viewHeight: sceneHeight, coveredTop: legendBottom, coveredBottom: controlsHeight)
+                                                viewHeight: sceneHeight, coveredTop: legendBottom, coveredBottom: controlsHeight,
+                                                hidden: hiddenLayers)
                                 LandmarkOverlay(model: labelModel)
                             }
                             VStack(spacing: 0) {
                                 legend.allowsHitTesting(false)
+                                layerToggles
                                     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("avatarScene")).maxY } action: {
                                         legendBottom = $0
                                     }
@@ -418,6 +436,39 @@ struct AvatarFitView: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// With two pieces on, a button for each to take it off the view and back: an outer
+    /// one (a coat) otherwise hides what is worn under it.
+    @ViewBuilder
+    private var layerToggles: some View {
+        if let companion, (avatar?.layers.count ?? 0) > 1 {
+            HStack(spacing: 8) {
+                ForEach([(0, spec.category.title), (1, companion.spec.category.title)], id: \.0) { index, title in
+                    let shown = !hiddenLayers.contains(index)
+                    Button {
+                        withAnimation(.snappy) {
+                            if shown {
+                                // Never both off: the other comes back.
+                                hiddenLayers = [index]
+                            } else {
+                                hiddenLayers.remove(index)
+                            }
+                        }
+                    } label: {
+                        Label(title, systemImage: shown ? "eye.fill" : "eye.slash")
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(.black.opacity(shown ? 0.45 : 0.25), in: Capsule())
+                            .foregroundStyle(shown ? Color.white : Color.white.opacity(0.6))
+                    }
+                    .accessibilityLabel(Text(shown ? "Hide \(title)" : "Show \(title)"))
+                }
+            }
+            .padding(.top, 6)
+            .sensoryFeedback(.selection, trigger: hiddenLayers)
+        }
+    }
+
     /// The colour key, over the top of the scene.
     private var legend: some View {
         HStack(spacing: 10) {
@@ -487,7 +538,7 @@ struct AvatarFitView: View {
 
     /// Each fit line that has something to say, labelled where it is.
     private func labels(_ avatar: Avatar) -> [SceneLabel] {
-        avatar.layers.enumerated().flatMap { index, layer in
+        avatar.layers.enumerated().filter { !hiddenLayers.contains($0.offset) }.flatMap { index, layer in
             let trousers = layer.fit.kind == .trousers
             // The layers are this garment, then the one worn with it.
             let verdicts = index == 0 ? regions : companionRegions
@@ -680,6 +731,7 @@ struct AvatarFitView: View {
                     Spacer()
                     Button {
                         self.companion = nil
+                        hiddenLayers = []
                     } label: {
                         Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
                     }

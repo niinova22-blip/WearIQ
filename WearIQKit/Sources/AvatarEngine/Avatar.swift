@@ -566,8 +566,9 @@ extension BodyModel {
                                      planes: [(Vec3(0, 1, 0), waistband)]))
             // Longer than the leg: the hem reaches the floor and the rest stacks in folds.
             // Shorter: the hem sits above the ankle.
-            let extra = cm(fit.lengthDelta)
-            let hemY = extra >= 0 ? max(0.012 * h, ankleY - extra) : ankleY - extra
+            // Shorts are trousers cut short by design (`hemOffset`), not "too short".
+            let extra = cm(fit.lengthDelta + fit.hemOffset)
+            let hemY = extra >= 0 ? max(0.012 * h, ankleY - extra) : min(crotchY - 0.04 * h, ankleY - extra)
             let stacked = max(0, extra - (ankleY - 0.012 * h))
             let thighOff = cm(fit.thighEase) / (2 * .pi)
             shape.hemY = hemY

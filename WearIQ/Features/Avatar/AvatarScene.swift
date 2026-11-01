@@ -45,6 +45,8 @@ struct AvatarSceneView: UIViewRepresentable {
     var viewHeight: CGFloat = 0
     var coveredTop: CGFloat = 0
     var coveredBottom: CGFloat = 0
+    /// Garments taken off the view (by index in `avatar.layers`), to see what is under them.
+    var hidden: Set<Int> = []
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -59,7 +61,7 @@ struct AvatarSceneView: UIViewRepresentable {
         view.addGestureRecognizer(UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pan(_:))))
         view.addGestureRecognizer(UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pinch(_:))))
         context.coordinator.update(avatar, revision: revision, fitColors: fitColors, frame: frame, labels: labels,
-                                   model: labelModel, in: view)
+                                   hidden: hidden, model: labelModel, in: view)
         context.coordinator.turn(to: facing, turn: facingTurn)
         context.coordinator.frameBody(height: avatar.body.maxY, viewHeight: viewHeight, top: coveredTop, bottom: coveredBottom)
         return view
@@ -67,7 +69,7 @@ struct AvatarSceneView: UIViewRepresentable {
 
     func updateUIView(_ view: SCNView, context: Context) {
         context.coordinator.update(avatar, revision: revision, fitColors: fitColors, frame: frame, labels: labels,
-                                   model: labelModel, in: view)
+                                   hidden: hidden, model: labelModel, in: view)
         context.coordinator.turn(to: facing, turn: facingTurn)
         context.coordinator.frameBody(height: avatar.body.maxY, viewHeight: viewHeight, top: coveredTop, bottom: coveredBottom)
     }
@@ -181,9 +183,9 @@ struct AvatarSceneView: UIViewRepresentable {
 
         @MainActor
         func update(_ avatar: Avatar, revision: Int, fitColors: Bool, frame: Int?, labels: [SceneLabel],
-                    model: LandmarkLabels, in view: SCNView) {
+                    hidden: Set<Int> = [], model: LandmarkLabels, in view: SCNView) {
             self.model = model
-            let key = "\(revision)-\(fitColors)-\(frame ?? -1)"
+            let key = "\(revision)-\(fitColors)-\(frame ?? -1)-\(hidden.sorted())"
             if key != shownKey {
                 let bodyChanged = shownKey?.split(separator: "-").first != key.split(separator: "-").first
                 shownKey = key
@@ -196,7 +198,7 @@ struct AvatarSceneView: UIViewRepresentable {
                 }
                 layersNode.childNodes.forEach { $0.removeFromParentNode() }
                 var materials: [SCNMaterial] = []
-                for layer in avatar.layers {
+                for (index, layer) in avatar.layers.enumerated() where !hidden.contains(index) {
                     let mesh = frame.map { avatar.layerMesh(layer, frame: $0) } ?? layer.mesh
                     let garment = Self.geometry(mesh, color: fitColors ? .white : UIColor(red: 0.24, green: 0.3, blue: 0.44, alpha: 1),
                                                 roughness: 0.86, doubleSided: true,

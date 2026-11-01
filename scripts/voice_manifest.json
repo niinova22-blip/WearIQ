@@ -27,10 +27,6 @@
   "lang": "en",
   "text": "Come a little closer to the phone."
  },
- "voice_0c1624a5a2a754de": {
-  "lang": "en",
-  "text": "Hold your arms straight out at shoulder height."
- },
  "voice_0dc5ab5568174230": {
   "lang": "tr",
   "text": "Hiçbir yere gönderilmez."
@@ -83,6 +79,12 @@
   "lang": "tr",
   "text": "Bu ölçüler vücudundan büyük görünüyor, büyük ihtimalle kıyafetin yüzünden."
  },
+ "voice_27b3d3a56681d727": {
+  "cer": 0.0,
+  "heard": "Bir kez daha, daha yavaş.",
+  "lang": "tr",
+  "text": "Bir kez daha, daha yavaş."
+ },
  "voice_2a184acc533bc230": {
   "lang": "en",
   "text": "Come a little closer."
@@ -94,10 +96,6 @@
  "voice_2c33dcef91e06624": {
   "lang": "en",
   "text": "Good."
- },
- "voice_2e54b5b82c8d7b18": {
-  "lang": "tr",
-  "text": "Her fotoğraftan sonra sağına doğru 45 derece dön ve dur."
  },
  "voice_31bfdcd885796ab7": {
   "lang": "en",
@@ -139,10 +137,6 @@
   "lang": "tr",
   "text": "Ayakların görünmüyor."
  },
- "voice_3cc4f3c8c602d1c8": {
-  "lang": "en",
-  "text": "You haven't turned yet."
- },
  "voice_3d77150c6ad738f4": {
   "lang": "tr",
   "text": "Görüntünün ortasına geç."
@@ -158,6 +152,12 @@
  "voice_3f6107350e75d5b6": {
   "lang": "en",
   "text": "Step back."
+ },
+ "voice_43ce6888e4c024ba": {
+  "cer": 0.0,
+  "heard": "Şimdi kollarını omuz hizasında yana aç ve olduğun yerde sağına doğru yavaşça bir tam tur dön.",
+  "lang": "tr",
+  "text": "Şimdi kollarını omuz hizasında yana aç ve olduğun yerde, sağına doğru yavaşça bir tam tur dön."
  },
  "voice_44b3596668e37465": {
   "lang": "en",
@@ -175,19 +175,9 @@
   "lang": "tr",
   "text": "Dönüşü bir kez daha deneyelim."
  },
- "voice_4ae58d0ef6b6af25": {
-  "cer": 0.0,
-  "heard": "Now turn 45 degrees to your right.",
-  "lang": "en",
-  "text": "Turn 45 degrees to your right."
- },
  "voice_4b53a58f30dd1aa4": {
   "lang": "tr",
   "text": "Hafifçe geri dön."
- },
- "voice_4bd10eff733fcf5c": {
-  "lang": "en",
-  "text": "After each photo, turn 45 degrees to your right and stop."
  },
  "voice_4c7fc377d578c491": {
   "lang": "en",
@@ -205,21 +195,35 @@
   "lang": "tr",
   "text": "Başın görünmüyor."
  },
+ "voice_4f6e17e630ffc114": {
+  "cer": 0.231,
+  "heard": "It takes about 15 seconds.",
+  "lang": "en",
+  "text": "It takes about fifteen seconds."
+ },
  "voice_505dc8d427bb2e1f": {
   "lang": "en",
   "text": "Move to the centre of the frame."
+ },
+ "voice_54950191bcab2236": {
+  "cer": 0.0,
+  "heard": "Once more, more slowly.",
+  "lang": "en",
+  "text": "Once more, more slowly."
  },
  "voice_557ec9cb02919898": {
   "lang": "tr",
   "text": "Görüntüye geri gel."
  },
+ "voice_5d73e7e7da4f9520": {
+  "cer": 0.0,
+  "heard": "That was a little fast.",
+  "lang": "en",
+  "text": "That was a little fast."
+ },
  "voice_5dcf8718216f8256": {
   "lang": "en",
   "text": "These measurements look larger than your body, probably because of your clothes."
- },
- "voice_64c0b80ff8829f65": {
-  "lang": "tr",
-  "text": "Henüz dönmedin."
  },
  "voice_64d11805995573ce": {
   "lang": "tr",
@@ -249,6 +253,12 @@
   "lang": "en",
   "text": "Your back faces the phone."
  },
+ "voice_700e550f83bc652b": {
+  "cer": 0.0,
+  "heard": "Kollarını omuz hizasında açık tut.",
+  "lang": "tr",
+  "text": "Kollarını omuz hizasında açık tut."
+ },
  "voice_7078396cbb43e255": {
   "lang": "en",
   "text": "Your head is cut off."
@@ -256,6 +266,12 @@
  "voice_739f2de7d52e2fd7": {
   "lang": "en",
   "text": "Move to the middle of the picture."
+ },
+ "voice_7697842d381c37ca": {
+  "cer": 0.0,
+  "heard": "Sağına doğru yavaşça dönmeye devam et.",
+  "lang": "tr",
+  "text": "Sağına doğru yavaşça dönmeye devam et."
  },
  "voice_7778621397147412": {
   "lang": "en",
@@ -265,10 +281,6 @@
   "lang": "tr",
   "text": "sağına doğru 45 derece daha dön ve dur."
  },
- "voice_7db0b7b6ffe2a640": {
-  "lang": "tr",
-  "text": "Şimdi sekiz yönden fotoğraf çekeceğim."
- },
  "voice_7ef87d6087bcfe8b": {
   "lang": "en",
   "text": "Turn 45 degrees to your right and stop."
@@ -276,6 +288,12 @@
  "voice_8074a9fd4dbbe5ff": {
   "lang": "en",
   "text": "Step back or tilt the phone."
+ },
+ "voice_83ce1f7c91ba72f1": {
+  "cer": 0.0,
+  "heard": "Keep your arms out at shoulder height",
+  "lang": "en",
+  "text": "Keep your arms out at shoulder height."
  },
  "voice_8c62e7b0de3ab1e6": {
   "lang": "en",
@@ -293,6 +311,12 @@
   "lang": "tr",
   "text": "Güzel, şimdi kıpırdamadan bekle."
  },
+ "voice_93e34f9742465030": {
+  "cer": 0.0,
+  "heard": "Now raise your arms to shoulder height and turn slowly in place to your right, once all the way round.",
+  "lang": "en",
+  "text": "Now raise your arms to shoulder height and turn slowly in place to your right, once all the way round."
+ },
  "voice_9999a67740f8bedb": {
   "lang": "en",
   "text": "Your measurements are ready."
@@ -301,6 +325,12 @@
   "lang": "en",
   "text": "Step back until you're fully visible, head to feet."
  },
+ "voice_9bdcb27c2957e7f6": {
+  "cer": 0.0,
+  "heard": "Keep turning slowly to your right.",
+  "lang": "en",
+  "text": "Keep turning slowly to your right."
+ },
  "voice_9e15844496b3c76b": {
   "lang": "tr",
   "text": "1 duruşu bir kez daha ölçelim."
@@ -308,6 +338,12 @@
  "voice_a016b4923b12462e": {
   "lang": "en",
   "text": "Turn back slightly, counter-clockwise."
+ },
+ "voice_a5de1ec8fcee5e5a": {
+  "cer": 0.0,
+  "heard": "Biraz hızlı oldu.",
+  "lang": "tr",
+  "text": "Biraz hızlı oldu."
  },
  "voice_a9de692fc4755296": {
   "lang": "en",
@@ -332,10 +368,6 @@
  "voice_adf9e1c9a010b9f5": {
   "lang": "tr",
   "text": "Yüzün telefona dönük, kolların yanlara açık dur ve kıpırdama."
- },
- "voice_aef9f34df31eb352": {
-  "lang": "en",
-  "text": "Now I'll take a photo from eight directions."
  },
  "voice_b49132a626551c92": {
   "lang": "en",
@@ -409,10 +441,6 @@
   "lang": "en",
   "text": "Turn fully to your side."
  },
- "voice_d1097ebdb7bd3950": {
-  "lang": "tr",
-  "text": "Kollarını omuz hizasında yana aç."
- },
  "voice_d1ff054d0f3256ad": {
   "lang": "tr",
   "text": "Sağ yanın telefona baksın."
@@ -453,13 +481,15 @@
   "lang": "en",
   "text": "Done."
  },
+ "voice_eec293ae4e79b9b7": {
+  "cer": 0.208,
+  "heard": "Yaklaşık 15 saniye sürer.",
+  "lang": "tr",
+  "text": "Yaklaşık on beş saniye sürer."
+ },
  "voice_f7ed9cfac61a582e": {
   "lang": "tr",
   "text": "Biraz fazla döndün."
- },
- "voice_f9bfad9f8f0bca23": {
-  "lang": "tr",
-  "text": "Sağına doğru 45 derece dön."
  },
  "voice_ffdcf16f72b9314d": {
   "lang": "tr",

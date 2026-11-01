@@ -65,14 +65,14 @@ public enum StandardSizeCharts {
         switch category {
         case .pants?: lengths[.inseam] = 0.481 * h
         case .tshirt?: lengths[.bodyLength] = 0.262 * h
-        case .shirt?, .jacket?:
+        case .shirt?, .jacket?, .sweater?:
             lengths[.bodyLength] = 0.262 * h
             lengths[.sleeveLength] = 0.3375 * h
         case .coat?:
             // Above the knee on the model: shoulder to knee less a hand's width.
             lengths[.bodyLength] = 0.5 * h
             lengths[.sleeveLength] = 0.3375 * h
-        case .dress?, .skirt?:
+        case .dress?, .skirt?, .shorts?:
             // A dress's or skirt's length is its style; without a stated one, none.
             break
         case nil: break
@@ -107,7 +107,8 @@ public enum StandardSizeCharts {
         if let r = (audience == .men ? menLetters : womenLetters)[label] { return r }
         guard let n = Int(label.split(separator: "/").first.map(String.init) ?? label) else { return nil }
         // Jeans and trousers in inches (W30): waist ≈ size × 2.54.
-        if (category == .pants || category == nil) && (24...40).contains(n) && (audience == .men || category == .pants) {
+        let trousers = category == .pants || category == .shorts
+        if (trousers || category == nil) && (24...40).contains(n) && (audience == .men || trousers) {
             let waist = Double(n) * 2.54
             return (waist + 10...waist + 18, waist - 2...waist + 2, waist + 14...waist + 20)
         }

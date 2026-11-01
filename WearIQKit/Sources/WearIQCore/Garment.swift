@@ -5,11 +5,14 @@ public enum GarmentCategory: String, Codable, CaseIterable, Sendable {
     /// A long outer layer: overcoat, trench, parka. Hangs past the hips.
     case coat
     case dress, skirt
+    /// Knitwear and sweatshirts: jumpers, hoodies, cardigans. Long sleeves, a knit.
+    case sweater
+    case shorts
 
     /// Worn on the upper body (a dress counts: it's sized by the chest).
     public var isTop: Bool { !isBottom }
     /// Worn from the waist down.
-    public var isBottom: Bool { self == .pants || self == .skirt }
+    public var isBottom: Bool { self == .pants || self == .skirt || self == .shorts }
     /// Goes over other clothes.
     public var isOuterwear: Bool { self == .jacket || self == .coat }
 }

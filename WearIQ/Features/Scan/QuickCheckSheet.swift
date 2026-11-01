@@ -120,6 +120,8 @@ extension GarmentCategory {
         case .coat: "coat"
         case .dress: "figure.stand.dress"
         case .skirt: "figure.stand.dress"
+        case .sweater: "tshirt"
+        case .shorts: "figure.run"
         }
     }
 }

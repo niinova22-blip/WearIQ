@@ -77,7 +77,6 @@ LINES = [
     "Turn fully to your side.",
     # StationGuide.instruction
     "Face the phone, arms straight out to the sides, and hold still.",
-    "Great. Now I'll take a photo from eight directions. Hold your arms straight out at shoulder height. After each photo, turn 45 degrees to your right and stop.",
     "Turn 45 degrees to your right and stop.",
     "Another 45 degrees to your right. Your left side faces the phone.",
     "Another 45 degrees to your right. Your back faces the phone.",
@@ -85,8 +84,11 @@ LINES = [
     "Last photo: another 45 degrees to your right, and stop.",
     "Another 45 degrees to your right, and stop.",
     "Photo taken.",
-    "You haven't turned yet. Turn 45 degrees to your right.",
     "Photos are processed on this phone and deleted right away. Nothing is sent anywhere.",
+    "Great. Now raise your arms to shoulder height and turn slowly in place to your right, once all the way round. It takes about fifteen seconds.",
+    "Keep turning slowly to your right.",
+    "Keep your arms out at shoulder height.",
+    "That was a little fast. Once more, more slowly.",
 ]
 RETAKE = "One more look at %lld position(s)."
 NUMBER_WORDS = {

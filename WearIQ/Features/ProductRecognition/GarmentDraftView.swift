@@ -126,6 +126,17 @@ struct GarmentDraftView: View {
                 Text("Choose").tag(GarmentCategory?.none)
                 ForEach(GarmentCategory.allCases, id: \.self) { Text($0.title).tag(GarmentCategory?.some($0)) }
             }
+            // A store that publishes no size chart (many render it with scripts): once the
+            // kind of garment is known, the standard chart for its sizes fills in.
+            .onChange(of: draft.category) { _, _ in
+                guard draft.sizes.isEmpty || draft.chartSource == .standard else { return }
+                let audience: GarmentAudience? = switch BodySex(rawValue: UserDefaults.standard.string(forKey: "bodySex") ?? "") {
+                case .male: .men
+                case .female: .women
+                case nil: nil
+                }
+                draft.fillStandardChart(fallbackAudience: audience)
+            }
             Picker("Fit", selection: $draft.fitStyle) {
                 ForEach(FitStyle.allCases, id: \.self) { Text($0.title).tag($0) }
             }
@@ -295,6 +306,8 @@ extension GarmentCategory {
         case .coat: String(localized: "Coat")
         case .dress: String(localized: "Dress")
         case .skirt: String(localized: "Skirt")
+        case .sweater: String(localized: "Sweater / sweatshirt")
+        case .shorts: String(localized: "Shorts")
         }
     }
 }

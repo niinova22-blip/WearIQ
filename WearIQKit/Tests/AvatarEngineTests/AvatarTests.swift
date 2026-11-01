@@ -217,3 +217,23 @@ import WearIQCore
         #expect(abs((sleeve?.offsetCm ?? 0) - 2) < 0.5)
     }
 }
+
+@Suite struct ShortsAndCrops {
+    let m = Avatar.Measurements(height: 170, chest: 90, waist: 74, hip: 96, thigh: 56,
+                                shoulderWidth: 36, armLength: 55, inseam: 78)
+
+    /// Shorts cut to mid-thigh say so, against the thigh, not "50 cm above the ankle".
+    @Test func shortsEndAtTheThigh() throws {
+        var f = Avatar.GarmentFit(kind: .trousers); f.hemOffset = -0.335 * 170
+        let legs = try #require(Avatar(m, garment: f, detail: .preview).layers[0].placements.first)
+        #expect([.midThigh, .knee].contains(legs.landmark))
+        #expect(legs.usual)
+    }
+
+    /// A crop top's hem is up at the waist.
+    @Test func cropTopEndsAtTheWaist() throws {
+        var f = Avatar.GarmentFit(kind: .top(longSleeves: false)); f.hemOffset = -0.075 * 170
+        let hem = try #require(Avatar(m, garment: f, detail: .preview).layers[0].placements.first { $0.edge == .hem })
+        #expect([.waist, .hips].contains(hem.landmark))
+    }
+}

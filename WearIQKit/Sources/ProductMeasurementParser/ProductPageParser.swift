@@ -312,11 +312,15 @@ public enum GarmentClassifier {
             (.shirt, ["dress shirt"]),
             (.dress, ["elbise", "dress", "abiye"]),
             (.skirt, ["etek", "skirt"]),
-            (.pants, ["pantolon", "jean", "kot ", "chino", "trouser", "pants", "jogger", "esofman alti", "tayt", "legging"]),
+            (.shorts, ["sort", "short", "bermuda"]),
+            (.pants, ["pantolon", "jean", "kot ", "chino", "trouser", "pants", "jogger", "esofman alti", "tayt", "legging",
+                      "kargo", "cargo", "palazzo"]),
             (.coat, ["palto", "kaban", "trenckot", "trenchcoat", "trench", "overcoat", "parka", "pardesu", "coat"]),
-            (.jacket, ["ceket", "mont", "blazer", "jacket", "yelek", "hirka", "cardigan"]),
-            (.tshirt, ["t-shirt", "tisort", "tshirt", "tee", "polo"]),
-            (.shirt, ["gomlek", "shirt", "bluz", "blouse"]),
+            (.jacket, ["ceket", "mont", "blazer", "jacket", "yelek", "bomber", "kase", "deri ceket"]),
+            (.sweater, ["kazak", "triko", "sweatshirt", "sweat", "hoodie", "kapusonlu", "hirka", "cardigan", "kardigan",
+                        "sweater", "jumper", "pullover", "boğazli", "bogazli", "polar", "fleece"]),
+            (.tshirt, ["t-shirt", "tisort", "tshirt", "tee", "polo", "atlet", "crop", " top", "body", "bustiyer", "tank"]),
+            (.shirt, ["gomlek", "shirt", "bluz", "blouse", "tunik", "tunic"]),
         ]
         return rules.first { _, keys in keys.contains { t.contains($0) } }?.0
     }

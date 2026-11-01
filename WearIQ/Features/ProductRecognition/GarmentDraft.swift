@@ -73,6 +73,8 @@ final class GarmentDraft {
         case .shirt, .jacket, .coat: [.chest, .shoulderWidth, .sleeveLength, .waist, .bodyLength]
         case .dress: [.chest, .waist, .hip, .shoulderWidth, .bodyLength]
         case .skirt: [.waist, .hip, .bodyLength]
+        case .sweater: [.chest, .shoulderWidth, .sleeveLength, .bodyLength]
+        case .shorts: [.waist, .hip, .thigh, .inseam]
         }
     }
 
@@ -106,7 +108,7 @@ final class GarmentDraft {
         // Without the store's size list, use the usual range so the user still gets
         // their standard size.
         let labels = info.availableSizes.isEmpty
-            ? (category == .pants ? ["28", "29", "30", "31", "32", "33", "34", "36", "38"] : ["XS", "S", "M", "L", "XL", "XXL"])
+            ? (category == .pants && info.audience != .women ? ["28", "29", "30", "31", "32", "33", "34", "36", "38"] : ["XS", "S", "M", "L", "XL", "XXL"])
             : info.availableSizes
         guard sizes.isEmpty || chartSource == .standard, category != nil,
               let chart = StandardSizeCharts.chart(for: labels, category: category,

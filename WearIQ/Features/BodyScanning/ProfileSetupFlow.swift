@@ -222,7 +222,7 @@ struct ScanGuideView: View {
             .shadow(color: .pink.opacity(0.35), radius: 12, y: 6)
             VStack(alignment: .leading, spacing: 4) {
                 Text("About a minute").font(.title2.bold())
-                Text("Voice guidance leads you; photos are taken automatically.")
+                Text("Voice guidance leads you; the turn is filmed and measured on this phone.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -234,7 +234,7 @@ struct ScanGuideView: View {
     private var steps: some View {
         VStack(alignment: .leading, spacing: 12) {
             step(1, "A front photo", "Face the phone, arms slightly away from your body.")
-            step(2, "Eight directions", "Arms out at shoulder height; after each photo turn 45° to your right.")
+            step(2, "One slow turn", "After 3, 2, 1: arms out at shoulder height, turn slowly once round to your right. About 15 seconds.")
             step(3, "Your measurements", "Chest, waist, hips and lengths, ready to check.")
         }
         .padding(Theme.Spacing.m)

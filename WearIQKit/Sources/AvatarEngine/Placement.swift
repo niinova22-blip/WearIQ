@@ -50,9 +50,13 @@ extension BodyModel {
         switch fit.kind {
         case .trousers:
             // The leg's end against the ankle bone: longer reaches the shoe and then the floor.
-            let extra = fit.lengthDelta
+            let extra = fit.lengthDelta + fit.hemOffset
             let floorAt = Double((ankleY - 0.012 * h) * 100)
-            if extra >= floorAt {
+            if extra < -12 {
+                // Shorts or cropped legs: against the thigh, knee or calf.
+                let (landmark, offset) = nearestLandmark(to: shape.hemY)
+                out.append(.init(edge: .legs, landmark: landmark, offsetCm: offset, estimated: !lengthKnown, usual: usualLength))
+            } else if extra >= floorAt {
                 out.append(.init(edge: .legs, landmark: .floor, offsetCm: extra - floorAt, estimated: !lengthKnown, usual: false))
             } else {
                 out.append(.init(edge: .legs, landmark: .ankle, offsetCm: extra, estimated: !lengthKnown, usual: usualLength))

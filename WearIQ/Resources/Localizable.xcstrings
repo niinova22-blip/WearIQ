@@ -9290,6 +9290,126 @@
           }
         }
       }
+    },
+    "Great. Now raise your arms to shoulder height and turn slowly in place to your right, once all the way round. It takes about fifteen seconds.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harika. Şimdi kollarını omuz hizasında yana aç ve olduğun yerde, sağına doğru yavaşça bir tam tur dön. Yaklaşık on beş saniye sürer."
+          }
+        }
+      }
+    },
+    "Keep turning slowly to your right.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına doğru yavaşça dönmeye devam et."
+          }
+        }
+      }
+    },
+    "Keep your arms out at shoulder height.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollarını omuz hizasında açık tut."
+          }
+        }
+      }
+    },
+    "That was a little fast. Once more, more slowly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz hızlı oldu. Bir kez daha, daha yavaş."
+          }
+        }
+      }
+    },
+    "Turning: %lld%%": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dönüş: %%%lld"
+          }
+        }
+      }
+    },
+    "Sweater / sweatshirt": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kazak / sweatshirt"
+          }
+        }
+      }
+    },
+    "Shorts": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şort"
+          }
+        }
+      }
+    },
+    "Hide %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ gizle"
+          }
+        }
+      }
+    },
+    "Show %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ göster"
+          }
+        }
+      }
+    },
+    "One slow turn": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tek yavaş tur"
+          }
+        }
+      }
+    },
+    "After 3, 2, 1: arms out at shoulder height, turn slowly once round to your right. About 15 seconds.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3, 2, 1'den sonra: kollar omuz hizasında açık, sağına doğru yavaşça bir tur dön. Yaklaşık 15 saniye."
+          }
+        }
+      }
+    },
+    "Voice guidance leads you; the turn is filmed and measured on this phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesli yönlendirme eşlik eder; dönüş bu telefonda kaydedilip ölçülür."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

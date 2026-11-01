@@ -97,6 +97,12 @@ import WearIQCore
         #expect(GarmentClassifier.category(from: "Midi Pileli Etek") == .skirt)
         #expect(GarmentClassifier.category(from: "Pamuklu Bluz") == .shirt)
         #expect(GarmentClassifier.category(from: "Men's Oxford Dress Shirt") == .shirt)
+        #expect(GarmentClassifier.category(from: "Fitted dik yaka kazak") == .sweater)
+        #expect(GarmentClassifier.category(from: "Kapüşonlu Sweatshirt") == .sweater)
+        #expect(GarmentClassifier.category(from: "Crop Kazak") == .sweater)
+        #expect(GarmentClassifier.category(from: "Basic Crop Top") == .tshirt)
+        #expect(GarmentClassifier.category(from: "Denim Bermuda Şort") == .shorts)
+        #expect(GarmentClassifier.category(from: "Kargo Pantolon") == .pants)
     }
 
     @Test func compositionStretch() {

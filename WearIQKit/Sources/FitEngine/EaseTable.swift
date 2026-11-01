@@ -44,8 +44,10 @@ struct RegionRule {
 enum EaseTable {
     static func rules(for category: GarmentCategory, fit: FitStyle) -> [RegionRule] {
         switch category {
-        case .shirt, .tshirt, .jacket, .coat, .dress: topRules(category, fit)
+        case .shirt, .tshirt, .jacket, .coat, .dress, .sweater: topRules(category, fit)
         case .pants: pantsRules(fit)
+        // Shorts are sized like trousers; their legs are short by design.
+        case .shorts: pantsRules(fit).filter { $0.region != .inseam && $0.region != .outseam }
         case .skirt: skirtRules(fit)
         }
     }

@@ -128,6 +128,15 @@ final class BodyScanViewModel {
     private var suspended = false
     /// Since when the arms have looked lowered.
     private var armsDownSince: Date?
+    /// The filmed turn, and when filming began (nil during the countdown).
+    private var recording = TurnRecording()
+    private var recordingStarted: Date?
+    /// Arm spans seen during the countdown, for the front view's.
+    private var spans: [Double] = []
+    private var clothingChecked = false
+    private var turnProgress = 0.0
+    private var lastProgressAt = Date()
+    private var frontResult: FrontAnalysis?
 
     /// Pose problems are spoken once they have lasted this long, so flickering
     /// detections don't produce a stream of half-finished sentences.
@@ -138,7 +147,7 @@ final class BodyScanViewModel {
 
     /// How long the pose must be held before the countdown starts.
     private let holdDuration: TimeInterval = 1.0
-    private let maxTurnDuration: TimeInterval = 150
+    private let maxTurnDuration: TimeInterval = 45
     private let defaultFractions: [BodyLevel: Double] = [.chest: 0.27, .waist: 0.39, .hip: 0.5]
 
     init(basics: BodyBasics) {
@@ -204,6 +213,8 @@ final class BodyScanViewModel {
         turn = TurnState()
         retakeQueue = []
         retakesOffered = false
+        frontResult = nil
+        recordingStarted = nil
         clothingFindings = []
         result = nil
         partialResult = nil
@@ -246,15 +257,13 @@ final class BodyScanViewModel {
     func dismissClothingWarning() {
         clothingWarningDismissed = true
         turn.clothing = []
-        stillness.reset()
-        stationStart = Date()
+        if let front = frontResult { startStations(front) }
     }
 
     func retryAfterChangingClothes() {
         turn.clothing = []
-        stillness.reset()
-        stationStart = Date()
-        say(StationGuide.instruction(turn.station))
+        clothingChecked = false
+        if let front = frontResult { startStations(front) }
     }
 
     private func handle(_ joints: [BodyJoint: DetectedJoint]) {
@@ -328,13 +337,14 @@ final class BodyScanViewModel {
         stage = .turning(0)
         let front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
         self.front = front
-        audio.say(String(localized: "Great. Now I'll take a photo from eight directions. Hold your arms straight out at shoulder height. After each photo, turn 45 degrees to your right and stop."),
+        audio.say(String(localized: "Great. Now raise your arms to shoulder height and turn slowly in place to your right, once all the way round. It takes about fifteen seconds."),
                   priority: .high)
         countdownTask = Task { [weak self] in
             do {
                 let result = try await front.value
-                // A moment to lift the arms; the first instruction waits for the sentence above.
-                try? await Task.sleep(for: .seconds(3))
+                self?.frontResult = result
+                // The sentence above has to end before the countdown.
+                try? await Task.sleep(for: .seconds(1))
                 guard !Task.isCancelled else { return }
                 self?.startStations(result)
             } catch {
@@ -347,43 +357,66 @@ final class BodyScanViewModel {
 
     private func startStations(_ front: FrontAnalysis) {
         scan = StationScan()
-        stillness.reset()
+        recording = TurnRecording()
+        recordingStarted = nil
+        spans = []
+        clothingChecked = basics.attire == .everyday || clothingWarningDismissed
+        armsDownSince = nil
         turn = TurnState()
         turnStart = Date()
         scanBegan = Date()
-        stationStart = Date()
         spanReference = 1
-        shoulderReference = nil
 
         let vision = vision
         let start = turnStart
         let heightCm = basics.heightCm
         let fractions = front.fractions.merging(defaultFractions) { measured, _ in measured }
         levelFractions = fractions
-        capturing = false
         let analyzer = RotationScanAnalyzer()
-        camera.frameRate = 8
+        // Ten frames a second: a quarter of a slow turn is about 35 frames.
+        camera.frameRate = 10
         camera.onFrame = { [weak self] buffer in
             let time = Date().timeIntervalSince(start)
             let reading = vision.turnFrame(buffer, time: time)
                 .flatMap { analyzer.reading($0, heightCm: heightCm, levelFractions: fractions) }
-            Task { @MainActor in self?.handleStation(reading, time: time) }
+            Task { @MainActor in self?.handleTurn(reading, time: time) }
         }
         stage = .turning(0)
         shownFit.reset(nil)
-        say(StationGuide.instruction(0))
-
         countdownTask = Task { [weak self] in
+            // Once the intro has been said: 3, 2, 1, and the turn is filmed.
+            while let self, self.audio.isSpeaking, !Task.isCancelled { try? await Task.sleep(for: .milliseconds(100)) }
+            for n in stride(from: 3, through: 1, by: -1) {
+                guard let self, !Task.isCancelled else { return }
+                self.audio.play(.tick)
+                self.audio.say("\(n)", priority: .high)
+                try? await Task.sleep(for: .seconds(1))
+            }
+            guard let self, !Task.isCancelled, case .turning = self.stage else { return }
+            self.beginRecording()
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
-                guard let self, case .turning = self.stage else { return }
+                guard case .turning = self.stage else { return }
                 self.coach()
             }
         }
     }
 
-    private func handleStation(_ reading: FrameReading?, time: Double) {
-        guard case .turning = stage, turn.station < StationScan.stationCount, !capturing else { return }
+    /// The front view's arm span, from the frames seen during the countdown (arms up,
+    /// facing the phone), is what the turn is measured against.
+    private func beginRecording() {
+        let sorted = spans.sorted()
+        if !sorted.isEmpty { spanReference = sorted[sorted.count * 3 / 4] }
+        recording = TurnRecording()
+        recordingStarted = Date()
+        lastProgressAt = Date()
+        audio.play(.go)
+    }
+
+    /// Every frame of the turn: kept while the user is whole in the picture with the
+    /// arms out; the voice speaks up only when something is wrong.
+    private func handleTurn(_ reading: FrameReading?, time: Double) {
+        guard case .turning = stage else { return }
         let now = Date()
         if let reading {
             turn.reading = reading
@@ -393,145 +426,56 @@ final class BodyScanViewModel {
             turn.reading = nil
             turn.cutEdges = []
         }
-        guard turn.clothing.isEmpty else { return }
-        guard let reading else {
-            stillness.reset()
-            turn.holding = false
-            return
-        }
-        stillness.add(reading, time: time)
-        // A photo at each of the eight directions, led by the voice: the instruction is
-        // said, and once it has ended and the user stands still, the photo is taken. The
-        // angle isn't policed to a narrow band (that made stops slow and fussy, and π ×
-        // the mean of eight widths barely changes for a stop 10–15° off); only a stop
-        // that plainly isn't a new direction is refused, and opposite stops that disagree
-        // are taken again at the end.
-        guard Date().timeIntervalSince(stationStart) > 1.2, !audio.isSpeaking, let span = reading.armSpan else { return }
-        let station = turn.station
-        let shoulders = Self.shoulderSeparation(reading)
-        let ratio = span / spanReference
-        // Arms counted as down only after a moment: a frame or two of a missed wrist
-        // isn't the user dropping them. Side-on, one arm points at the camera and the
-        // joints can't be read, so it isn't judged there.
-        if station % 4 != 2, StopGuide.armsDown(reading) {
-            armsDownSince = armsDownSince ?? now
-        } else {
-            armsDownSince = nil
-        }
+        guard turn.clothing.isEmpty, let reading, let span = reading.armSpan else { return }
+        // Arms lowered for most of a second (a missed wrist for a frame doesn't count).
+        // Side-on the joints of the arms can't be read, so only the wider views judge it.
+        let wideView = recordingStarted == nil || span / spanReference > 0.6
+        if wideView, StopGuide.armsDown(reading) { armsDownSince = armsDownSince ?? now } else { armsDownSince = nil }
+        let armsDown = armsDownSince.map { now.timeIntervalSince($0) > 0.8 } ?? false
         let fit: StopFit
         if !StopGuide.fullyVisible(reading) {
             fit = .stepBack
         } else if !turn.cutEdges.isDisjoint(with: [.left, .right]) {
             fit = .handsOutOfFrame
-        } else if reading.floor - reading.top < StopGuide.minimumBodySpan {
-            fit = .comeCloser
-        } else if abs(reading.centerX - 0.5) > 0.18 {
-            fit = .moveToCentre
-        } else if let since = armsDownSince, now.timeIntervalSince(since) > 0.8 {
+        } else if armsDown {
             fit = .openArms
-        } else if station == 0 {
-            fit = span >= StopGuide.openArmSpan ? .ok : .openArms
-        } else if StopGuide.plainlyOff(station: station, spanRatio: ratio) {
-            fit = .turnFurther
         } else {
             fit = .ok
         }
-        let shown = shownFit.update(fit)
-        guard let widths = stillness.stillWidths(at: time) else {
-            turn.fit = shown
-            turn.holding = false
-            if fit == .ok { holdStillHint() } else { nudge(fit) }
+        turn.fit = shownFit.update(fit)
+        guard let started = recordingStarted else {
+            // The countdown, facing the phone: the front span, and loose clothing.
+            guard fit == .ok else { return nudge(fit) }
+            spans.append(span)
+            if !clothingChecked, span >= StopGuide.openArmSpan {
+                clothingChecked = true
+                let bmi = basics.weightKg / ((basics.heightCm / 100) * (basics.heightCm / 100))
+                let findings = ClothingCheck.findings(armThickness: reading.armThickness,
+                                                      waistWidthCm: reading.levels[.waist]?.widthCm,
+                                                      hipWidthCm: reading.levels[.hip]?.widthCm,
+                                                      bmi: bmi, sex: basics.sex)
+                clothingFindings = findings
+                if !findings.isEmpty {
+                    countdownTask?.cancel()
+                    turn.clothing = findings
+                    audio.play(.problem)
+                    say(String(localized: "Your clothes look loose, which makes the measurements too large. Take them off or put on something fitted."), priority: .high)
+                }
+            }
             return
         }
-        turn.fit = fit == .ok ? .ok : shown
-        turn.holding = fit == .ok
         guard fit == .ok else { return nudge(fit) }
-        // Still where the last photo was taken: neither the arm span nor the outline has
-        // changed, so the user hasn't turned yet.
-        if station > 0, !turn.retaking {
-            let spanMoved = turn.lastRatio.map { StopGuide.turned(from: $0, to: ratio) } ?? true
-            if !spanMoved, !scan.differs(widths, from: station - 1, threshold: 0.05) {
-                turn.fit = .turnFurther
-                turn.holding = false
-                return nudge(.turnFurther)
-            }
-        }
-        // Going round again: stops that measured well are passed by.
-        if turn.retaking, !retakeQueue.contains(station) {
-            audio.play(.tick)
-            turn.lastRatio = ratio
-            return advance()
-        }
-        if station == 0, !turn.retaking {
-            // Facing the phone with the arms out is where loose clothing shows.
-            let bmi = basics.weightKg / ((basics.heightCm / 100) * (basics.heightCm / 100))
-            let findings = ClothingCheck.findings(armThickness: reading.armThickness,
-                                                  waistWidthCm: reading.levels[.waist]?.widthCm,
-                                                  hipWidthCm: reading.levels[.hip]?.widthCm,
-                                                  bmi: bmi, sex: basics.sex)
-            clothingFindings = findings
-            // In everyday clothes that's expected: the measurement accounts for it.
-            if !findings.isEmpty, !clothingWarningDismissed, basics.attire != .everyday {
-                turn.clothing = findings
-                turn.holding = false
-                audio.play(.problem)
-                say(String(localized: "Your clothes look loose, which makes the measurements too large. Take them off or put on something fitted."), priority: .high)
-                return
-            }
-            spanReference = span
-            shoulderReference = shoulders
-        }
-        turn.lastRatio = station == 0 ? 1 : ratio
-        capturePrecise(fallback: widths)
-    }
-
-    /// Re-measures the stop on stills at the best segmentation quality; the live frames'
-    /// faster masks have softer edges. Five stills 120 ms apart (different camera
-    /// frames) are measured and the median width per level kept, so one frame's
-    /// segmentation slip doesn't decide the stop. Falls back to the live widths if
-    /// none can be measured.
-    private func capturePrecise(fallback: [BodyLevel: Double]) {
-        guard !capturing else { return }
-        capturing = true
-        turn.capturing = true
-        audio.play(.tick)
-        let station = turn.station
-        let heightCm = basics.heightCm
-        let fractions = levelFractions
-        Task {
-            var images: [CGImage] = []
-            // Five stills, 120 ms apart: the median of five shrugs off two bad masks.
-            for k in 0..<5 {
-                if k > 0 { try? await Task.sleep(for: .milliseconds(120)) }
-                if let image = camera.captureStill() { images.append(image) }
-            }
-            let stills = images
-            let precise = await Task.detached(priority: .userInitiated) { () -> (widths: [BodyLevel: Double], profile: StopProfile?)? in
-                var readings: [[BodyLevel: Double]] = []
-                // The stop's whole width profile too, for measuring the turn another way
-                // in validation mode; numbers only, no picture is kept.
-                var profiles: [StopProfile] = []
-                for image in stills {
-                    guard let frame = VisionBodyAnalyzer().turnFrame(image, time: 0),
-                          let reading = RotationScanAnalyzer().reading(frame, heightCm: heightCm, levelFractions: fractions),
-                          StopGuide.fullyVisible(reading) else { continue }
-                    readings.append(reading.levels.mapValues(\.widthCm))
-                    if let profile = RotationScanAnalyzer().profile(frame, heightCm: heightCm, station: station) {
-                        profiles.append(profile)
-                    }
-                }
-                var widths: [BodyLevel: Double] = [:]
-                for level in BodyLevel.allCases {
-                    let values = readings.compactMap { $0[level] }.sorted()
-                    if !values.isEmpty { widths[level] = values[values.count / 2] }
-                }
-                return widths[.waist] != nil || widths[.hip] != nil ? (widths, StopProfile.median(profiles)) : nil
-            }.value
-            capturing = false
-            turn.capturing = false
-            guard case .turning = stage, turn.station == station else { return }
-            record(precise?.widths ?? fallback, profile: precise?.profile)
-        }
+        recording.add(.init(time: now.timeIntervalSince(started), spanRatio: span / spanReference,
+                            widths: reading.levels.mapValues(\.widthCm)))
+        // The ring fills as the user goes round.
+        let progress = recording.progress
+        if progress > turnProgress + 0.01 { lastProgressAt = now }
+        turnProgress = progress
+        let passed = Int((progress * Double(StationScan.stationCount)).rounded(.down))
+        turn.station = min(StationScan.stationCount - 1, passed)
+        turn.captured = Set(0..<min(StationScan.stationCount, passed + 1))
+        stage = .turning(progress)
+        if recording.isComplete || recording.tooFast { finishTurn() }
     }
 
     /// Shoulder joints' separation over body height, in the same units both ways.
@@ -539,12 +483,6 @@ final class BodyScanViewModel {
         guard let l = reading.joints[.leftShoulder], let r = reading.joints[.rightShoulder],
               reading.floor > reading.top else { return nil }
         return abs(l.x - r.x) * 9 / 16 / (reading.floor - reading.top)
-    }
-
-    /// In the right place but still moving: one short word, not a sentence.
-    private func holdStillHint() {
-        guard Date().timeIntervalSince(lastHintAt) > 3, !audio.isSpeaking else { return }
-        hint(String(localized: "Good, now hold still."))
     }
 
     private func nudge(_ fit: StopFit) {
@@ -555,63 +493,36 @@ final class BodyScanViewModel {
         switch fit {
         case .ok: return
         case .handsOutOfFrame: hint(String(localized: "Step back until your hands fit in the picture too."))
-        case .turnFurther: hint(String(localized: "You haven't turned yet. Turn 45 degrees to your right."))
+        case .turnFurther: hint(String(localized: "Keep turning slowly to your right."))
         case .turnBack: hint(String(localized: "A little too far. Turn back slightly, counter-clockwise."))
         case .comeCloser: hint(String(localized: "Come a little closer to the phone."))
         case .moveToCentre: hint(String(localized: "Move to the middle of the picture."))
-        case .openArms: hint(String(localized: "Raise your arms to shoulder height, straight out to the sides."))
+        case .openArms: hint(String(localized: "Keep your arms out at shoulder height."))
         case .stepBack: hint(String(localized: "Step back until you're fully visible, head to feet."))
         }
     }
 
-    private func record(_ widths: [BodyLevel: Double], profile: StopProfile? = nil) {
-        let station = turn.station
-        scan.record(widths, at: station, profile: profile)
-        turn.captured.insert(station)
-        let measured = Set(scan.levels.filter { scan.isMeasured($0) })
-        if !measured.subtracting(turn.measured).isEmpty { audio.play(.region) }
-        turn.measured = measured
-        turn.holding = false
-        audio.play(.sector(station))
-        stillness.reset()
-        turn.fit = nil
-
-        if turn.retaking {
-            retakeQueue.removeAll { $0 == station }
-            guard !retakeQueue.isEmpty else { return finishTurn() }
-            return advance()
-        }
-        stage = .turning(Double(station + 1) / Double(StationScan.stationCount))
-        guard station + 1 < StationScan.stationCount else {
-            turn.station = station + 1
-            return finishTurn()
-        }
-        advance()
-    }
-
-    /// On to the next stop, 45° further clockwise.
-    private func advance() {
-        let next = turn.station + 1
-        turn.station = next
-        turn.holding = false
-        turn.fit = nil
-        shownFit.reset(nil)
-        stillness.reset()
-        stationStart = Date()
-        say(String(localized: "Photo taken.") + " " + StationGuide.instruction(next))
-    }
-
-    /// Runs twice a second: helps when a stop is taking long.
+    /// Runs twice a second during the turn: a turn that has stopped moving is nudged on,
+    /// one that takes far too long is started again.
     private func coach() {
-        if Date().timeIntervalSince(turnStart) > maxTurnDuration { return finishTurn() }
-        guard Date().timeIntervalSince(lastHintAt) > 8, !audio.isSpeaking else { return }
+        guard let started = recordingStarted else { return }
+        if Date().timeIntervalSince(started) > maxTurnDuration { return restartTurn() }
+        guard Date().timeIntervalSince(lastHintAt) > 5, !audio.isSpeaking else { return }
         if turn.reading == nil {
             hint(String(localized: "Step back into the frame."))
-        } else if turn.fit == nil {
-            hint(String(localized: "Stop and hold still for a moment."))
-        } else {
-            hint(StationGuide.instruction(turn.station))
+        } else if Date().timeIntervalSince(lastProgressAt) > 5 {
+            hint(String(localized: "Keep turning slowly to your right."))
         }
+    }
+
+    /// The turn again from the front: it went too fast, or didn't come round.
+    private func restartTurn(tooFast: Bool = false) {
+        guard let front = frontResult else { return retry() }
+        countdownTask?.cancel()
+        audio.play(.problem)
+        say(tooFast ? String(localized: "That was a little fast. Once more, more slowly.")
+                    : String(localized: "Let's try the turn again."), priority: .high)
+        startStations(front)
     }
 
     /// An instruction: waits for whatever is being said to finish, unless told to cut in.
@@ -627,29 +538,13 @@ final class BodyScanViewModel {
     }
 
     private func finishTurn() {
-        // Opposite stops see the same outline; where they disagree one was off. A few such
-        // stops are taken again instead of redoing the whole turn; many mean the turn as a
-        // whole went wrong, and the measurement says how sure it is.
-        if !retakesOffered {
-            retakesOffered = true
-            let retake = scan.stopsToRetake()
-            if !retake.isEmpty, retake.count <= 3 {
-                // Round again from the front, in the same 45° steps, measuring only the
-                // stops that need it: easier to follow than jumping to a position.
-                retakeQueue = retake.sorted()
-                turn.retaking = true
-                turn.station = 0
-                turn.fit = nil
-                shownFit.reset(nil)
-                turnStart = Date()
-                stationStart = Date()
-                stillness.reset()
-                audio.play(.problem)
-                say(String(localized: "One more look at \(retake.count) position(s).") + " " + StationGuide.instruction(0),
-                    priority: .high)
-                return
-            }
+        if recording.tooFast { return restartTurn(tooFast: true) }
+        // The eight directions found in the turn, as the stops the measurement uses.
+        scan = StationScan()
+        for (k, widths) in recording.stations().enumerated() {
+            if let widths { scan.record(widths, at: k) }
         }
+        guard scan.captured.count >= scan.minimumStations else { return restartTurn() }
         camera.onFrame = nil
         countdownTask?.cancel()
         audio.play(.success)
