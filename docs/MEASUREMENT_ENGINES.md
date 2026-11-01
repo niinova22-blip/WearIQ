@@ -104,5 +104,30 @@ deliberately.
 3. Scan a few people twice (same code) to measure repeatability.
 4. Export the CSV/JSON.
 
-Not yet done: no real-device run of engine B. ARKit modes (moving camera, floor-plane
-scale) are later steps.
+## Step 3: real-world scale from ARKit (experimental)
+
+`FloorScale` (BodyMeasurementEngine, tested on a synthetic camera) and
+`ARScaleSession` (app). On a record: "Measure height with ARKit".
+
+1. One person holds the phone (back camera) while ARKit finds the floor plane. This
+   needs world tracking only, so it works on an iPhone 11 without LiDAR.
+2. About three times a second, the person's silhouette is found. The ray through its
+   lowest point meets the floor at the front of the feet.
+3. The body's vertical line is placed 0.11 × stature behind that point. The ray through
+   the top of the head is cut by the vertical plane through that line, facing the
+   camera.
+4. Height is head minus floor. 15 frames are combined by their median, and frames
+   without normal tracking are left out.
+
+With a LiDAR, its median depth to the torso is kept as a check on the camera distance;
+the LiDAR is never required.
+
+The record keeps ARKit height, distance, samples, the tracking share and whether ARKit
+classified the plane as a floor. The report compares both the ARKit height and the
+typed height against the tape height. That shows whether ARKit's scale is good enough to
+replace the typed height as the ruler of the turn. Only then would it go into the
+scan itself.
+
+Not yet done:
+- no real-device run of engine B or of the ARKit height;
+- the moving-camera mode (step 5) is not started.

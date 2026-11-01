@@ -8370,6 +8370,256 @@
           }
         }
       }
+    },
+    "Move the phone more slowly.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonu daha yavaş hareket ettir."
+          }
+        }
+      }
+    },
+    "Too little detail in view; more light helps.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Görüntüde yeterli ayrıntı yok; daha fazla ışık yardımcı olur."
+          }
+        }
+      }
+    },
+    "Tracking is limited for a moment.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takip bir anlığına sınırlı."
+          }
+        }
+      }
+    },
+    "Tracking isn't available.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takip kullanılamıyor."
+          }
+        }
+      }
+    },
+    "Head or feet are out of the picture: step back.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baş ya da ayaklar görüntünün dışında: biraz geri çekil."
+          }
+        }
+      }
+    },
+    "Typed height: %lld cm · distance %@ m": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Girilen boy: %lld cm · mesafe %@ m"
+          }
+        }
+      }
+    },
+    "LiDAR to the body's front: %@ m": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LiDAR ile vücudun önüne mesafe: %@ m"
+          }
+        }
+      }
+    },
+    "Measure again": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekrar ölç"
+          }
+        }
+      }
+    },
+    "Save to this scan": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu taramaya kaydet"
+          }
+        }
+      }
+    },
+    "Height with ARKit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ARKit ile boy"
+          }
+        }
+      }
+    },
+    "This device doesn't support ARKit world tracking.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu cihaz ARKit dünya takibini desteklemiyor."
+          }
+        }
+      }
+    },
+    "Point the camera at the floor and move it slowly until the floor is found.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamerayı yere çevir ve zemin bulunana kadar yavaşça gezdir."
+          }
+        }
+      }
+    },
+    "Floor found. Now point at the person: whole body in view, 2–3 m away, standing straight, arms by the sides.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zemin bulundu. Şimdi kişiye çevir: tüm vücut görünsün, 2–3 m uzakta, dik dursun, kollar yanda."
+          }
+        }
+      }
+    },
+    "Measuring… hold the phone steady.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülüyor… telefonu sabit tut."
+          }
+        }
+      }
+    },
+    "Measured height": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülen boy"
+          }
+        }
+      }
+    },
+    "ARKit height": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ARKit boyu"
+          }
+        }
+      }
+    },
+    "Distance": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mesafe"
+          }
+        }
+      }
+    },
+    "Against the tape": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezuraya göre"
+          }
+        }
+      }
+    },
+    "%+.1f cm (typed %+.1f cm)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%+.1f cm (girilen boy %+.1f cm)"
+          }
+        }
+      }
+    },
+    "Measure height with ARKit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boyu ARKit ile ölç"
+          }
+        }
+      }
+    },
+    "Measure height with ARKit again": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boyu ARKit ile yeniden ölç"
+          }
+        }
+      }
+    },
+    "Real-world scale": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gerçek dünya ölçeği"
+          }
+        }
+      }
+    },
+    "Checks whether ARKit's floor and camera give the true height without the typed one. One person holds the phone, the other stands. Enter the tape height above to compare.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ARKit'in zemin ve kamera bilgisinin, girilen boy olmadan gerçek boyu verip vermediğini sınar. Bir kişi telefonu tutar, diğeri durur. Karşılaştırmak için yukarıya mezurayla ölçülen boyu gir."
+          }
+        }
+      }
+    },
+    "ARKit height: MAE %.1f cm (%+.1f), n %d": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ARKit boyu: ort. hata %.1f cm (%+.1f), n %d"
+          }
+        }
+      }
+    },
+    "Typed height: MAE %.1f cm (%+.1f), n %d": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Girilen boy: ort. hata %.1f cm (%+.1f), n %d"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

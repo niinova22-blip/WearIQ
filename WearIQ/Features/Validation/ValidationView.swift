@@ -126,6 +126,12 @@ private struct ValidationResultsSection: View {
                     ].compactMap { $0 }
                     if !parts.isEmpty { Text("\(e.rawValue): " + parts.joined(separator: " · ")) }
                 }
+                if let ar = report.arHeight {
+                    Text(String(format: String(localized: "ARKit height: MAE %.1f cm (%+.1f), n %d"), ar.meanAbsoluteError, ar.bias, ar.n))
+                }
+                if let typed = report.typedHeight {
+                    Text(String(format: String(localized: "Typed height: MAE %.1f cm (%+.1f), n %d"), typed.meanAbsoluteError, typed.bias, typed.n))
+                }
                 if let s = report.meanScanSeconds { Text("Average scan time: \(Int(s.rounded())) s (the same turn for both engines)") }
             }
             .font(.caption.monospacedDigit())
@@ -191,6 +197,25 @@ struct ValidationRecordView: View {
                 Text("Tape (cm) · A · B")
             } footer: {
                 Text("A: current engine. B: silhouette fit. ◆ seen by the camera, ◇ from the body model, ○ from height and weight. The error is against your tape value.")
+            }
+
+            Section {
+                if let ar = record.arScale {
+                    LabeledContent("ARKit height", value: String(format: "%.1f ± %.1f cm", ar.statureCm, ar.sdCm))
+                    LabeledContent("Distance", value: String(format: "%.2f m", ar.distanceM)
+                                   + (ar.lidarDistanceM.map { String(format: " · LiDAR %.2f m", $0) } ?? ""))
+                    if let tape = record.tape(.height) {
+                        LabeledContent("Against the tape", value: String(format: String(localized: "%+.1f cm (typed %+.1f cm)"),
+                                                                         ar.statureCm - tape, record.heightCm - tape))
+                    }
+                }
+                NavigationLink(record.arScale == nil ? LocalizedStringKey("Measure height with ARKit") : LocalizedStringKey("Measure height with ARKit again")) {
+                    ARHeightCheckView(record: $record)
+                }
+            } header: {
+                Text("Real-world scale")
+            } footer: {
+                Text("Checks whether ARKit's floor and camera give the true height without the typed one. One person holds the phone, the other stands. Enter the tape height above to compare.")
             }
 
             if let notes = record.notes {

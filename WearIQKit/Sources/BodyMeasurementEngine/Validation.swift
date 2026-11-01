@@ -55,6 +55,8 @@ public struct ValidationRecord: Codable, Sendable, Identifiable, Equatable {
     public var memoryMB: [String: Double] = [:]
     /// The turn's stop profiles, to run future engines on this very scan.
     public var profiles: [StopProfile] = []
+    /// The person's height measured from ARKit's floor and camera, when that was done.
+    public var arScale: ARScaleReading?
     public var notes: String?
 
     public init(participant: String, device: String, hasLiDAR: Bool, clothing: String, sex: BodySex?,
@@ -83,6 +85,34 @@ public struct ValidationRecord: Codable, Sendable, Identifiable, Equatable {
     public func error(_ engine: MeasurementEngineID, _ d: BodyDimension) -> Double? {
         guard let t = tape(d), let v = value(engine, d) else { return nil }
         return v.cm - t
+    }
+}
+
+/// Height measured with ARKit (`FloorScale`): a real-world scale that doesn't come from
+/// the typed height.
+public struct ARScaleReading: Codable, Sendable, Equatable {
+    public var statureCm: Double
+    public var sdCm: Double
+    /// Camera to the body's vertical line, m.
+    public var distanceM: Double
+    /// Frames combined.
+    public var samples: Int
+    /// The LiDAR's median distance to the front of the body, m, where there is LiDAR.
+    public var lidarDistanceM: Double?
+    /// Share of frames ARKit tracked normally while measuring.
+    public var trackingNormalShare: Double
+    /// ARKit recognised the plane as a floor (not just a horizontal surface).
+    public var floorClassified: Bool
+
+    public init(statureCm: Double, sdCm: Double, distanceM: Double, samples: Int, lidarDistanceM: Double?,
+                trackingNormalShare: Double, floorClassified: Bool) {
+        self.statureCm = statureCm
+        self.sdCm = sdCm
+        self.distanceM = distanceM
+        self.samples = samples
+        self.lidarDistanceM = lidarDistanceM
+        self.trackingNormalShare = trackingNormalShare
+        self.floorClassified = floorClassified
     }
 }
 
@@ -116,6 +146,9 @@ public struct ValidationReport: Sendable {
     public var meanProcessingMs: [MeasurementEngineID: Double]
     public var meanMemoryMB: [MeasurementEngineID: Double]
     public var meanScanSeconds: Double?
+    /// Scale: the ARKit height and the typed height against the tape height.
+    public var arHeight: Stats?
+    public var typedHeight: Stats?
     /// Real records counted, and distinct participants among them.
     public var records: Int
     public var participants: Int
@@ -170,8 +203,22 @@ public struct ValidationReport: Sendable {
         failureRate = failure
         meanProcessingMs = processing
         meanMemoryMB = memory
+        arHeight = Self.stats(real.compactMap { r in r.tape(.height).flatMap { t in r.arScale.map { ($0.statureCm - t, t) } } })
+        typedHeight = Self.stats(real.compactMap { r in r.tape(.height).map { (r.heightCm - $0, $0) } })
         let scans = real.compactMap(\.scanSeconds)
         meanScanSeconds = scans.isEmpty ? nil : scans.reduce(0, +) / Double(scans.count)
+    }
+
+    /// Statistics of (signed error, tape value) pairs.
+    static func stats(_ errors: [(Double, Double)]) -> Stats? {
+        guard !errors.isEmpty else { return nil }
+        let abs = errors.map { Swift.abs($0.0) }.sorted()
+        return Stats(n: errors.count,
+                     meanAbsoluteError: abs.reduce(0, +) / Double(abs.count),
+                     medianAbsoluteError: abs.count % 2 == 1 ? abs[abs.count / 2] : (abs[abs.count / 2 - 1] + abs[abs.count / 2]) / 2,
+                     meanPercentError: errors.map { Swift.abs($0.0) / $0.1 * 100 }.reduce(0, +) / Double(errors.count),
+                     bias: errors.map(\.0).reduce(0, +) / Double(errors.count),
+                     maxAbsoluteError: abs.last ?? 0)
     }
 
     /// Mean absolute error over every measurement both engines have, cm.
@@ -233,7 +280,7 @@ extension ValidationRecord {
     /// The records as CSV, one row per record and measurement, for a spreadsheet.
     public static func csv(_ records: [ValidationRecord]) -> String {
         var lines = ["participant,date,synthetic,device,lidar,clothing,sex,height_cm,weight_kg,measurement,tape_cm,"
-            + "A_cm,A_sd,A_source,B_cm,B_sd,B_source,A_error_cm,B_error_cm,scan_s,A_ms,B_ms"]
+            + "A_cm,A_sd,A_source,B_cm,B_sd,B_source,A_error_cm,B_error_cm,scan_s,A_ms,B_ms,ar_height_cm,ar_distance_m"]
         let date = ISO8601DateFormatter()
         func f(_ v: Double?) -> String { v.map { String(format: "%.1f", $0) } ?? "" }
         func q(_ s: String) -> String { "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
@@ -247,7 +294,8 @@ extension ValidationRecord {
                               f(b?.cm), f(b?.sdCm), b?.provenance.rawValue ?? "",
                               f(r.error(.current, d)), f(r.error(.silhouetteFit, d)), f(r.scanSeconds),
                               f(r.processingMs[MeasurementEngineID.current.rawValue]),
-                              f(r.processingMs[MeasurementEngineID.silhouetteFit.rawValue])].joined(separator: ","))
+                              f(r.processingMs[MeasurementEngineID.silhouetteFit.rawValue]),
+                              f(r.arScale?.statureCm), r.arScale.map { String(format: "%.2f", $0.distanceM) } ?? ""].joined(separator: ","))
             }
         }
         return lines.joined(separator: "\n") + "\n"
