@@ -40,8 +40,10 @@ final class ARScaleSession: NSObject, ARSessionDelegate {
     private(set) var lastDistance: Double?
     private(set) var personCutOff = false
     private(set) var statures: [Double] = []
-    private var distances: [Double] = [], lidar: [Double] = []
-    private var framesSeen = 0, framesNormal = 0
+    private var distances: [Double] = []
+    private var lidar: [Double] = []
+    private var framesSeen = 0
+    private var framesNormal = 0
     private var busy = false
     private var lastProcessed = Date.distantPast
     private let typedHeightCm: Double

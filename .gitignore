@@ -29,3 +29,4 @@ WearIQKit/Info.plist
 # Resource copies the Windows test run leaves in the package root
 WearIQKit/SomaBody.bin
 WearIQKit/SOMA-X-LICENSE.txt
+.build-opt/
