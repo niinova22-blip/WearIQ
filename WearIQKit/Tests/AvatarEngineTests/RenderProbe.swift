@@ -7,7 +7,7 @@ import Testing
     let me = Avatar.Measurements(height: 173, chest: 90, waist: 83.5, hip: 89, thigh: 56.9,
                                  shoulderWidth: 37.6, armLength: 56.4, inseam: 83.4)
 
-    func render(_ a: Avatar, yaw: Float, fitMap: Bool, name: String) {
+    func render(_ a: Avatar, yaw: Float, fitMap: Bool, name: String, marks: [Vec3] = []) {
         let W = 420, H = 820
         var color = [UInt8](repeating: 20, count: W * H * 3)
         var depth = [Float](repeating: -1e9, count: W * H)
@@ -81,6 +81,7 @@ import Testing
             for dx in -2...2 { for dy in -2...2 where x + dx >= 0 && x + dx < W && y + dy >= 0 && y + dy < H {
                 let k = (y + dy) * W + x + dx; color[k * 3] = 255; color[k * 3 + 1] = 60; color[k * 3 + 2] = 200 } }
         }
+        for p in marks { plot(p, Vec3(0.1, 1, 0.2), 1) }
         let dir = ProcessInfo.processInfo.environment["RENDER_DIR"] ?? "."
         FileManager.default.createFile(atPath: dir + "/" + name + ".rgb", contents: Data(color))
     }
@@ -128,6 +129,119 @@ import Testing
             render(o, yaw: 0, fitMap: true, name: "shot_outfit\(label)_front")
             render(o, yaw: -.pi / 2, fitMap: true, name: "shot_outfit\(label)_side")
             render(o, yaw: .pi, fitMap: true, name: "shot_outfit\(label)_back")
+        }
+    }
+    /// Body points a garment should cover but doesn't: no fabric within 6 cm outside
+    /// the skin there (a gap, or skin poking through the cloth).
+    static func uncovered(_ a: Avatar, layer: Int, region: (Vec3) -> Bool) -> (share: Double, points: [Vec3]) {
+        let g = a.layers[layer].mesh.positions
+        let cell: Float = 0.03
+        func key(_ p: Vec3) -> SIMD3<Int32> {
+            SIMD3(Int32((p.x / cell).rounded(.down)), Int32((p.y / cell).rounded(.down)), Int32((p.z / cell).rounded(.down)))
+        }
+        var grid: [SIMD3<Int32>: [Int]] = [:]
+        for i in g.indices { grid[key(g[i]), default: []].append(i) }
+        var total = 0
+        var open: [Vec3] = []
+        for i in a.body.positions.indices {
+            let p = a.body.positions[i], n = a.body.normals[i]
+            guard region(p) else { continue }
+            total += 1
+            let k = key(p + n * 0.03)
+            var found = false
+            search: for dx: Int32 in -2...2 { for dy: Int32 in -2...2 { for dz: Int32 in -2...2 {
+                for j in grid[k &+ SIMD3(dx, dy, dz)] ?? [] {
+                    let d = g[j] - p, along = d.dot(n)
+                    guard along > -0.004, along < 0.06 else { continue }
+                    if (d - n * along).length < 0.025 { found = true; break search }
+                }
+            } } }
+            if !found { open.append(p) }
+        }
+        return (total > 0 ? Double(open.count) / Double(total) : 0, open)
+    }
+
+    /// Sizes from tight to loose on a body like the user's, dressed as the app dresses
+    /// them (the animated dressing), from the front, side and back, with the body
+    /// points the garment leaves uncovered marked green.
+    @Test func variations() {
+        guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
+        let user = Avatar.Measurements(height: 173, chest: 92, waist: 82, hip: 92, thigh: 56,
+                                       shoulderWidth: 37, armLength: 56, inseam: 81)
+        let model = BodyModel.make(user)
+        let waistband = (model.waistY + model.hipY) / 2
+        let only = ProcessInfo.processInfo.environment["VARIANTS"]
+        func trousersRegion(_ p: Vec3) -> Bool {
+            p.y > model.kneeY && p.y < waistband - 0.025 && abs(p.x) < model.hip.0 + 0.03
+        }
+        let trousers: [(String, Double, Double, Double)] = [
+            ("t-6", -6, 4, 6), ("t-2", -2, 5, 7), ("t+2", 2, 7, 9), ("t+6", 6, 9, 12), ("t+14", 14, 14, 18), ("trelax", 3, 14, 20),
+        ]
+        for (name, waist, hip, thigh) in trousers where only == nil || only!.contains(name) {
+            var f = Avatar.GarmentFit(kind: .trousers)
+            f.waistEase = waist; f.hipEase = hip; f.thighEase = thigh; f.lengthDelta = 2
+            let a = Avatar(user, garment: f, detail: .animated)
+            let (share, open) = Self.uncovered(a, layer: 0, region: trousersRegion)
+            print("VAR \(name): uncovered \(String(format: "%.1f", share * 100))%",
+                  a.fitReport.map { "\($0.key)=\($0.value.tension) \(Int($0.value.stretchPercent))% c\(Int($0.value.contactShare * 100)) g\(String(format: "%.1f", $0.value.gapCm)) e\(Int($0.value.easeCm))" }.sorted())
+            for (yaw, view) in [(Float(0), "front"), (Float.pi, "back"), (-Float.pi / 2, "side")] {
+                render(a, yaw: yaw, fitMap: true, name: "var_\(name)_\(view)", marks: open)
+            }
+        }
+        let tops: [(String, Double, Double, Double)] = [
+            ("s-4", -4, 0, 0), ("s+6", 6, 0, 0), ("s+12d4", 12, 4, 2), ("s+30d10", 30, 10, 4),
+        ]
+        for (name, chest, shoulder, length) in tops where only == nil || only!.contains(name) {
+            var f = Avatar.GarmentFit(kind: .top(longSleeves: false))
+            f.chestEase = chest; f.waistEase = chest + 3; f.hipEase = chest + 3; f.shoulderDelta = shoulder; f.lengthDelta = length
+            let a = Avatar(user, garment: f, detail: .animated)
+            let hem = (a.layers[0].mesh.positions.map(\.y).min() ?? 0) + 0.04
+            let (share, open) = Self.uncovered(a, layer: 0) { p in
+                p.y > hem && p.y < model.armpitY - 0.03 && abs(p.x) < model.chest.0 + 0.02
+            }
+            print("VAR \(name): uncovered \(String(format: "%.1f", share * 100))%",
+                  a.fitReport.map { "\($0.key)=\($0.value.tension) \(Int($0.value.stretchPercent))% c\(Int($0.value.contactShare * 100)) g\(String(format: "%.1f", $0.value.gapCm)) e\(Int($0.value.easeCm))" }.sorted(),
+                  a.layers[0].fitLines.map { "\($0.kind)=\($0.tone) \($0.deltaCm)" })
+            for (yaw, view) in [(Float(0), "front"), (Float.pi, "back"), (-Float.pi / 2, "side")] {
+                render(a, yaw: yaw, fitMap: true, name: "var_\(name)_\(view)", marks: open)
+            }
+        }
+        if only == nil || only!.contains("outfit") {
+            var top = Avatar.GarmentFit(kind: .top(longSleeves: false))
+            top.chestEase = 12; top.waistEase = 15; top.hipEase = 15; top.shoulderDelta = 4; top.lengthDelta = 2
+            var pants = Avatar.GarmentFit(kind: .trousers)
+            pants.waistEase = 2; pants.hipEase = 7; pants.thighEase = 9; pants.lengthDelta = 2
+            let a = Avatar(user, garments: [top, pants], detail: .animated)
+            let (share, open) = Self.uncovered(a, layer: 1, region: trousersRegion)
+            print("VAR outfit: trousers uncovered \(String(format: "%.1f", share * 100))%")
+            for (yaw, view) in [(Float(0), "front"), (Float.pi, "back"), (-Float.pi / 2, "side")] {
+                render(a, yaw: yaw, fitMap: true, name: "var_outfit_\(view)", marks: open)
+            }
+        }
+    }
+    /// Open edges of a garment drawn as marks: where its holes are.
+    @Test func holes() {
+        guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
+        let user = Avatar.Measurements(height: 173, chest: 92, waist: 82, hip: 92, thigh: 56,
+                                       shoulderWidth: 37, armLength: 56, inseam: 81)
+        var f = Avatar.GarmentFit(kind: .trousers)
+        f.waistEase = 20; f.hipEase = 24; f.thighEase = 28; f.lengthDelta = 2
+        var top = Avatar.GarmentFit(kind: .top(longSleeves: false))
+        top.chestEase = 6; top.waistEase = 9; top.hipEase = 9; top.lengthDelta = 3
+        for (name, fit) in [("holes_trousers", f), ("holes_top", top)] {
+            let a = Avatar(user, garment: fit, detail: .preview)
+            let mesh = a.layers[0].mesh
+            var count: [Int: Int] = [:]
+            for t in stride(from: 0, to: mesh.indices.count - 2, by: 3) {
+                for e in 0..<3 {
+                    let x = Int(mesh.indices[t + e]), y = Int(mesh.indices[t + (e + 1) % 3])
+                    count[min(x, y) << 32 | max(x, y), default: 0] += 1
+                }
+            }
+            let open = count.filter { $0.value == 1 }.flatMap { [mesh.positions[$0.key >> 32], mesh.positions[$0.key & 0xFFFF_FFFF]] }
+            for (yaw, view) in [(Float(0), "front"), (Float.pi / 2, "side"), (Float.pi / 4, "diag")] {
+                render(a, yaw: yaw, fitMap: false, name: "\(name)_\(view)", marks: open)
+            }
         }
     }
 }

@@ -21,7 +21,8 @@ import Testing
         // The dropped seam sits further out than the regular one.
         let outer = { (l: Avatar.Line) in l.map { abs($0.x) }.reduce(0, +) / Float(l.count) }
         #expect(outer(seam(wide).line) > outer(seam(regular).line) + 0.008)
-        #expect(share(wide.mesh, .loose) > share(regular.mesh, .loose))
+        // Where the seam sits is its line and label; the fabric round it isn't coloured loose.
+        #expect(share(wide.mesh, .loose) <= share(regular.mesh, .loose) + 0.02)
     }
 
     @Test func longSleevesAndHemAreRed() {
@@ -83,7 +84,7 @@ import Testing
         // The dropped shoulder isn't coloured loose when the verdict says it fits.
         var unjudged = tee
         unjudged.judged = .init()
-        #expect(share(top.mesh, .loose) < share(Avatar(me, garment: unjudged, detail: .preview).layers[0].mesh, .loose))
+        #expect(share(top.mesh, .loose) <= share(Avatar(me, garment: unjudged, detail: .preview).layers[0].mesh, .loose) + 0.01)
         tee.judged = .init(length: 0)
         #expect(Avatar(me, garment: tee, detail: .preview).layers[0].fitLines.first { $0.kind == .hem }?.tone == .fits)
 
@@ -103,6 +104,35 @@ import Testing
         for zone in [FitZone.knee, .hem] {
             #expect((report[zone]?.tension ?? ZoneTension.comfortable) <= ZoneTension.comfortable, "\(zone)")
         }
+    }
+    /// The map says what the size chart says where it judged: a waist called tight shows
+    /// purple where the fabric touches, one called fine doesn't (short of the fabric
+    /// being stretched past its limit), and the zone report agrees.
+    @Test func mapFollowsTheVerdictWhereThereIsOne() {
+        var trousers = Avatar.GarmentFit(kind: .trousers)
+        trousers.waistEase = 1; trousers.hipEase = 7; trousers.thighEase = 9
+        trousers.judged = .init(zones: [.waist: .tight], tensions: [.waist: .slightlyTight])
+        let tight = Avatar(me, garment: trousers, detail: .preview)
+        #expect(share(tight.layers[0].mesh, .tight) > 0.03)
+        #expect(tight.fitReport[.waist]?.tension == .slightlyTight)
+        trousers.judged = .init(zones: [.waist: .fits, .hip: .fits, .thigh: .fits],
+                                tensions: [.waist: .comfortable, .hip: .comfortable, .thigh: .comfortable])
+        let fine = Avatar(me, garment: trousers, detail: .preview)
+        #expect(share(fine.layers[0].mesh, .tight) < 0.01)
+        #expect(share(fine.layers[0].mesh, .loose) < 0.01)
+        #expect(fine.fitReport[.waist]?.tension == .comfortable)
+    }
+
+    /// Regular trousers: nothing loose round the knees or hems (they hang as cut), and
+    /// their own weight doesn't make anything read tight.
+    @Test func regularTrousersReadFine() {
+        var trousers = Avatar.GarmentFit(kind: .trousers)
+        trousers.waistEase = 2; trousers.hipEase = 7; trousers.thighEase = 9
+        let a = Avatar(me, garment: trousers, detail: .preview)
+        for zone in [FitZone.waist, .hip, .thigh, .knee, .hem] {
+            #expect(a.fitReport[zone]?.tension == .comfortable, "\(zone): \(String(describing: a.fitReport[zone]))")
+        }
+        #expect(share(a.layers[0].mesh, .loose) < 0.01 && share(a.layers[0].mesh, .tight) < 0.01)
     }
 }
 

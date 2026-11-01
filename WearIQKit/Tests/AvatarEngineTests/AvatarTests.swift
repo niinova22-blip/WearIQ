@@ -85,13 +85,12 @@ import Testing
         fit.chestEase = 30
         let oversized = Avatar(me, garment: fit, detail: quick)
         #expect(oversized.anchors[.shoulder]!.x > regular.anchors[.shoulder]!.x + 0.03)
-        // Across the body at the chest, not counting the sleeves.
+        // Standing further off the chest at the front, in the middle (no sleeve there).
         let model = BodyModel.make(me)
-        let width = { (a: Avatar) in
-            a.garment!.positions.filter { abs($0.y - model.chestY) < 0.03 && abs($0.z) < 0.08 && abs($0.x) < model.shoulderHalf }
-                .map(\.x).max() ?? 0
+        let front = { (a: Avatar) in
+            a.garment!.positions.filter { abs($0.y - model.chestY) < 0.03 && abs($0.x) < 0.05 }.map(\.z).max() ?? 0
         }
-        #expect(width(oversized) > width(regular))
+        #expect(front(oversized) > front(regular) + 0.01)
     }
 
     @Test func tightWovenPullsAndStretchGives() {

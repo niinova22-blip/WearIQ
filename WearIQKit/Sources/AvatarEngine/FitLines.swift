@@ -63,23 +63,43 @@ extension BodyModel {
 
     // MARK: Tones
 
-    /// Per vertex, how the garment sits there and how strongly. Tightness comes from the
-    /// stretch the drape left (from 0.6 of what the fabric takes comfortably, where the
-    /// zone report says "tight"); length from where the garment ends against the body;
-    /// the shoulders from where the seam sits against the shoulder point; looseness from
-    /// fabric standing further off the body than a regular fit's room (2.5 cm round the
-    /// body, about 16 cm of ease; 3.2 cm round a trouser leg, about 20 cm). Tightness
-    /// wins over the rest. Each vertex then takes the tone most of its neighbours have,
-    /// so the map shows areas rather than speckles.
-    func tones(_ shape: GarmentShape, rest: [Vec3], tags: [Int], stretch: [Float], contact: [Bool], gap: [Float],
+    /// Per vertex, how the garment sits there and how strongly.
+    ///
+    /// - Tight: the stretch the drape left round the body, where the fabric presses on
+    ///   it (from 0.6 of what the fabric takes comfortably, where the zone report says
+    ///   "tight").
+    /// - Long and short: where the garment ends against the body.
+    /// - Loose: the girth ease the garment is cut with at that level (garment minus body
+    ///   girth, as on the size chart), beyond what a regular fit has (`looseEase`), only
+    ///   in zones where looseness means something (not round the knees or hems, where
+    ///   trousers hang by design). How the fabric falls and folds doesn't make it loose,
+    ///   so the gap between the legs or under the seat isn't coloured. Where the
+    ///   size-chart check gave a zone a verdict, that verdict decides.
+    ///
+    /// A shoulder seam off the shoulder point is a line and a label, not a colour: the
+    /// fabric there isn't loose, the seam is somewhere else. Tightness wins over the
+    /// rest. Each vertex then takes the tone most of its neighbours have, so the map
+    /// shows areas rather than speckles.
+    func tones(_ shape: GarmentShape, rest: [Vec3], tags: [Int], stretch: [Float], contact: [Bool], ease: [Float],
                fabric: Fabric, neighbours: [[Int]]) -> (tones: [FitTone], weights: [Float]) {
         var tones = [FitTone](repeating: .fits, count: rest.count)
         var weights = [Float](repeating: 0, count: rest.count)
-        let trousers: Bool = if case .trousers = shape.fit.kind { true } else { false }
+        let kind = shape.fit.kind
         for i in rest.indices {
             let r = rest[i], tag = tags[i]
+            let zone = zone(of: r, part: tag, kind: kind)
+            let verdict = shape.fit.judged.zones[zone]
             let used = max(0, stretch[i] - 0.008) / fabric.stretchLimit
-            if used >= 0.6, contact[i] {
+            // Called tight by the size chart: the zone shows it, more where the drape
+            // stretches it. Called fine or loose: only a stretch past what the fabric
+            // takes comfortably shows (the drape can pull a fold tight that the chart
+            // can't see).
+            if verdict == .tight {
+                tones[i] = .tight
+                weights[i] = min(1, 0.65 + max(0, used - 0.6))
+                continue
+            }
+            if used >= (verdict == nil ? 0.6 : 1), contact[i] {
                 tones[i] = .tight
                 weights[i] = min(1, 0.6 + (used - 0.6))
                 continue
@@ -89,11 +109,19 @@ extension BodyModel {
                 weights[i] = weight
                 continue
             }
-            let room: Float = trousers && tag > 0 ? 3.2 : 2.5
-            let g = gap[i] * 100
-            if !contact[i], g > room {
+            guard let threshold = Self.looseEase(zone, kind) else { continue }
+            let e = ease[i]
+            switch verdict {
+            case .loose?:
+                // Called loose by the size chart: the zone shows it, more where the drape
+                // has more room.
                 tones[i] = .loose
-                weights[i] = min(1, 0.45 + (g - room) / 3)
+                weights[i] = min(1, 0.55 + max(0, e - threshold) / 10)
+            case nil where e > threshold:
+                tones[i] = .loose
+                weights[i] = min(1, 0.45 + (e - threshold) / 10)
+            default:
+                break
             }
         }
         var smoothed = tones, smoothedWeights = weights
@@ -136,14 +164,24 @@ extension BodyModel {
                 if sleeve.delta >= sleeve.threshold, along > min(armLength + 0.01, shape.sleeveReach - 0.04) { return (.long, 1) }
                 if sleeve.delta <= -sleeve.threshold, along > shape.sleeveReach - 0.04 { return (.short, 0.85) }
             }
-            // Between the shoulder point and the seam: fabric hanging off the shoulder
-            // (seam dropped) or a shoulder the garment doesn't reach (seam inside).
-            let shoulder = fit.shownShoulderPerSide
-            guard r.y > armpitY - 0.02 * h, abs(shape.dropped) >= 0.008, abs(shoulder.delta) >= shoulder.threshold else { return nil }
-            let a = armhole(i, r)
-            let lo = min(0, shape.dropped), hi = max(0, shape.dropped)
-            guard a >= lo - 0.004, a <= hi + 0.004 else { return nil }
-            return shoulder.delta > 0 ? (.loose, 0.85) : (.tight, 0.85)
+            // Where the shoulder seam sits is told by its line and label; the fabric
+            // round it isn't loose or tight for that.
+            return nil
+        }
+    }
+
+    /// Girth ease that counts as loose in a zone, cm: just past what a regular fit has
+    /// there (the fit engine's regular ranges: chest 9–16, a top's waist 12–19, trouser
+    /// waist up to about 4, seat 4–11, thigh 6–12). Nil where looseness isn't judged:
+    /// shoulders, sleeves, knees and hems hang as they're cut.
+    static func looseEase(_ zone: FitZone, _ kind: Avatar.GarmentFit.Kind) -> Float? {
+        switch (kind, zone) {
+        case (.trousers, .waist): 5
+        case (.trousers, .hip): 12
+        case (.trousers, .thigh): 13
+        case (.top, .chest), (.top, .back): 17
+        case (.top, .waist), (.top, .abdomen), (.top, .hip): 19
+        default: nil
         }
     }
 

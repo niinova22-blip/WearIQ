@@ -17,7 +17,8 @@ public enum ZoneTension: Int, Comparable, CaseIterable, Sendable {
 public struct ZoneReport: Equatable, Sendable {
     public var zone: FitZone
     public var tension: ZoneTension
-    /// 90th percentile of the stretch past the cut, per cent.
+    /// 75th percentile of the stretch past the cut where the fabric presses on the body,
+    /// round the body (not along it), per cent.
     public var stretchPercent: Double
     /// That stretch over what the fabric takes comfortably (1 = at the limit).
     public var stretchUsed: Double
@@ -25,6 +26,8 @@ public struct ZoneReport: Equatable, Sendable {
     public var contactShare: Double
     /// Median distance from the skin where it doesn't touch, cm.
     public var gapCm: Double
+    /// Median girth ease the zone is cut with, cm (garment less body girth).
+    public var easeCm: Double = 0
     /// Garment longer (+) or shorter (−) than the body there, cm, for sleeves and hems.
     public var lengthDeltaCm: Double?
 }
@@ -32,11 +35,15 @@ public struct ZoneReport: Equatable, Sendable {
 extension ZoneReport {
     /// The verdict from the numbers: how much of its comfortable stretch the fabric uses
     /// (under 0.3 comfortable, 0.6 slightly tight, 1 tight, beyond it very tight), or
-    /// loose where most of the zone stands off the body by more than 1.5 cm.
-    static func classify(stretchUsed u: Double, contactShare: Double, gapCm: Double) -> ZoneTension {
+    /// loose. With a girth ease and the zone's loose threshold (see
+    /// `BodyModel.looseEase`), loose is more ease than that, as a tape would find; without
+    /// them, most of the zone standing off the body by more than 1.5 cm.
+    static func classify(stretchUsed u: Double, contactShare: Double, gapCm: Double,
+                         easeCm: Double? = nil, looseAbove: Double? = nil) -> ZoneTension {
         if u >= 1 { return .veryTight }
         if u >= 0.6 { return .tight }
         if u >= 0.3 { return .slightlyTight }
+        if let easeCm, let looseAbove { return easeCm > looseAbove ? .loose : .comfortable }
         if contactShare < 0.3, gapCm > 1.5 { return .loose }
         return .comfortable
     }
@@ -67,7 +74,8 @@ extension BodyModel {
         }
     }
 
-    func report(_ cloth: TriangleCloth, contact pressing: [Bool], tags: [Int], fit: Avatar.GarmentFit, fabric: Fabric) -> [FitZone: ZoneReport] {
+    func report(_ cloth: TriangleCloth, contact pressing: [Bool], ease: [Float], tags: [Int], fit: Avatar.GarmentFit,
+                fabric: Fabric) -> [FitZone: ZoneReport] {
         var members: [FitZone: [Int]] = [:]
         for i in cloth.rest.indices {
             members[zone(of: cloth.rest[i], part: tags[i], kind: fit.kind), default: []].append(i)
@@ -81,8 +89,11 @@ extension BodyModel {
             let trousers: Bool = if case .trousers = fit.kind { true } else { false }
             let touching = ids.filter { pressing[$0] && !(trousers && cloth.rest[$0].y < ankleY + 0.015) }
             let stretch = touching.map { Double(cloth.stretch[$0]) }.sorted()
+            // The 75th percentile: a garment pulled round the body stretches all over the
+            // zone, while a few edges caught in a fold or on a bony point (the kneecap)
+            // stretch alone, and that isn't the zone being tight.
             let p90 = touching.count * 10 >= ids.count && !stretch.isEmpty
-                ? stretch[min(stretch.count - 1, Int(Double(stretch.count) * 0.9))] : 0
+                ? stretch[min(stretch.count - 1, Int(Double(stretch.count) * 0.75))] : 0
             // The first 0.8% is the mesh settling, not the fabric pulling (as in the fit map).
             let used = max(0, p90 - 0.008) / Double(fabric.stretchLimit)
             let contact = Double(touching.count) / Double(ids.count)
@@ -94,9 +105,23 @@ extension BodyModel {
             case (.hem, .trousers), (.abdomen, .top), (.hip, .top): length = fit.lengthDelta
             default: length = nil
             }
-            out[zone] = ZoneReport(zone: zone, tension: ZoneReport.classify(stretchUsed: used, contactShare: contact, gapCm: gap),
-                                   stretchPercent: p90 * 100, stretchUsed: used, contactShare: contact, gapCm: gap,
-                                   lengthDeltaCm: length)
+            let eases = ids.map { Double(ease[$0]) }.sorted()
+            let zoneEase = eases[eases.count / 2]
+            // Trouser knees and hems hang off the leg as they're cut: never "loose".
+            let threshold = Self.looseEase(zone, fit.kind).map(Double.init) ?? (trousers ? .infinity : nil)
+            var tension = ZoneReport.classify(stretchUsed: used, contactShare: contact, gapCm: gap,
+                                              easeCm: threshold == nil ? nil : zoneEase, looseAbove: threshold)
+            // Where the size chart judged the zone, the report says the same; only a
+            // stretch past the fabric's limit there can make a tight verdict "very tight".
+            if let judged = fit.judged.tensions[zone] {
+                tension = tension == .veryTight && judged >= .tight ? .veryTight : judged
+            }
+            var report = ZoneReport(zone: zone,
+                                    tension: tension,
+                                    stretchPercent: p90 * 100, stretchUsed: used, contactShare: contact, gapCm: gap,
+                                    lengthDeltaCm: length)
+            report.easeCm = zoneEase
+            out[zone] = report
         }
         return out
     }

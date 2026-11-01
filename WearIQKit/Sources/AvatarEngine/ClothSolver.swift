@@ -24,6 +24,11 @@ struct TriangleCloth {
     private(set) var gap: [Float] = []
     /// Positions while it falls and settles, when asked for (`Motion.recordEvery`).
     private(set) var frames: [[Vec3]] = []
+    /// Per vertex, the axis of the body part it goes round (straight up for the torso
+    /// and trouser legs, along the arm for a sleeve). Only edges running round that
+    /// axis count towards `stretch`: tightness pulls fabric round the body, while its
+    /// own weight stretches it along the axis, which is no tightness.
+    var axes: [Vec3] = []
 
     /// How the garment is put on.
     struct Motion {
@@ -270,9 +275,14 @@ struct TriangleCloth {
         gap = positions.indices.map { contact[$0] ? 0 : max(0, clearance[$0]) }
 
         // The most stretched edge at each vertex: a garment pulled round the body
-        // stretches across, not along.
+        // stretches across, not along, so edges running along the part's axis (within
+        // about 50° of it) are left out.
         var most = [Float](repeating: 0, count: positions.count)
         for l in edges where l.length > 1e-6 {
+            if axes.count == positions.count {
+                let along = abs((rest[l.a] - rest[l.b]).normalized.dot(axes[l.a]))
+                if along > 0.64 { continue }
+            }
             let e = max(0, (positions[l.a] - positions[l.b]).length / l.length - 1)
             most[l.a] = max(most[l.a], e); most[l.b] = max(most[l.b], e)
         }

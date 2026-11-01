@@ -124,12 +124,21 @@ public struct Avatar: Sendable {
             public var sleeve: Double?
             public var shoulderPerSide: Double?
             public var waist: FitTone?
+            /// Per zone, how the size chart says it sits: loose, fits or tight. A zone with
+            /// a verdict is coloured as the verdict says (tight where the fabric touches,
+            /// loose over the zone), and the zone report gives `tensions` for it.
+            public var zones: [FitZone: FitTone]
+            /// The same verdicts in the zone report's words (slightly tight, tight…).
+            public var tensions: [FitZone: ZoneTension]
 
-            public init(length: Double? = nil, sleeve: Double? = nil, shoulderPerSide: Double? = nil, waist: FitTone? = nil) {
+            public init(length: Double? = nil, sleeve: Double? = nil, shoulderPerSide: Double? = nil, waist: FitTone? = nil,
+                        zones: [FitZone: FitTone] = [:], tensions: [FitZone: ZoneTension] = [:]) {
                 self.length = length
                 self.sleeve = sleeve
                 self.shoulderPerSide = shoulderPerSide
                 self.waist = waist
+                self.zones = zones
+                self.tensions = tensions
             }
         }
 
@@ -491,6 +500,8 @@ extension BodyModel {
         var stacks: [(part: Int, axis: Vec3, start: Vec3, length: Float)] = []
         // Where loose fabric hangs in vertical folds (how loose, m), and round which axis.
         var hang: (Int, Vec3) -> (amount: Float, axis: Vec3)? = { _, _ in nil }
+        // The girth ease the garment is cut with, cm, by part and height (as cut).
+        var cutEase: (Int, Float) -> Float = { _, _ in 0 }
         let (bodyLo, bodyHi) = bounds
         var shape = GarmentShape(fit: fit, hemY: 0)
         let lift = skinMargin
@@ -535,8 +546,21 @@ extension BodyModel {
                 let leg = self.legs[part - 1]
                 return (thighOff - 0.02, Vec3(leg.knee.x, 0, leg.knee.z))
             }
-            lo = Vec3(bodyLo.x, max(-0.01, hemY - 0.03), bodyLo.z)
-            hi = Vec3(bodyHi.x, waistband + 0.03, bodyHi.z)
+            cutEase = { part, y in
+                if part == 0 {
+                    return self.interpolate([(self.hipY, Float(fit.hipEase)), (waistband, Float(fit.waistEase))], at: y)
+                }
+                // The thigh's ease, narrowing towards the knee as the leg is cut.
+                let top = self.legs[part - 1].hip.y
+                let f = min(1, max(0, (top - y) / (top - hemY)))
+                return Float(fit.thighEase) * (1 - 0.4 * min(1, f * 1.6))
+            }
+            // The box the cut is meshed in reaches past the body by the garment's room:
+            // fabric outside it would be cut away, leaving a hole (loose trousers opened
+            // at the back, where the seat stands out furthest).
+            let pad = max(0, cm(max(fit.hipEase, fit.waistEase, fit.thighEase))) / (2 * .pi) + lift + 0.03
+            lo = Vec3(bodyLo.x - pad, max(-0.01, hemY - 0.03), bodyLo.z - pad)
+            hi = Vec3(bodyHi.x + pad, waistband + 0.03, bodyHi.z + pad)
             pinnedAbove = waistband - 0.025 * h
             anchors[.hem] = Vec3(legs[0].ankle.x + thighR * 0.4, hemY, 0)
             anchors[.waist] = Vec3(waist.0 + cm(fit.waistEase) / (2 * .pi), waistband, 0)
@@ -586,9 +610,16 @@ extension BodyModel {
                 guard part == 0, p.y < self.chestY else { return nil }
                 return (ease(p.y) - 0.012, Vec3(0, 0, 0))
             }
+            cutEase = { part, y in
+                guard part == 0 else { return 0 }
+                return self.interpolate([(self.hipY, Float(max(fit.hipEase, fit.waistEase))), (self.waistY, Float(fit.waistEase)),
+                                         (self.chestY, Float(fit.chestEase)), (self.armpitY, Float(fit.chestEase))], at: y)
+            }
             let side = shoulderHalf + armLength * max(0.26, abs(arms[0].dir.x)) + 0.06 * h
-            lo = Vec3(-side, hemY - 0.03, bodyLo.z)
-            hi = Vec3(side, necklineTop + 0.03, bodyHi.z)
+            // Past the body by the garment's room, as for trousers.
+            let pad = max(0, cm(max(fit.chestEase, fit.waistEase, fit.hipEase))) / (2 * .pi) + lift + 0.03
+            lo = Vec3(-side, hemY - 0.03, bodyLo.z - pad)
+            hi = Vec3(side, necklineTop + 0.03, bodyHi.z + pad)
             pinnedAbove = shoulderY - 0.02 * h
             anchors[.hem] = Vec3(hip.0 + ease(hemY), hemY, 0)
             anchors[.chest] = Vec3(chest.0 + ease(chestY), chestY, 0)
@@ -658,15 +689,24 @@ extension BodyModel {
                 motion.directions = tags.map { _ in Vec3(0, -1, 0) }
             }
         }
+        cloth.axes = tags.map { tag in
+            if case .top = fit.kind, tag > 0, tag <= arms.count { return arms[tag - 1].dir }
+            return Vec3(0, 1, 0)
+        }
         cloth.drape(body: rests, fabric: fabric, pinned: pinned, motion: motion)
         mesh.positions = cloth.positions
+        // The skin shown is finer than the field the cloth collided with: wherever the
+        // cloth ended inside it or right on it (the small of the back under loose
+        // trousers), it goes back out, so no skin shows through fabric.
+        liftOffSkin(&mesh.positions, clearance: max(0.003, thickness + 0.002))
         // Tightness is the body pressing on the fabric. Over another garment, a top
         // stretched round the trousers' loose fabric isn't tight: that fabric gives.
         let pressing = under == nil ? cloth.contact : cloth.positions.indices.map { i in
             cloth.contact[i] && self.distance(cloth.positions[i]) - margin - thickness < 0.004
         }
         mesh.strain = fitValues(stretch: cloth.stretch, contact: pressing, fabric: fabric, neighbours: neighbours)
-        let report = self.report(cloth, contact: pressing, tags: tags, fit: fit, fabric: fabric)
+        let ease = cloth.rest.indices.map { cutEase(tags[$0], cloth.rest[$0].y) }
+        let report = self.report(cloth, contact: pressing, ease: ease, tags: tags, fit: fit, fabric: fabric)
         if case .trousers = fit.kind {
             // A hem resting on the shoe isn't a fit problem; the avatar has no shoes.
             for i in mesh.strain.indices where cloth.rest[i].y < ankleY + 0.015 { mesh.strain[i] = min(mesh.strain[i], 0.5) }
@@ -707,7 +747,7 @@ extension BodyModel {
         }
 
         (mesh.tones, mesh.toneWeight) = tones(shape, rest: cloth.rest, tags: tags, stretch: cloth.stretch,
-                                              contact: pressing, gap: cloth.gap, fabric: fabric,
+                                              contact: pressing, ease: ease, fabric: fabric,
                                               neighbours: neighbours)
         mesh.sway = sway(shape, rest: cloth.rest, tags: tags, gap: cloth.gap, pinnedAbove: pinnedAbove, fabric: fabric)
         let cover: (Vec3) -> Float = under.map { inner in { p in min(cut(p), inner(p)) } } ?? cut
@@ -771,6 +811,35 @@ extension BodyModel {
             }
         }
         return lines.flatMap { contour($0.f, parts: $0.parts, mesh: mesh, tags: tags, dash: $0.dash) }
+    }
+
+    /// Moves points that lie inside the shown skin, or closer to it than `clearance`,
+    /// out along the skin's normal at the nearest skin vertex (within 5 cm; further away
+    /// a point isn't on this skin). Only for a body with its own skin (SOMA-X); a body
+    /// drawn from its distance field has nothing finer to hold to.
+    func liftOffSkin(_ points: inout [Vec3], clearance: Float) {
+        guard let skin = surface, skin.normals.count == skin.positions.count else { return }
+        let cell: Float = 0.025
+        func key(_ p: Vec3) -> SIMD3<Int32> {
+            SIMD3(Int32((p.x / cell).rounded(.down)), Int32((p.y / cell).rounded(.down)), Int32((p.z / cell).rounded(.down)))
+        }
+        var grid: [SIMD3<Int32>: [Int]] = [:]
+        for i in skin.positions.indices { grid[key(skin.positions[i]), default: []].append(i) }
+        for i in points.indices {
+            let p = points[i], k = key(p)
+            var best = -1, bestD: Float = 0.05 * 0.05
+            for dx: Int32 in -2...2 { for dy: Int32 in -2...2 { for dz: Int32 in -2...2 {
+                for j in grid[k &+ SIMD3(dx, dy, dz)] ?? [] {
+                    let d = p - skin.positions[j]
+                    let dd = d.dot(d)
+                    if dd < bestD { bestD = dd; best = j }
+                }
+            } } }
+            guard best >= 0 else { continue }
+            let n = skin.normals[best]
+            let along = (p - skin.positions[best]).dot(n)
+            if along < clearance { points[i] = p + n * (clearance - along) }
+        }
     }
 
     /// The mesh with only the given triangles, unused vertices dropped.

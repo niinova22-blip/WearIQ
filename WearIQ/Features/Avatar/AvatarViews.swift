@@ -84,6 +84,32 @@ enum AvatarFitMapper {
             default: return 0
             }
         }
+        // Each girth verdict for the zones it covers: loose, fits or tight there.
+        func tone(_ r: RegionFit) -> FitTone {
+            switch r.verdict {
+            case .tight, .slightlyTight: .tight
+            case .loose, .slightlyLoose: .loose
+            default: .fits
+            }
+        }
+        let covered: [(FitRegion, [FitZone])] = trousers
+            ? [(.waist, [.waist]), (.hip, [.hip]), (.thigh, [.thigh])]
+            : [(.chest, [.chest, .back]), (.waist, [.waist, .abdomen, .hip])]
+        func tension(_ r: RegionFit) -> ZoneTension {
+            switch r.verdict {
+            case .tight: .tight
+            case .slightlyTight: .slightlyTight
+            case .loose, .slightlyLoose: .loose
+            default: .comfortable
+            }
+        }
+        for (region, zones) in covered {
+            guard let r = by(region) else { continue }
+            for zone in zones {
+                j.zones[zone] = tone(r)
+                j.tensions[zone] = tension(r)
+            }
+        }
         if trousers {
             j.length = length(by(.inseam) ?? by(.outseam))
             if let w = by(.waist) {
