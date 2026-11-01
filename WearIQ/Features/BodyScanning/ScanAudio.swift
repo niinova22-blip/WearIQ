@@ -85,12 +85,12 @@ final class ScanAudio {
             configured = true
             let center = NotificationCenter.default
             observers.append(center.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.ensureRunning() }
+                MainActor.assumeIsolated { _ = self?.ensureRunning() }
             })
             observers.append(center.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
                 let type = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt).flatMap { AVAudioSession.InterruptionType(rawValue: $0) }
                 guard type == .ended else { return }
-                MainActor.assumeIsolated { self?.ensureRunning() }
+                MainActor.assumeIsolated { _ = self?.ensureRunning() }
             })
         }
         ensureRunning()
