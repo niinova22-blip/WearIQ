@@ -64,7 +64,7 @@ import WearIQCore
         #expect(try context.fetch(FetchDescriptor<SavedAnalysis>()).count == 1)
     }
 
-    @Test func insufficientDataIsFreeAndNotSaved() throws {
+    @Test func insufficientDataIsFreeButKeptInTheHistory() throws {
         // Pants need the waist; this profile has none.
         let (coordinator, context, quota) = try makeCoordinator(profile: BodyProfile(values: [.height: m(178), .chest: m(100)]))
         let draft = makeDraft()
@@ -74,7 +74,7 @@ import WearIQCore
             Issue.record("expected insufficientData"); return
         }
         #expect(quota.remaining() == 4)
-        #expect(try context.fetch(FetchDescriptor<SavedAnalysis>()).isEmpty)
+        #expect(try context.fetch(FetchDescriptor<SavedAnalysis>()).count == 1)
     }
 
     @Test func noBodyProfile() throws {

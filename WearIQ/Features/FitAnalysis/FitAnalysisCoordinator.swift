@@ -32,10 +32,21 @@ struct FitAnalysisCoordinator {
         if quota.check(productKey: key, isPremium: isPremium) == .exhausted { return .quotaExhausted }
 
         let analysis = engine.analyze(body: body, garment: spec, preference: preference)
-        if case .insufficientData = analysis.recommendation { return .insufficientData(analysis) }
+        if case .insufficientData = analysis.recommendation {
+            // Free, but kept in the history all the same: every garment checked can be
+            // opened again with one tap, whether or not it went to the wardrobe.
+            try save(draft, spec: spec, analysis: analysis)
+            return .insufficientData(analysis)
+        }
 
         guard quota.recordSuccess(productKey: key, isPremium: isPremium) else { return .quotaExhausted }
+        return .analyzed(try save(draft, spec: spec, analysis: analysis))
+    }
 
+    /// The analysis in the history, replacing an earlier one of the same product.
+    @discardableResult
+    private func save(_ draft: GarmentDraft, spec: GarmentSpec, analysis: FitAnalysis) throws -> SavedAnalysis {
+        let key = draft.productKey
         let existing = FetchDescriptor<SavedAnalysis>(predicate: #Predicate { $0.productKey == key })
         try context.fetch(existing).forEach(context.delete)
         let saved = try SavedAnalysis(productKey: key, productName: draft.info.name, brand: draft.info.brand,
@@ -43,7 +54,7 @@ struct FitAnalysisCoordinator {
                                       spec: spec, analysis: analysis, material: draft.info.material)
         context.insert(saved)
         try context.save()
-        return .analyzed(saved)
+        return saved
     }
 
     private func latestBodyProfile() throws -> BodyProfile? {

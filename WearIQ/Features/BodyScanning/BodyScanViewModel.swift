@@ -126,6 +126,8 @@ final class BodyScanViewModel {
     private var lastHintAt = Date.distantPast
     /// Stopped while the app is in the background.
     private var suspended = false
+    /// Since when the arms have looked lowered.
+    private var armsDownSince: Date?
 
     /// Pose problems are spoken once they have lasted this long, so flickering
     /// detections don't produce a stream of half-finished sentences.
@@ -148,7 +150,8 @@ final class BodyScanViewModel {
         watchPose()
         do {
             try await camera.start(position: .front)
-            audio.say(String(localized: "Stand about three steps back from the phone, facing it, arms slightly away from your body."), priority: .high)
+            audio.say(String(localized: "Photos are processed on this phone and deleted right away. Nothing is sent anywhere.") + " "
+                      + String(localized: "Stand about three steps back from the phone, facing it, arms slightly away from your body."), priority: .high)
         } catch {
             stage = .failed(error.localizedDescription)
         }
@@ -325,7 +328,7 @@ final class BodyScanViewModel {
         stage = .turning(0)
         let front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
         self.front = front
-        audio.say(String(localized: "Great. Now I'll measure you from eight sides. Hold your arms straight out at shoulder height and keep them there. Each time, turn 45 degrees clockwise, to your right, and wait for the tone."),
+        audio.say(String(localized: "Great. Now I'll take a photo from eight directions. Hold your arms straight out at shoulder height. After each photo, turn 45 degrees to your right and stop."),
                   priority: .high)
         countdownTask = Task { [weak self] in
             do {
@@ -397,14 +400,24 @@ final class BodyScanViewModel {
             return
         }
         stillness.add(reading, time: time)
-        // Time to hear the instruction and start moving: nothing is taken while it is
-        // still being said, so stops can't be ticked off faster than they're asked for.
-        guard Date().timeIntervalSince(stationStart) > 2.0, !audio.isSpeaking, let span = reading.armSpan else { return }
+        // A photo at each of the eight directions, led by the voice: the instruction is
+        // said, and once it has ended and the user stands still, the photo is taken. The
+        // angle isn't policed to a narrow band (that made stops slow and fussy, and π ×
+        // the mean of eight widths barely changes for a stop 10–15° off); only a stop
+        // that plainly isn't a new direction is refused, and opposite stops that disagree
+        // are taken again at the end.
+        guard Date().timeIntervalSince(stationStart) > 1.2, !audio.isSpeaking, let span = reading.armSpan else { return }
         let station = turn.station
         let shoulders = Self.shoulderSeparation(reading)
-        // Judged on every frame, so the voice guides while the user moves ("come closer",
-        // "turn further") instead of waiting for them to stand still first. Fitting in the
-        // picture comes first: with a hand cut off, the arm span says nothing about the turn.
+        let ratio = span / spanReference
+        // Arms counted as down only after a moment: a frame or two of a missed wrist
+        // isn't the user dropping them. Side-on, one arm points at the camera and the
+        // joints can't be read, so it isn't judged there.
+        if station % 4 != 2, StopGuide.armsDown(reading) {
+            armsDownSince = armsDownSince ?? now
+        } else {
+            armsDownSince = nil
+        }
         let fit: StopFit
         if !StopGuide.fullyVisible(reading) {
             fit = .stepBack
@@ -414,24 +427,15 @@ final class BodyScanViewModel {
             fit = .comeCloser
         } else if abs(reading.centerX - 0.5) > 0.18 {
             fit = .moveToCentre
-        } else if StopGuide.armsDown(reading) {
-            // Checked at every stop before the turn: dropped arms also shrink the span,
-            // which would otherwise read as "turn further".
+        } else if let since = armsDownSince, now.timeIntervalSince(since) > 0.8 {
             fit = .openArms
         } else if station == 0 {
             fit = span >= StopGuide.openArmSpan ? .ok : .openArms
+        } else if StopGuide.plainlyOff(station: station, spanRatio: ratio) {
+            fit = .turnFurther
         } else {
-            let ratio = span / spanReference
-            let at = StopGuide.fit(station: station, spanRatio: ratio,
-                                   shoulderRatio: shoulders.flatMap { s in shoulderReference.map { s / $0 } })
-            // In the band but hardly moved from the last stop: not turned yet.
-            if at == .ok, let last = turn.lastRatio, !StopGuide.turned(from: last, to: ratio) {
-                fit = .turnFurther
-            } else {
-                fit = at
-            }
+            fit = .ok
         }
-        // Right place: hold still for the capture.
         let shown = shownFit.update(fit)
         guard let widths = stillness.stillWidths(at: time) else {
             turn.fit = shown
@@ -442,14 +446,16 @@ final class BodyScanViewModel {
         turn.fit = fit == .ok ? .ok : shown
         turn.holding = fit == .ok
         guard fit == .ok else { return nudge(fit) }
-        // The outline must have changed from the last stop too (neighbouring stops differ
-        // by 10–20% at the waist or hips), or this is the same position again.
-        if station > 0, !turn.retaking, !scan.differs(widths, from: station - 1, threshold: 0.04) {
-            turn.fit = .turnFurther
-            turn.holding = false
-            return nudge(.turnFurther)
+        // Still where the last photo was taken: neither the arm span nor the outline has
+        // changed, so the user hasn't turned yet.
+        if station > 0, !turn.retaking {
+            let spanMoved = turn.lastRatio.map { StopGuide.turned(from: $0, to: ratio) } ?? true
+            if !spanMoved, !scan.differs(widths, from: station - 1, threshold: 0.05) {
+                turn.fit = .turnFurther
+                turn.holding = false
+                return nudge(.turnFurther)
+            }
         }
-        let ratio = span / spanReference
         // Going round again: stops that measured well are passed by.
         if turn.retaking, !retakeQueue.contains(station) {
             audio.play(.tick)
@@ -480,7 +486,7 @@ final class BodyScanViewModel {
     }
 
     /// Re-measures the stop on stills at the best segmentation quality; the live frames'
-    /// faster masks have softer edges. Three stills 150 ms apart (different camera
+    /// faster masks have softer edges. Five stills 120 ms apart (different camera
     /// frames) are measured and the median width per level kept, so one frame's
     /// segmentation slip doesn't decide the stop. Falls back to the live widths if
     /// none can be measured.
@@ -494,8 +500,9 @@ final class BodyScanViewModel {
         let fractions = levelFractions
         Task {
             var images: [CGImage] = []
-            for k in 0..<3 {
-                if k > 0 { try? await Task.sleep(for: .milliseconds(150)) }
+            // Five stills, 120 ms apart: the median of five shrugs off two bad masks.
+            for k in 0..<5 {
+                if k > 0 { try? await Task.sleep(for: .milliseconds(120)) }
                 if let image = camera.captureStill() { images.append(image) }
             }
             let stills = images
@@ -548,7 +555,7 @@ final class BodyScanViewModel {
         switch fit {
         case .ok: return
         case .handsOutOfFrame: hint(String(localized: "Step back until your hands fit in the picture too."))
-        case .turnFurther: hint(String(localized: "Turn a little further clockwise."))
+        case .turnFurther: hint(String(localized: "You haven't turned yet. Turn 45 degrees to your right."))
         case .turnBack: hint(String(localized: "A little too far. Turn back slightly, counter-clockwise."))
         case .comeCloser: hint(String(localized: "Come a little closer to the phone."))
         case .moveToCentre: hint(String(localized: "Move to the middle of the picture."))
@@ -591,7 +598,7 @@ final class BodyScanViewModel {
         shownFit.reset(nil)
         stillness.reset()
         stationStart = Date()
-        say(String(localized: "Good.") + " " + StationGuide.instruction(next))
+        say(String(localized: "Photo taken.") + " " + StationGuide.instruction(next))
     }
 
     /// Runs twice a second: helps when a stop is taking long.
@@ -924,12 +931,12 @@ enum StationGuide {
     static func instruction(_ station: Int) -> String {
         switch station {
         case 0: String(localized: "Face the phone, arms straight out to the sides, and hold still.")
-        case 1: String(localized: "Turn 45 degrees clockwise and stop.")
-        case 2: String(localized: "Another 45 degrees clockwise, so your left side faces the phone.")
-        case 4: String(localized: "Another 45 degrees clockwise, so your back faces the phone.")
-        case 6: String(localized: "Another 45 degrees clockwise, so your right side faces the phone.")
-        case 7: String(localized: "Last one: another 45 degrees clockwise, and stop.")
-        default: String(localized: "Another 45 degrees clockwise, and stop.")
+        case 1: String(localized: "Turn 45 degrees to your right and stop.")
+        case 2: String(localized: "Another 45 degrees to your right. Your left side faces the phone.")
+        case 4: String(localized: "Another 45 degrees to your right. Your back faces the phone.")
+        case 6: String(localized: "Another 45 degrees to your right. Your right side faces the phone.")
+        case 7: String(localized: "Last photo: another 45 degrees to your right, and stop.")
+        default: String(localized: "Another 45 degrees to your right, and stop.")
         }
     }
 }

@@ -242,6 +242,18 @@ public enum StopGuide {
         }
     }
 
+    /// Whether the user plainly isn't at this kind of stop: side-on with the full span
+    /// of a front view, or at the back with the span of a side view. Anything nearer
+    /// is taken (the turn is guided by voice, and a stop 10–15° off barely changes the
+    /// girth).
+    public static func plainlyOff(station: Int, spanRatio r: Double) -> Bool {
+        switch station % 4 {
+        case 0: r < 0.6
+        case 2: r > 0.75
+        default: r > 0.97 || r < 0.3
+        }
+    }
+
     /// Whether the span moved enough since the last stop for this to be a new one. Neighbouring
     /// stops are about 45° apart, which changes the span by 0.29 or more (1 to cos 45°, cos
     /// 45° to the body's depth); arms drifting while standing still change it far less.

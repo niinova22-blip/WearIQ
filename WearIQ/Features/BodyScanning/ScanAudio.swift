@@ -65,6 +65,7 @@ final class ScanAudio {
     private var waitTask: Task<Void, Never>?
     private var configured = false
     private var observers: [NSObjectProtocol] = []
+    private var fadeTask: Task<Void, Never>?
 
     init() {
         engine.attach(speechPlayer)
@@ -73,6 +74,8 @@ final class ScanAudio {
         engine.connect(speechPlayer, to: engine.mainMixerNode, format: speechFormat)
         engine.connect(clipPlayer, to: engine.mainMixerNode, format: ScanVoice.format)
         engine.connect(tonePlayer, to: engine.mainMixerNode, format: toneFormat)
+        // Headroom: a cue and the end of a line together must not clip.
+        engine.mainMixerNode.outputVolume = 0.85
         renderer.usesApplicationAudioSession = true
         fallback.usesApplicationAudioSession = true
     }
@@ -144,7 +147,29 @@ final class ScanAudio {
         // A player started on a stopped engine raises an exception that ends the app;
         // the engine can't run while the app is in the background.
         guard ensureRunning() else { return }
+        // Cutting into a line: faded out over 40 ms first, since stopping a voice mid-
+        // waveform clicks (heard as crackle when instructions followed quickly).
+        let playing = [clipPlayer, speechPlayer].filter(\.isPlaying)
+        guard playing.isEmpty else {
+            speakingUntil = Date().addingTimeInterval(1)
+            fadeTask?.cancel()
+            fadeTask = Task { [weak self] in
+                for k in stride(from: 4, through: 0, by: -1) {
+                    for p in playing { p.volume = Float(k) / 5 }
+                    try? await Task.sleep(for: .milliseconds(8))
+                }
+                guard let self, !Task.isCancelled else { return }
+                self.silenceSpeech()
+                for p in playing { p.volume = 1 }
+                self.begin(text)
+            }
+            return
+        }
         silenceSpeech()
+        begin(text)
+    }
+
+    private func begin(_ text: String) {
         if let clips = ScanVoice.clips(for: text) {
             var seconds = 0.0
             for clip in clips {
@@ -186,6 +211,12 @@ final class ScanAudio {
     }
 
     func play(_ cue: Cue) {
+        // Small cues never go over a voice line: mixed together they clipped, and the
+        // words were lost under them. Results and problems still sound.
+        switch cue {
+        case .tick, .go, .sector, .region: if isSpeaking { return }
+        case .success, .problem: break
+        }
         guard isEnabled, ensureRunning() else { return }
         guard let buffer = Self.render(cue, format: toneFormat) else { return }
         tonePlayer.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
@@ -195,6 +226,7 @@ final class ScanAudio {
     }
 
     private func silence() {
+        fadeTask?.cancel()
         waiting = nil
         waitTask?.cancel()
         silenceSpeech()

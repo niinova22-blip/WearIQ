@@ -219,6 +219,9 @@ public struct SizeChartParser: Sendable {
 
     /// Case- and diacritic-insensitive form that treats Turkish İ/ı like i, so
     /// "GÖĞÜS", "göğüs" and "Inseam" all match plain ASCII keys.
+    /// Lower-cased, without Turkish dots and accents, for matching words in names.
+    public static func foldForMatching(_ s: String) -> String { fold(s) }
+
     static func fold(_ s: String) -> String {
         s.replacingOccurrences(of: "İ", with: "i")
             .replacingOccurrences(of: "ı", with: "i")

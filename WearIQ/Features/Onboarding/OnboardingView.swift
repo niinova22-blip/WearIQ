@@ -14,31 +14,44 @@ struct OnboardingView: View {
 
     private let pages = [
         Page(symbol: "figure.stand", title: "Scan once",
-             text: "Create your body profile one time. Every garment is checked against it afterwards."),
+             text: "One minute, once. Every garment is checked against your body."),
         Page(symbol: "ruler", title: "Know how it fits",
-             text: "See how shoulders, chest, waist, sleeves and length will sit, size by size."),
+             text: "See it on your 3D avatar: shoulders, waist, sleeves and where the hem ends."),
         Page(symbol: "checkmark.seal", title: "Pick the right size",
-             text: "Get a size recommendation with an honest confidence level, not a guess."),
+             text: "A size recommendation with an honest confidence, not a guess."),
         Page(symbol: "lock.shield", title: "Private by design",
-             text: "Your photos are analysed on this device and deleted after measuring. No account required."),
+             text: "Photos are processed only on this phone and deleted right away. Nothing is sent anywhere."),
     ]
 
     var body: some View {
         VStack(spacing: Theme.Spacing.l) {
             TabView(selection: $page) {
                 ForEach(pages.indices, id: \.self) { i in
-                    VStack(spacing: Theme.Spacing.m) {
-                        Image(systemName: pages[i].symbol)
-                            .font(.system(size: 72, weight: .light))
-                            .foregroundStyle(.tint)
-                            .accessibilityHidden(true)
-                        Text(pages[i].title)
-                            .font(.largeTitle.bold())
-                            .multilineTextAlignment(.center)
-                        Text(pages[i].text)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
+                    VStack(spacing: Theme.Spacing.l) {
+                        ZStack {
+                            Circle()
+                                .fill(Theme.accentGradient.opacity(0.15))
+                                .frame(width: 180, height: 180)
+                            Circle()
+                                .fill(Theme.accentGradient)
+                                .frame(width: 120, height: 120)
+                                .shadow(color: .pink.opacity(0.35), radius: 20, y: 10)
+                            Image(systemName: pages[i].symbol)
+                                .font(.system(size: 52, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .symbolEffect(.bounce, value: page == i)
+                        }
+                        .accessibilityHidden(true)
+                        VStack(spacing: Theme.Spacing.s) {
+                            Text(pages[i].title)
+                                .font(.largeTitle.bold())
+                                .multilineTextAlignment(.center)
+                            Text(pages[i].text)
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: 320)
+                        }
                     }
                     .padding(Theme.Spacing.l)
                     .tag(i)

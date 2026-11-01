@@ -48,6 +48,8 @@ public struct Avatar: Sendable {
         public var seams: [Vec3] = []
         /// Where its seams and hems sit against the body.
         public var fitLines: [FitLine] = []
+        /// Where its hem, legs and sleeves end on the body.
+        public var placements: [Placement] = []
         /// How it sits in each zone, from the drape.
         public var fitReport: [FitZone: ZoneReport] = [:]
     }
@@ -129,6 +131,14 @@ public struct Avatar: Sendable {
         /// down: 0 straight, about 0.1 for a coat, 0.15–0.3 for an A-line skirt or dress.
         /// Nil takes the style's usual one.
         public var flare: Double?
+        /// Whether the length and sleeve came from the size chart (otherwise they are the
+        /// usual ones for the kind and size, and said to be estimates).
+        public var lengthFromChart = true
+        /// How much longer (+) or shorter than the usual length for its kind the garment is
+        /// cut by design, cm: a mini skirt, a maxi dress, a long coat. Moves the hem
+        /// without making it "too long" or "too short".
+        public var hemOffset: Double = 0
+        public var sleeveFromChart = true
         public var chestEase: Double = 10
         public var waistEase: Double = 8
         public var hipEase: Double = 8
@@ -247,7 +257,7 @@ public struct Avatar: Sendable {
         }
         layers = garments.indices.compactMap { i in
             dressed[i].map { Layer(fit: garments[i], mesh: $0.mesh, frames: $0.frames, seams: $0.seams,
-                                   fitLines: $0.lines, fitReport: $0.report) }
+                                   fitLines: $0.lines, placements: $0.placements, fitReport: $0.report) }
         }
         landmarks = model.landmarks(covering: cover)
     }
@@ -524,6 +534,7 @@ extension BodyModel {
         var report: [FitZone: ZoneReport]
         var frames: [[Vec3]] = []
         var lines: [Avatar.FitLine] = []
+        var placements: [Avatar.Placement] = []
     }
 
     /// Cuts the garment and drapes it. `under` is what's already worn beneath (trousers
@@ -851,13 +862,19 @@ extension BodyModel {
             max(self.distance(p) - margin - thickness - 0.002, p.y - top, bottom - p.y)
         }
         let shell = { (p: Vec3) -> Float in min(cut(p), covered(p)) }
-        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: shell, report: report, frames: frames, lines: lines)
+        let placed = placements(shape, lengthKnown: fit.lengthFromChart, sleeveKnown: fit.sleeveFromChart)
+        return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: shell, report: report, frames: frames, lines: lines,
+                       placements: placed)
     }
 
     /// Where a garment of this kind usually ends, before its length moves it: a top just
     /// below the hips, a coat a little above the knee, a dress at the knee, a skirt just
     /// above it.
     func regularHem(_ fit: Avatar.GarmentFit) -> Float {
+        usualHem(fit) - Float(fit.hemOffset / 100)
+    }
+
+    private func usualHem(_ fit: Avatar.GarmentFit) -> Float {
         switch (fit.kind, fit.style) {
         case (.skirt, _): kneeY + 0.03 * h
         case (.top, .coat): kneeY + 0.05 * h

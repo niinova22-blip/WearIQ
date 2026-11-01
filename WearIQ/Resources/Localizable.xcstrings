@@ -8650,6 +8650,646 @@
           }
         }
       }
+    },
+    "At the waist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bel hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above the waist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belin %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below the waist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belin %lld cm altında"
+          }
+        }
+      }
+    },
+    "At the hips": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalça hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above the hips": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalçanın %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below the hips": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalçanın %lld cm altında"
+          }
+        }
+      }
+    },
+    "At the crotch": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apış arası hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above the crotch": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apış arasının %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below the crotch": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apış arasının %lld cm altında"
+          }
+        }
+      }
+    },
+    "At mid-thigh": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyluk ortası hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above mid-thigh": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyluk ortasının %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below mid-thigh": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyluk ortasının %lld cm altında"
+          }
+        }
+      }
+    },
+    "At the knee": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diz hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above the knee": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dizin %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below the knee": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dizin %lld cm altında"
+          }
+        }
+      }
+    },
+    "At mid-calf": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baldır ortası hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above mid-calf": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baldır ortasının %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below mid-calf": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baldır ortasının %lld cm altında"
+          }
+        }
+      }
+    },
+    "At the ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilek hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above the ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bileğin %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below the ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bileğin %lld cm altında"
+          }
+        }
+      }
+    },
+    "At mid upper arm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üst kol ortası hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above mid upper arm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üst kol ortasının %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below mid upper arm": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üst kol ortasının %lld cm altında"
+          }
+        }
+      }
+    },
+    "At the elbow": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dirsek hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above the elbow": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dirseğin %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below the elbow": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dirseğin %lld cm altında"
+          }
+        }
+      }
+    },
+    "At the wrist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El bileği hizasında"
+          }
+        }
+      }
+    },
+    "%lld cm above the wrist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El bileğinin %lld cm üstünde"
+          }
+        }
+      }
+    },
+    "%lld cm below the wrist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El bileğinin %lld cm altında"
+          }
+        }
+      }
+    },
+    "%lld cm past the ankle": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bileği %lld cm geçer"
+          }
+        }
+      }
+    },
+    "%lld cm past the wrist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bileği %lld cm geçer"
+          }
+        }
+      }
+    },
+    "Reaches the floor; %lld cm gathers on it": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yere değer; %lld cm fazlası yerde toplanır"
+          }
+        }
+      }
+    },
+    "(estimated)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(tahmini)"
+          }
+        }
+      }
+    },
+    "Great. Now I'll take a photo from eight directions. Hold your arms straight out at shoulder height. After each photo, turn 45 degrees to your right and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harika. Şimdi sekiz yönden fotoğraf çekeceğim. Kollarını omuz hizasında yana aç. Her fotoğraftan sonra sağına doğru 45 derece dön ve dur."
+          }
+        }
+      }
+    },
+    "Turn 45 degrees to your right and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına doğru 45 derece dön ve dur."
+          }
+        }
+      }
+    },
+    "Another 45 degrees to your right. Your left side faces the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına doğru 45 derece daha dön. Sol yanın telefona baksın."
+          }
+        }
+      }
+    },
+    "Another 45 degrees to your right. Your back faces the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına doğru 45 derece daha dön. Sırtın telefona baksın."
+          }
+        }
+      }
+    },
+    "Another 45 degrees to your right. Your right side faces the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına doğru 45 derece daha dön. Sağ yanın telefona baksın."
+          }
+        }
+      }
+    },
+    "Last photo: another 45 degrees to your right, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son fotoğraf: sağına doğru 45 derece daha dön ve dur."
+          }
+        }
+      }
+    },
+    "Another 45 degrees to your right, and stop.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına doğru 45 derece daha dön ve dur."
+          }
+        }
+      }
+    },
+    "Photo taken.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf alındı."
+          }
+        }
+      }
+    },
+    "You haven't turned yet. Turn 45 degrees to your right.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz dönmedin. Sağına doğru 45 derece dön."
+          }
+        }
+      }
+    },
+    "Photos are processed on this phone and deleted right away. Nothing is sent anywhere.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflar yalnızca bu telefonda işlenir ve hemen silinir. Hiçbir yere gönderilmez."
+          }
+        }
+      }
+    },
+    "Photo %lld of %lld": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf %1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "Choose what you're wearing": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ne giydiğini seç"
+          }
+        }
+      }
+    },
+    "About a minute": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yaklaşık bir dakika"
+          }
+        }
+      }
+    },
+    "Voice guidance leads you; photos are taken automatically.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesli yönlendirme eşlik eder; fotoğraflar kendiliğinden çekilir."
+          }
+        }
+      }
+    },
+    "A front photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önden bir fotoğraf"
+          }
+        }
+      }
+    },
+    "Face the phone, arms slightly away from your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefona dön, kolların gövdenden biraz açık."
+          }
+        }
+      }
+    },
+    "Eight directions": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sekiz yönden"
+          }
+        }
+      }
+    },
+    "Arms out at shoulder height; after each photo turn 45° to your right.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar omuz hizasında yana açık; her fotoğraftan sonra sağına 45° dön."
+          }
+        }
+      }
+    },
+    "Chest, waist, hips and lengths, ready to check.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğüs, bel, kalça ve boylar; kontrolüne hazır."
+          }
+        }
+      }
+    },
+    "Phone upright at waist height, 3 m away": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefon dik, bel hizasında, 3 m uzakta"
+          }
+        }
+      }
+    },
+    "Bright room, plain background": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aydınlık oda, sade arka plan"
+          }
+        }
+      }
+    },
+    "Barefoot, long hair tied up": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çıplak ayak, uzun saç toplu"
+          }
+        }
+      }
+    },
+    "Sound on: you'll be facing away": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesi aç: arkan dönük olacak"
+          }
+        }
+      }
+    },
+    "Fitted or underwear": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar kıyafet ya da iç çamaşırı"
+          }
+        }
+      }
+    },
+    "Most accurate": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En doğru sonuç"
+          }
+        }
+      }
+    },
+    "Shown with a range": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aralıkla gösterilir"
+          }
+        }
+      }
+    },
+    "Photos are processed only on this phone and deleted right away. Nothing is sent anywhere.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflar yalnızca bu telefonda işlenir ve hemen silinir. Hiçbir yere gönderilmez."
+          }
+        }
+      }
+    },
+    "One minute, once. Every garment is checked against your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir kez, bir dakikada. Her giysi senin vücuduna göre kontrol edilir."
+          }
+        }
+      }
+    },
+    "See it on your 3D avatar: shoulders, waist, sleeves and where the hem ends.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3B avatarında gör: omuz, bel, kollar ve eteğin nerede bittiği."
+          }
+        }
+      }
+    },
+    "A size recommendation with an honest confidence, not a guess.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tahmin değil; dürüst bir güvenle beden önerisi."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

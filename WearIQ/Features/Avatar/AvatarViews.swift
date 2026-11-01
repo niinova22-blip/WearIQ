@@ -31,7 +31,8 @@ extension Avatar.Landmark.Kind {
 enum AvatarFitMapper {
     /// With `regions` (the size-chart verdicts for this size), the avatar's colours,
     /// lines and labels say what those verdicts say.
-    static func fit(spec: GarmentSpec, size: SizeEntry, body: BodyProfile, regions: [RegionFit] = []) -> Avatar.GarmentFit {
+    static func fit(spec: GarmentSpec, size: SizeEntry, body: BodyProfile, regions: [RegionFit] = [],
+                    name: String? = nil) -> Avatar.GarmentFit {
         let isTrousers = spec.category == .pants
         let bottom = spec.category.isBottom
         var fit = Avatar.GarmentFit(kind: kind(spec, size))
@@ -52,11 +53,33 @@ enum AvatarFitMapper {
             return spec.chartKind == .garment ? d : typical + d
         }
         let style = spec.fitStyle
+        // A length the chart gives per size; one that is the same for every size was
+        // filled in from the model's photo (or the chart doesn't grade it) and says
+        // nothing about this size.
+        func graded(_ g: GarmentDimension) -> Double? {
+            guard let v = size.values[g]?.cm else { return nil }
+            let all = spec.sizes.compactMap { $0.values[g]?.cm }
+            return spec.sizes.count > 1 && all.count == spec.sizes.count && Set(all.map { ($0 * 2).rounded() }).count == 1 ? nil : v
+        }
+        // Sizes this one is from a regular fit on this body (+ bigger): lengths grow
+        // with the size as its girths do, about 1.5 cm in length and 1 cm in sleeve for
+        // every 5 cm of chest (4 cm of waist), as patterns are graded.
+        var steps = 0.0
+        // The design length the name says, cm from the kind's usual one.
+        let words = SizeChartParser.foldForMatching(name ?? "")
+        func hint(_ table: [(String, Double)]) -> Double { table.first { words.contains($0.0) }?.1 ?? 0 }
         if spec.category == .skirt {
             fit.waistEase = ease(.waist, .waist, typical: 1.5)
             fit.hipEase = ease(.hip, .hip, typical: [FitStyle.slim: 5, .regular: 8, .relaxed: 16, .oversized: 30][style] ?? 8)
+            steps = (fit.waistEase - 1.5) / 4
             // Waistband to hem; a regular skirt ends just above the knee.
-            if let length = size.values[.bodyLength]?.cm { fit.lengthDelta = length - 0.245 * height }
+            if let length = graded(.bodyLength) {
+                fit.hemOffset = length - 0.245 * height
+            } else {
+                fit.lengthFromChart = false
+                fit.hemOffset = hint([("mini", -0.065), ("midi", 0.15), ("maxi", 0.25), ("maksi", 0.25), ("uzun", 0.2)]) * height
+                    + steps * 1.0
+            }
         } else if isTrousers {
             fit.waistEase = ease(.waist, .waist, typical: 1.5)
             fit.hipEase = ease(.hip, .hip, typical: [FitStyle.slim: 4, .regular: 7, .relaxed: 12, .oversized: 20][style] ?? 7)
@@ -68,16 +91,38 @@ enum AvatarFitMapper {
             fit.chestEase = ease(.chest, .chest, typical: chestTypical)
             fit.waistEase = ease(.waist, .waist, typical: spec.category == .dress ? chestTypical - 4 : chestTypical + 3)
             fit.hipEase = spec.category == .dress ? ease(.hip, .hip, typical: chestTypical - 2) : fit.waistEase
+            steps = (fit.chestEase - chestTypical) / 5
             switch spec.category {
             case .coat, .dress:
-                // Measured from the shoulder; a regular coat ends above the knee, a dress at it.
+                // Measured from the shoulder; a regular coat ends above the knee, a dress at
+                // it. Its length is its style, so it moves the hem without being "too long".
                 let regular = (spec.category == .coat ? 0.49 : 0.54) * height
-                if let length = size.values[.bodyLength]?.cm, spec.chartKind == .garment { fit.lengthDelta = length - regular }
+                if let length = graded(.bodyLength), spec.chartKind == .garment {
+                    fit.hemOffset = length - regular
+                } else {
+                    fit.lengthFromChart = false
+                    let named = spec.category == .coat
+                        ? hint([("uzun", 0.17), ("long", 0.17), ("maxi", 0.25), ("kisa", -0.12), ("short", -0.12)])
+                        : hint([("mini", -0.095), ("midi", 0.12), ("maxi", 0.22), ("maksi", 0.22), ("uzun", 0.2)])
+                    fit.hemOffset = named * height + steps * 1.5
+                }
             default:
                 let lengthEase: Double = spec.category == .tshirt ? 18 : spec.category == .jacket ? 25 : 21
-                if let d = diff(.bodyLength, .torsoLength) { fit.lengthDelta = spec.chartKind == .garment ? d - lengthEase : d }
+                if graded(.bodyLength) != nil, let d = diff(.bodyLength, .torsoLength) {
+                    fit.lengthDelta = spec.chartKind == .garment ? d - lengthEase : d
+                } else {
+                    fit.lengthFromChart = false
+                    fit.lengthDelta = steps * 1.5
+                    fit.judged.length = nil
+                }
             }
-            if let d = diff(.sleeveLength, .armLength) { fit.sleeveDelta = spec.chartKind == .garment ? d - 2.5 : d }
+            if graded(.sleeveLength) != nil, let d = diff(.sleeveLength, .armLength) {
+                fit.sleeveDelta = spec.chartKind == .garment ? d - 2.5 : d
+            } else {
+                fit.sleeveFromChart = false
+                fit.sleeveDelta = steps * 1.0
+                fit.judged.sleeve = nil
+            }
             // The chart's shoulder runs over the back; a scanned one is bone to bone.
             let shoulder = body[.shoulderWidth].map(FitEngine.acrossBack)
             if let gv = size.values[.shoulderWidth]?.cm, let bv = shoulder?.cm {
@@ -229,6 +274,9 @@ struct AvatarFitView: View {
     @State var sizeLabel: String
     /// The fabric composition from the product page, when known.
     var material: String?
+    /// The product's name: "mini", "midi", "long" in it set a skirt's or coat's length
+    /// when the chart has none.
+    var productName: String?
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
     @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var saved: [SavedAnalysis]
     /// The gender chosen at setup, for profiles saved before they carried it.
@@ -449,6 +497,10 @@ struct AvatarFitView: View {
                 if line.kind == .waistband, let waist = verdicts.first(where: { $0.region == .waist }) {
                     text = waist.verdict == .ideal ? nil : FitZone.waist.title + ": " + waist.verdictTitle
                 }
+                // A hem that sits as usual still says where it ends: "6 cm above the knee".
+                if text == nil, line.kind == .hem, let ends = layer.placements.first(where: { $0.edge != .sleeve }) {
+                    text = ends.text
+                }
                 guard let text else { return nil }
                 return SceneLabel(id: "\(index)-\(line.kind.rawValue)", position: line.anchor, normal: line.normal,
                                   side: line.anchor.x >= 0 ? 1 : -1, text: text, tone: line.tone)
@@ -489,11 +541,12 @@ struct AvatarFitView: View {
         measured.sex = measured.sex ?? BodySex(rawValue: sexRaw)
         let m = measured
         var fits: [Avatar.GarmentFit] = []
-        var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body, regions: regions)
+        var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body, regions: regions, name: productName)
         fit.fabric = AvatarFitMapper.fabric(spec: spec, material: material)
         fits.append(fit)
         if let companion, let size = companion.spec.sizes.first(where: { $0.label == companion.size }) {
-            var other = AvatarFitMapper.fit(spec: companion.spec, size: size, body: body, regions: companionRegions)
+            var other = AvatarFitMapper.fit(spec: companion.spec, size: size, body: body, regions: companionRegions,
+                                            name: companion.name)
             other.fabric = AvatarFitMapper.fabric(spec: companion.spec, material: companion.material)
             fits.append(other)
         }
@@ -529,6 +582,7 @@ struct AvatarFitView: View {
                     .pickerStyle(.segmented)
                 }
                 regionRows(regions)
+                placementRows(layer: 0)
                 if let body = profiles.first?.profile { reliability(body) }
                 companionSection
                 details
@@ -553,6 +607,32 @@ struct AvatarFitView: View {
                     Text(r.detailText).foregroundStyle(.secondary).multilineTextAlignment(.trailing)
                 }
                 .font(.subheadline)
+            }
+        }
+    }
+
+    /// Where the garment's hem, legs and sleeves end on the body, as the draped avatar
+    /// shows them: "Hem: 6 cm above the knee", "Legs: 3 cm past the ankle".
+    @ViewBuilder
+    private func placementRows(layer: Int) -> some View {
+        if frame == nil, !draping, let avatar, avatar.layers.indices.contains(layer) {
+            let placements = avatar.layers[layer].placements
+            if !placements.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(placements.indices, id: \.self) { i in
+                        let p = placements[i]
+                        HStack(alignment: .firstTextBaseline) {
+                            Image(systemName: p.usual ? "ruler" : "exclamationmark.circle")
+                                .foregroundStyle(p.usual ? Color.secondary : Color.orange)
+                            Text(p.edge.title)
+                            Spacer()
+                            Text(p.text + (p.estimated ? " " + String(localized: "(estimated)") : ""))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        .font(.subheadline)
+                    }
+                }
             }
         }
     }
@@ -610,6 +690,7 @@ struct AvatarFitView: View {
                 }
                 regionRows(companion.analysis.sizes.first { $0.label == companion.size }?.regions
                     .filter { $0.verdict != .insufficientData } ?? [])
+                placementRows(layer: 1)
             }
         } else if spec.category != .dress {
             Button {
@@ -808,7 +889,7 @@ struct AvatarFitView: View {
         comparing = true
         let fabric = AvatarFitMapper.fabric(spec: spec, material: material)
         let sizes: [(label: String, fit: Avatar.GarmentFit)] = spec.sizes.map { size in
-            var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body)
+            var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body, name: productName)
             fit.fabric = fabric
             return (size.label, fit)
         }

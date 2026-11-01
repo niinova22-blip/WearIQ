@@ -185,3 +185,35 @@ import WearIQCore
         #expect(hem(coat) < model.kneeY + 0.15)
     }
 }
+
+@Suite struct Placements {
+    let m = Avatar.Measurements(height: 173, chest: 92, waist: 82, hip: 92, thigh: 56,
+                                shoulderWidth: 37, armLength: 56, inseam: 81)
+
+    /// Trouser legs 3 cm long end 3 cm past the ankle; 15 cm long reach the floor.
+    @Test func trouserLegsAgainstTheAnkle() throws {
+        var f = Avatar.GarmentFit(kind: .trousers); f.lengthDelta = 3
+        let legs = try #require(Avatar(m, garment: f, detail: .preview).layers[0].placements.first)
+        #expect(legs.edge == .legs && legs.landmark == .ankle && abs(legs.offsetCm - 3) < 0.5)
+        f.lengthDelta = 15
+        #expect(Avatar(m, garment: f, detail: .preview).layers[0].placements.first?.landmark == .floor)
+    }
+
+    /// A skirt's hem is said against the knee; a mini skirt's well above it.
+    @Test func skirtHemAgainstTheKnee() throws {
+        var f = Avatar.GarmentFit(kind: .skirt); f.waistEase = 1; f.hipEase = 8
+        let regular = try #require(Avatar(m, garment: f, detail: .preview).layers[0].placements.first)
+        #expect(regular.landmark == .knee && regular.offsetCm < 0 && regular.offsetCm > -10)
+        f.hemOffset = -0.065 * 173
+        let mini = try #require(Avatar(m, garment: f, detail: .preview).layers[0].placements.first)
+        #expect([.midThigh, .knee].contains(mini.landmark) && mini.usual)
+    }
+
+    /// Long sleeves 2 cm long end 2 cm past the wrist.
+    @Test func sleevesAgainstTheWrist() {
+        var f = Avatar.GarmentFit(kind: .top(longSleeves: true)); f.sleeveDelta = 2
+        let sleeve = Avatar(m, garment: f, detail: .preview).layers[0].placements.first { $0.edge == .sleeve }
+        #expect(sleeve?.landmark == .wrist)
+        #expect(abs((sleeve?.offsetCm ?? 0) - 2) < 0.5)
+    }
+}

@@ -643,3 +643,48 @@ extension Avatar.FitLine {
         }
     }
 }
+
+extension Avatar.Placement.Edge {
+    var title: String {
+        switch self {
+        case .hem: String(localized: "Length")
+        case .legs: String(localized: "Leg length")
+        case .sleeve: String(localized: "Sleeves")
+        }
+    }
+}
+
+extension Avatar.Placement {
+    /// Where it ends, in a shopper's words: "6 cm above the knee", "3 cm past the ankle".
+    var text: String {
+        let n = Int(offsetCm.rounded())
+        // Past the wrist or ankle reads better than "below" for sleeves and legs.
+        if landmark == .floor { return String(localized: "Reaches the floor; \(max(1, n)) cm gathers on it") }
+        if n > 0, edge == .legs, landmark == .ankle { return String(localized: "\(n) cm past the ankle") }
+        if n > 0, edge == .sleeve, landmark == .wrist { return String(localized: "\(n) cm past the wrist") }
+        return switch landmark {
+        case .waist:
+            n == 0 ? String(localized: "At the waist") : n < 0 ? String(localized: "\(-n) cm above the waist") : String(localized: "\(n) cm below the waist")
+        case .hips:
+            n == 0 ? String(localized: "At the hips") : n < 0 ? String(localized: "\(-n) cm above the hips") : String(localized: "\(n) cm below the hips")
+        case .crotch:
+            n == 0 ? String(localized: "At the crotch") : n < 0 ? String(localized: "\(-n) cm above the crotch") : String(localized: "\(n) cm below the crotch")
+        case .midThigh:
+            n == 0 ? String(localized: "At mid-thigh") : n < 0 ? String(localized: "\(-n) cm above mid-thigh") : String(localized: "\(n) cm below mid-thigh")
+        case .knee:
+            n == 0 ? String(localized: "At the knee") : n < 0 ? String(localized: "\(-n) cm above the knee") : String(localized: "\(n) cm below the knee")
+        case .midCalf:
+            n == 0 ? String(localized: "At mid-calf") : n < 0 ? String(localized: "\(-n) cm above mid-calf") : String(localized: "\(n) cm below mid-calf")
+        case .ankle:
+            n == 0 ? String(localized: "At the ankle") : n < 0 ? String(localized: "\(-n) cm above the ankle") : String(localized: "\(n) cm below the ankle")
+        case .midUpperArm:
+            n == 0 ? String(localized: "At mid upper arm") : n < 0 ? String(localized: "\(-n) cm above mid upper arm") : String(localized: "\(n) cm below mid upper arm")
+        case .elbow:
+            n == 0 ? String(localized: "At the elbow") : n < 0 ? String(localized: "\(-n) cm above the elbow") : String(localized: "\(n) cm below the elbow")
+        case .wrist:
+            n == 0 ? String(localized: "At the wrist") : n < 0 ? String(localized: "\(-n) cm above the wrist") : String(localized: "\(n) cm below the wrist")
+        case .floor:
+            String(localized: "Reaches the floor; \(max(1, n)) cm gathers on it")
+        }
+    }
+}

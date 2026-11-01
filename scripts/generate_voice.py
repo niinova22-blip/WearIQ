@@ -11,7 +11,7 @@ Each line is rendered three times and each take transcribed back with Whisper
 (large-v3-turbo); the take whose transcript is closest to the text is kept (short lines
 get up to twelve tries). Numbers are spoken as words, and Turkish is rendered a little
 slower and calmer than the model's default (`SETTINGS`). Silence is trimmed, loudness is normalised to −18
-LUFS, and the clip is encoded as 48 kbit/s mono AAC.
+LUFS after the hiss is taken out (`clean`), and the clip is encoded as 64 kbit/s mono AAC.
 
 Clip names: voice_<first 16 hex digits of SHA-256 of the NFC sentence>.m4a, the same
 key ScanVoice computes in the app, so a line is found by its text. Sentences are split
@@ -48,10 +48,8 @@ OUT = os.path.join(ROOT, "WearIQ", "Resources", "Voice")
 # English source strings, as in the code.
 LINES = [
     "Stand about three steps back from the phone, facing it, arms slightly away from your body.",
-    "Great. Now I'll measure you from eight sides. Hold your arms straight out at shoulder height and keep them there. Each time, turn 45 degrees clockwise, to your right, and wait for the tone.",
     "Your clothes look loose, which makes the measurements too large. Take them off or put on something fitted.",
     "Good, now hold still.",
-    "Turn a little further clockwise.",
     "A little too far. Turn back slightly, counter-clockwise.",
     "Come a little closer to the phone.",
     "Move to the middle of the picture.",
@@ -79,12 +77,16 @@ LINES = [
     "Turn fully to your side.",
     # StationGuide.instruction
     "Face the phone, arms straight out to the sides, and hold still.",
-    "Turn 45 degrees clockwise and stop.",
-    "Another 45 degrees clockwise, so your left side faces the phone.",
-    "Another 45 degrees clockwise, so your back faces the phone.",
-    "Another 45 degrees clockwise, so your right side faces the phone.",
-    "Last one: another 45 degrees clockwise, and stop.",
-    "Another 45 degrees clockwise, and stop.",
+    "Great. Now I'll take a photo from eight directions. Hold your arms straight out at shoulder height. After each photo, turn 45 degrees to your right and stop.",
+    "Turn 45 degrees to your right and stop.",
+    "Another 45 degrees to your right. Your left side faces the phone.",
+    "Another 45 degrees to your right. Your back faces the phone.",
+    "Another 45 degrees to your right. Your right side faces the phone.",
+    "Last photo: another 45 degrees to your right, and stop.",
+    "Another 45 degrees to your right, and stop.",
+    "Photo taken.",
+    "You haven't turned yet. Turn 45 degrees to your right.",
+    "Photos are processed on this phone and deleted right away. Nothing is sent anywhere.",
 ]
 RETAKE = "One more look at %lld position(s)."
 NUMBER_WORDS = {
@@ -97,7 +99,8 @@ COUNTDOWN = {"en": {"3": "Three!", "2": "Two!", "1": "One!"}, "tr": {"3": "Üç!
 # Lines the model stumbles on as written (a word repeated, sounds after it); said in
 # other words with the same meaning.
 SPOKEN = {"Done.": "All done.", "Your measurements are ready.": "Your measurements are ready to see.",
-          "Your feet aren't visible.": "I can't see your feet."}
+          "Your feet aren't visible.": "I can't see your feet.",
+          "Turn 45 degrees to your right.": "Now turn 45 degrees to your right."}
 # Numbers are said in words: the model reads digits unreliably, Turkish ones worst.
 NUMBERS = {"en": {"45": "forty-five"}, "tr": {"45": "kırk beş"}}
 # Sampling per language. A lower CFG weight gives slower, more deliberate speech, which
@@ -175,6 +178,29 @@ def cer(a, b, lang="tr"):
     return d[len(b)] / len(a)
 
 
+def clean(wav, sr):
+    """Takes out the model's background hiss and rumble, which loudness normalisation
+    brought up and users heard as rustling under the voice: a high-pass at 70 Hz, then
+    spectral gating against the clip's own noise floor (the quietest tenth of its frames,
+    per frequency), with a soft mask smoothed over time so speech isn't chopped; then
+    10 ms fades so a clip never starts or stops on a click."""
+    from scipy.signal import butter, sosfiltfilt
+    wav = sosfiltfilt(butter(4, 70, btype="highpass", fs=sr, output="sos"), wav).astype("float32")
+    spec = librosa.stft(wav, n_fft=1024, hop_length=256)
+    mag = np.abs(spec)
+    floor = np.percentile(mag, 10, axis=1, keepdims=True)
+    gain = np.clip((mag - 2.0 * floor) / np.maximum(mag, 1e-9), 0.05, 1.0)
+    # Smooth over three frames each side: gating frame by frame would warble.
+    kernel = np.ones(7) / 7
+    gain = np.apply_along_axis(lambda g: np.convolve(g, kernel, mode="same"), 1, gain)
+    out = librosa.istft(spec * gain, hop_length=256, length=len(wav)).astype("float32")
+    fade = int(0.01 * sr)
+    ramp = np.linspace(0, 1, fade, dtype="float32")
+    out[:fade] *= ramp
+    out[-fade:] *= ramp[::-1]
+    return out
+
+
 def main():
     from chatterbox.mtl_tts import ChatterboxMultilingualTTS
     from transformers import pipeline
@@ -225,6 +251,7 @@ def main():
             manifest[name]["heard"] = heard.strip()
             manifest[name]["cer"] = round(err, 3)
             print(f"[{lang}] {err:.2f} {shown!r} -> {heard.strip()!r}", flush=True)
+            wav = clean(wav, tts.sr)
             pad = np.zeros(int(0.06 * tts.sr), dtype="float32")
             wav = np.concatenate([pad, wav, pad])
             loudness = meter.integrated_loudness(wav)
@@ -235,7 +262,7 @@ def main():
                 raw = os.path.join(tmp, "clip.wav")
                 sf.write(raw, wav, tts.sr)
                 subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", raw, "-ac", "1", "-ar", "24000",
-                                "-c:a", "aac", "-b:a", "48k", path], check=True)
+                                "-c:a", "aac", "-b:a", "64k", path], check=True)
     # Clips no line uses any more.
     for f in os.listdir(OUT):
         if f.startswith("voice_") and f.endswith(".m4a") and f[:-4] not in manifest:

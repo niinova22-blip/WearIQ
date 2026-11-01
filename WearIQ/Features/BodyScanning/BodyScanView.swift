@@ -117,7 +117,7 @@ struct BodyScanView: View {
                                 capturing: model.turn.capturing)
                         .frame(width: 130, height: 130)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Step \(station + 1) of \(StationScan.stationCount)")
+                        Text("Photo \(station + 1) of \(StationScan.stationCount)")
                             .font(.system(size: 20, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.75))
                             .monospacedDigit()

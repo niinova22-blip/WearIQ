@@ -172,19 +172,18 @@ struct ScanGuideView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.m) {
-                clothingCard
-                tip("iphone.gen3", "Prop the phone upright at waist height, about 3 m away: far enough for your outstretched arms to fit in the picture.")
-                tip("lightbulb", "Use a bright room with a plain background.")
-                tip("shoeprints.fill", "Barefoot, with long hair tied up: your height sets the scale, and shoes or volume on top make every measurement come out smaller.")
-                tip("figure.arms.open", "First a front photo: face the phone, arms slightly away from your body.")
-                tip("arrow.trianglehead.2.clockwise.rotate.90", "Then hold your arms straight out and turn clockwise 45° at a time, 8 stops in all, waiting for the tone at each one. This measures your chest, waist and hips.")
-                tip("speaker.wave.2", "Voice cues guide you; the photo is taken automatically.")
-                tip("lock.shield", "Photos are analysed on this device and deleted right after measuring.")
+            VStack(alignment: .leading, spacing: Theme.Spacing.l) {
+                hero
+                steps
+                prepGrid
+                attireChoice
+                privacy
             }
             .padding(Theme.Spacing.m)
         }
+        .background(Theme.screenBackground)
         .navigationTitle("Body scan")
+        .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: Theme.Spacing.s) {
                 if status == .denied || status == .restricted {
@@ -196,67 +195,136 @@ struct ScanGuideView: View {
                     }
                     .buttonStyle(.primary)
                 } else {
-                    Button("Start scan") { Task { await requestAndScan() } }
-                        .buttonStyle(.primary)
-                        .disabled(attire == nil)
+                    Button(attire == nil ? LocalizedStringKey("Choose what you're wearing") : LocalizedStringKey("Start scan")) {
+                        Task { await requestAndScan() }
+                    }
+                    .buttonStyle(.primary)
+                    .disabled(attire == nil)
                 }
                 Button("Enter measurements manually", action: onManual)
+                    .font(.subheadline)
             }
             .padding(Theme.Spacing.m)
             .background(.bar)
         }
     }
 
-    private var clothingCard: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
-            Label("For the most accurate measurements", systemImage: "tshirt.fill")
-                .font(.title3.weight(.bold))
-            Text("The scan measures your outline, so every layer of loose clothing adds centimetres.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Label("Best: scan in your underwear. The photos never leave this phone; they're analysed here and deleted right after measuring.",
-                  systemImage: "1.circle.fill")
-                .font(.subheadline)
-            Label("Otherwise: a fitted T-shirt or tank top with leggings or fitted shorts. Tie long hair up.",
-                  systemImage: "2.circle.fill")
-                .font(.subheadline)
-            Text("What are you wearing?")
-                .font(.headline)
-                .padding(.top, Theme.Spacing.xs)
-            attireOption(.fitted, title: "Underwear or fitted clothes",
-                         detail: "Most accurate: your outline is your body.")
-            attireOption(.everyday, title: "My everyday clothes",
-                         detail: "Works too. Where clothes hide your body, values are estimated and shown with a range.")
+    /// What this is, in one look.
+    private var hero: some View {
+        HStack(spacing: Theme.Spacing.m) {
+            ZStack {
+                Circle().fill(Theme.accentGradient).frame(width: 64, height: 64)
+                Image(systemName: "figure.arms.open")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .symbolEffect(.pulse, options: .repeating)
+            }
+            .shadow(color: .pink.opacity(0.35), radius: 12, y: 6)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("About a minute").font(.title2.bold())
+                Text("Voice guidance leads you; photos are taken automatically.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The three steps, numbered.
+    private var steps: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            step(1, "A front photo", "Face the phone, arms slightly away from your body.")
+            step(2, "Eight directions", "Arms out at shoulder height; after each photo turn 45° to your right.")
+            step(3, "Your measurements", "Chest, waist, hips and lengths, ready to check.")
         }
         .padding(Theme.Spacing.m)
-        .background(.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-            .strokeBorder(attire == nil ? Color.orange : .green, lineWidth: 1.5))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+    }
+
+    private func step(_ n: Int, _ title: LocalizedStringKey, _ detail: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(verbatim: "\(n)")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 26, height: 26)
+                .background(Theme.accentGradient, in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail).font(.footnote).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Getting ready, as four tiles.
+    private var prepGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            prepTile("iphone.gen3", "Phone upright at waist height, 3 m away")
+            prepTile("lightbulb.max", "Bright room, plain background")
+            prepTile("shoeprints.fill", "Barefoot, long hair tied up")
+            prepTile("speaker.wave.2.fill", "Sound on: you'll be facing away")
+        }
+    }
+
+    private func prepTile(_ symbol: String, _ text: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: symbol).font(.title3).foregroundStyle(.tint)
+            Text(text).font(.footnote.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, minHeight: 86, alignment: .topLeading)
+        .padding(12)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// The scan measures the outline: what the user wears decides how it reads it.
+    private var attireChoice: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            Text("What are you wearing?").font(.headline)
+            HStack(spacing: 10) {
+                attireTile(.fitted, symbol: "figure.stand", title: "Fitted or underwear", detail: "Most accurate")
+                attireTile(.everyday, symbol: "tshirt", title: "Everyday clothes", detail: "Shown with a range")
+            }
+        }
         .sensoryFeedback(.selection, trigger: attire)
     }
 
-    private func attireOption(_ option: ScanAttire, title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
-        Button {
-            attire = option
+    private func attireTile(_ option: ScanAttire, symbol: String, title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
+        let on = attire == option
+        return Button {
+            withAnimation(.snappy) { attire = option }
         } label: {
-            HStack(alignment: .top, spacing: Theme.Spacing.s) {
-                Image(systemName: attire == option ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(attire == option ? Color.green : .secondary)
-                    .font(.title3)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                    Text(detail).font(.footnote).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Image(systemName: symbol).font(.title2)
+                    Spacer()
+                    Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(on ? Color.green : .secondary)
                 }
-                Spacer(minLength: 0)
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                Text(detail).font(.caption).foregroundStyle(.secondary)
             }
-            .contentShape(Rectangle())
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(on ? AnyShapeStyle(Theme.accentGradient) : AnyShapeStyle(Color.clear), lineWidth: 2))
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(attire == option ? .isSelected : [])
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    private func tip(_ symbol: String, _ text: LocalizedStringKey) -> some View {
-        Label { Text(text) } icon: { Image(systemName: symbol).foregroundStyle(.tint) }
+    /// Where the photos go: nowhere.
+    private var privacy: some View {
+        Label {
+            Text("Photos are processed only on this phone and deleted right away. Nothing is sent anywhere.")
+                .font(.footnote)
+        } icon: {
+            Image(systemName: "lock.shield.fill").foregroundStyle(.green)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func requestAndScan() async {
