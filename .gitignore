@@ -30,3 +30,6 @@ WearIQKit/Info.plist
 WearIQKit/SomaBody.bin
 WearIQKit/SOMA-X-LICENSE.txt
 .build-opt/
+
+# Python
+__pycache__/
