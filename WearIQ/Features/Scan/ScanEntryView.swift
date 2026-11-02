@@ -19,6 +19,10 @@ struct ScanEntryView: View {
     @State private var route: DraftRoute?
     @State private var showQuickCheck = false
     @State private var quickCheckBarcode: String?
+    /// A link is on the clipboard (from the share sheet's fallback, or copied in a store
+    /// app): offered with the system paste button, which reads it without a prompt.
+    @State private var clipboardHasLink = false
+    @Environment(\.scenePhase) private var scenePhase
 
     @Environment(AppContainer.self) private var container
     private let productService: ProductDataServicing = ProductDataService()
@@ -35,6 +39,7 @@ struct ScanEntryView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Theme.Spacing.m) {
+                if clipboardHasLink, linkText.isEmpty, !loadingLink { copiedLinkCard }
                 linkCard
                 HStack(spacing: Theme.Spacing.m) {
                     barcodeTile
@@ -66,11 +71,33 @@ struct ScanEntryView: View {
         }
         // Not `.task(id:)`: clearing the pending link changes the id, which would cancel
         // the very load it started (the shared link then showed a "cancelled" warning).
-        .onAppear { checkSharedLink() }
+        .onAppear {
+            checkSharedLink()
+            clipboardHasLink = UIPasteboard.general.hasURLs
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { clipboardHasLink = UIPasteboard.general.hasURLs }
+        }
         .onChange(of: container.pendingProductLink) { _, _ in checkSharedLink() }
     }
 
     // MARK: Cards
+
+    private var copiedLinkCard: some View {
+        Card {
+            Label("You copied a link", systemImage: "doc.on.clipboard").font(.headline)
+            Text("Tap Paste and the fit check starts straight away.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            PasteButton(payloadType: String.self) { strings in
+                guard let s = strings.first else { return }
+                clipboardHasLink = false
+                linkText = s
+                Task { await loadLink() }
+            }
+            .buttonBorderShape(.capsule)
+        }
+    }
 
     private var linkCard: some View {
         Card {

@@ -10420,6 +10420,26 @@
           }
         }
       }
+    },
+    "You copied a link": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir link kopyaladın"
+          }
+        }
+      }
+    },
+    "Tap Paste and the fit check starts straight away.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yapıştır'a dokun, beden kontrolü hemen başlasın."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

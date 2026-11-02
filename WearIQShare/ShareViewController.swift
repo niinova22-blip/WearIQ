@@ -27,13 +27,16 @@ final class ShareViewController: UIViewController {
         guard let link = await sharedLink(),
               var components = URLComponents(string: "weariq://check") else { return finish() }
         components.queryItems = [URLQueryItem(name: "url", value: link.absoluteString)]
-        guard let url = components.url, openContainingApp(url) else {
-            // Couldn't hand over: leave the link on the clipboard for pasting in WearIQ.
-            UIPasteboard.general.url = link
-            label.text = String(localized: "The link is copied. Open WearIQ and paste it.")
-            try? await Task.sleep(for: .seconds(2))
+        // Waits for the system to say the app opened before closing: closing the
+        // extension straight away could cancel the hand-over, which left the user with
+        // the "paste it" fallback and a scan that didn't start.
+        if let url = components.url, await openContainingApp(url) {
             return finish()
         }
+        // Couldn't hand over: leave the link on the clipboard for pasting in WearIQ.
+        UIPasteboard.general.url = link
+        label.text = String(localized: "The link is copied. Open WearIQ and paste it.")
+        try? await Task.sleep(for: .seconds(2))
         finish()
     }
 
@@ -54,13 +57,15 @@ final class ShareViewController: UIViewController {
     }
 
     /// Share extensions can't open apps directly; the app object is reached through the
-    /// responder chain.
-    private func openContainingApp(_ url: URL) -> Bool {
+    /// responder chain, and its answer is awaited.
+    @MainActor
+    private func openContainingApp(_ url: URL) async -> Bool {
         var responder: UIResponder? = self
         while let current = responder {
             if let application = current as? UIApplication {
-                application.open(url, options: [:], completionHandler: nil)
-                return true
+                return await withCheckedContinuation { continuation in
+                    application.open(url, options: [:]) { opened in continuation.resume(returning: opened) }
+                }
             }
             responder = current.next
         }
