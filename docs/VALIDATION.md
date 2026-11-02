@@ -186,3 +186,19 @@ Taramanın sabit cümleleri önceden kaydedilmiş seslerdir (`WearIQ/Resources/V
 - Telefon dik tutulduğunda görüntü 9:16'dır. Kollar yana açıkken kol açıklığı boya yakın olduğu için, vücut görüntü yüksekliğinin ~%50'sinden büyükse eller yanlardan taşar. Önceden önden konumlanmada %66'ya kadar izin veriliyordu, bu yüzden dönüşte eller kesiliyor ve dönüş açısı yanlış okunuyordu.
 - Artık konumlanma burun–bilek mesafesini görüntünün %34–45'inde tutuyor.
 - Dönüşte önce sırayla tam görünürlük, sonra kenarlardan taşma kontrol ediliyor (`StopGuide.cutEdges`, test `FramingTests`).
+
+## 13. Filme alınan dönüşün her karesi (2026-11-02)
+
+10 saniyelik dönüş saniyede 10 kare ile yaklaşık 100 kare verir. Önceden bu karelerden yalnızca 8 yön seçiliyor, her yönün çevresindeki karelerin medyanı alınıyordu. Artık `TurnRecording.girths` her kareye kol açıklığından bulunan açıyı veriyor (45° geçişleri, yanlar ve sırt düğüm noktası). Ardından seviye başına genişlik–açı eğrisine çift harmoniklerden (2θ, 4θ, 6θ) oluşan bir eğri Huber ağırlıklı en küçük karelerle oturtuluyor. Eğriden 3σ'dan fazla sapan kareler dışarıda bırakılıyor. Cauchy formülüne göre çevre, π × ortalama genişliktir; bu da eğrinin sabit terimidir. Bu yüzden düzensiz dönüş hızı sonucu kaydırmaz.
+
+Simülasyon (`FilmedTurnValidationTests`): ANSUR II'deki her üç kişiden biri (n=2.023). 8–12 saniyelik düzensiz dönüş, başta ve sonda bekleme, %2 maske gürültüsü ve her 20 karede bir %5–15 genişlemiş kare var.
+
+| Seviye | 8 yön: sapma / ort. hata / %95 | Her kare: sapma / ort. hata / %95 |
+|---|---|---|
+| Göğüs | +0,45% / 0,73% / 1,46% | +0,01% / 0,26% / 0,65% |
+| Bel | +0,83% / 0,85% / 1,75% | +0,01% / 0,28% / 0,69% |
+| Kalça | +0,93% / 0,94% / 1,86% | −0,00% / 0,29% / 0,71% |
+
+Kötü kayıtta (%4 gürültü, her beş karede bir genişlemiş kare) ortalama hata 8 yönde %1,9, her karede %1,2 çıkıyor. Gürültü içinde kalan genişlemiş kareler ayırt edilemediği için %1,2'lik bir sapma kalıyor; bu yine de 8 yönün %1,9'undan az. İki yöntem %6'dan fazla ayrışırsa uygulama 8 yönün değerini kullanıyor.
+
+Sınır: bu, karelerin rastgele hatasını ölçer. Maskenin her karede aynı yönde yaptığı hatayı (kıyafet, saç, ölçek) ölçmez; onu ancak mezura eşli veri gösterir (§6).

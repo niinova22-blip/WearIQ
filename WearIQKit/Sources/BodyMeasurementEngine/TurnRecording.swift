@@ -1,4 +1,5 @@
 import Foundation
+import WearIQCore
 
 /// One continuous turn, filmed: the user holds the arms out and turns slowly once
 /// round in place, and the eight directions are found in the recording instead of the
@@ -163,5 +164,129 @@ public struct TurnRecording: Sendable {
             out.append(widths.isEmpty ? nil : widths)
         }
         return out
+    }
+
+    // MARK: Every frame
+
+    /// The turn's angle at each sample, degrees from the front, clockwise: piecewise
+    /// linear through the points the span marks (the diagonals where it crosses cos 45°,
+    /// the sides and the back at the middle of their stretches). Nil outside the first
+    /// and last diagonal, where the span can't tell how far round the user is (still
+    /// standing at the start, slowing down at the end).
+    public func angles() -> [Double?] {
+        let points = turningPoints
+        guard points.count == 4, let start = samples.first?.time else { return samples.map { _ in nil } }
+        let marks = [start] + points
+        var knots: [(time: Double, degrees: Double)] = []
+        for q in 0..<4 {
+            if let d = crossing(0.707, from: marks[q], to: marks[q + 1]) { knots.append((d, Double(q) * 90 + 45)) }
+            if q < 3 { knots.append((marks[q + 1], Double(q + 1) * 90)) }
+        }
+        knots.sort { $0.time < $1.time }
+        guard knots.count >= 4, knots.first!.degrees == 45, knots.last!.degrees == 315 else { return samples.map { _ in nil } }
+        return samples.map { sample in
+            guard sample.time >= knots.first!.time, sample.time <= knots.last!.time else { return nil }
+            let k = knots.lastIndex { $0.time <= sample.time } ?? 0
+            guard k + 1 < knots.count else { return knots[k].degrees }
+            let a = knots[k], b = knots[k + 1]
+            return a.degrees + (b.degrees - a.degrees) * (sample.time - a.time) / max(1e-6, b.time - a.time)
+        }
+    }
+
+    /// Girths from every frame of the turn rather than eight: per level, the widths are
+    /// fitted against the angle with a smooth curve of the shape a silhouette's width
+    /// takes (the same seen from opposite sides, so even harmonics only: 2θ, 4θ, 6θ),
+    /// by iteratively reweighted least squares that sets aside frames far off the curve
+    /// (a mask that took in an arm, a frame blurred mid-step). By Cauchy's formula the
+    /// perimeter is π times the mean width, which is the curve's constant term, so
+    /// uneven turning speed and uneven coverage don't bias it, and the noise of single
+    /// frames averages out over about seventy of them instead of eight medians.
+    /// `calibration` removes the small bias measured on ANSUR II (AnsurValidationTests).
+    public func girths(calibration: [BodyLevel: Double] = TurnRecording.calibration) -> [BodyLevel: MeasuredValue] {
+        let theta = angles()
+        var out: [BodyLevel: MeasuredValue] = [:]
+        for level in [BodyLevel.chest, .waist, .hip] {
+            var xs: [Double] = [], ys: [Double] = []
+            for (i, s) in samples.enumerated() {
+                guard let t = theta[i], let w = s.widths[level], w > 0 else { continue }
+                xs.append(t * .pi / 180)
+                ys.append(w)
+            }
+            // At least most of the turn, spread over the half circle of directions.
+            guard xs.count >= 24 else { continue }
+            let folded = Set(xs.map { Int(($0.truncatingRemainder(dividingBy: .pi)) / (.pi / 8)) })
+            guard folded.count >= 7 else { continue }
+            guard let fit = Self.robustFit(xs, ys, harmonics: 3) else { continue }
+            let mean = fit.mean
+            guard mean > 0, let lo = ys.min(), let hi = ys.max(), lo < 0.92 * hi else { continue }
+            let girth = Double.pi * mean * (calibration[level] ?? 1)
+            // Uncertainty: the scatter about the curve over the frames used, plus a
+            // floor for what the mask itself gets wrong the same way in every frame.
+            let se = fit.residualSD / Double(max(1, fit.used)).squareRoot()
+            out[level] = MeasuredValue(cm: girth, uncertaintyCm: (pow(.pi * se, 2) + pow(0.02 * girth, 2)).squareRoot(), source: .scan)
+        }
+        return out
+    }
+
+    /// Measured on ANSUR II bodies with the simulated filmed turn (FilmedTurnValidationTests):
+    /// chest +0.08%, waist +0.02%, hips +0.04% before; these factors take it out.
+    public static let calibration: [BodyLevel: Double] = [.chest: 0.9992, .waist: 0.9998, .hip: 0.9996]
+
+    struct Fit { var mean: Double; var residualSD: Double; var used: Int }
+
+    /// w(θ) = c₀ + Σ aₖ cos 2kθ + bₖ sin 2kθ by Huber-weighted least squares.
+    static func robustFit(_ x: [Double], _ y: [Double], harmonics: Int) -> Fit? {
+        let p = 1 + 2 * harmonics
+        guard x.count > p + 4 else { return nil }
+        func row(_ t: Double) -> [Double] {
+            var r = [1.0]
+            for k in 1...harmonics { r.append(cos(2 * Double(k) * t)); r.append(sin(2 * Double(k) * t)) }
+            return r
+        }
+        let rows = x.map(row)
+        var weights = [Double](repeating: 1, count: x.count)
+        var coef = [Double](repeating: 0, count: p)
+        var sd = 0.0
+        // Huber weights within one robust standard deviation, frames beyond three set aside.
+        for _ in 0..<8 {
+            var a = [[Double]](repeating: [Double](repeating: 0, count: p), count: p)
+            var b = [Double](repeating: 0, count: p)
+            for (i, r) in rows.enumerated() where weights[i] > 0 {
+                for j in 0..<p {
+                    b[j] += weights[i] * r[j] * y[i]
+                    for k in 0..<p { a[j][k] += weights[i] * r[j] * r[k] }
+                }
+            }
+            guard let solved = solve(a, b) else { return nil }
+            coef = solved
+            let residuals = rows.indices.map { i in y[i] - zip(rows[i], coef).reduce(0) { $0 + $1.0 * $1.1 } }
+            let mad = residuals.map(abs).sorted()[residuals.count / 2]
+            sd = max(1e-6, 1.4826 * mad)
+            let c = 1.0 * sd
+            weights = residuals.map { r in abs(r) <= c ? 1 : abs(r) > 3 * sd ? 0 : c / abs(r) }
+        }
+        return Fit(mean: coef[0], residualSD: sd, used: weights.filter { $0 > 0 }.count)
+    }
+
+    /// Gaussian elimination with partial pivoting.
+    static func solve(_ a: [[Double]], _ b: [Double]) -> [Double]? {
+        var m = a, v = b
+        let n = v.count
+        for col in 0..<n {
+            guard let pivot = (col..<n).max(by: { abs(m[$0][col]) < abs(m[$1][col]) }), abs(m[pivot][col]) > 1e-12 else { return nil }
+            m.swapAt(col, pivot); v.swapAt(col, pivot)
+            for r in (col + 1)..<n {
+                let f = m[r][col] / m[col][col]
+                for c in col..<n { m[r][c] -= f * m[col][c] }
+                v[r] -= f * v[col]
+            }
+        }
+        var x = [Double](repeating: 0, count: n)
+        for r in stride(from: n - 1, through: 0, by: -1) {
+            var sum = v[r]
+            for c in (r + 1)..<n { sum -= m[r][c] * x[c] }
+            x[r] = sum / m[r][r]
+        }
+        return x
     }
 }

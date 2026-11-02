@@ -551,6 +551,9 @@ final class BodyScanViewModel {
         for (k, widths) in recording.stations().enumerated() {
             if let widths { scan.record(widths, at: k) }
         }
+        // Every frame of the turn, fitted against its angle: the girths it gives replace
+        // the eight directions' wherever it has enough of the turn.
+        scan.everyFrame = recording.girths()
         guard scan.captured.count >= scan.minimumStations else { return restartTurn() }
         camera.onFrame = nil
         countdownTask?.cancel()

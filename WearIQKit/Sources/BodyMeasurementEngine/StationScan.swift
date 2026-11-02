@@ -24,6 +24,11 @@ public struct StationScan: Sendable {
     /// Each stop's width profile, for measuring the same turn another way.
     public private(set) var profiles: [Int: StopProfile] = [:]
 
+    /// Girths from every frame of a filmed turn (`TurnRecording.girths`), where the turn
+    /// gave one: taken over the eight directions' for those levels, being about three
+    /// times as accurate on ANSUR II (FilmedTurnValidationTests).
+    public var everyFrame: [BodyLevel: MeasuredValue] = [:]
+
     public init() {}
 
     public mutating func record(_ levelWidths: [BodyLevel: Double], at station: Int, profile: StopProfile? = nil) {
@@ -76,6 +81,11 @@ public struct StationScan: Sendable {
                   lo < 0.92 * hi else { continue }  // equal widths all round: the user didn't turn
             let girth = Double.pi * filled.reduce(0, +) / Double(filled.count) * (calibration[level] ?? 1)
             result[level] = MeasuredValue(cm: girth, uncertaintyCm: 0.03 * girth, source: .scan)
+        }
+        for (level, value) in everyFrame where levels.contains(level) {
+            // A wildly different value means the frames' angles went wrong; keep the stops'.
+            if let stops = result[level], abs(value.cm - stops.cm) > 0.06 * stops.cm { continue }
+            result[level] = value
         }
         return result
     }
