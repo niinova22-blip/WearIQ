@@ -98,19 +98,21 @@ private struct ValidationResultsSection: View {
                     Text(verbatim: "n")
                     Text("A error")
                     Text("B error")
+                    Text("C error")
                     Text("Better")
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 ForEach(ValidationReport.dimensions, id: \.self) { d in
-                    let a = report.stats[.current]?[d], b = report.stats[.silhouetteFit]?[d]
-                    if a != nil || b != nil {
+                    let a = report.stats[.current]?[d], b = report.stats[.silhouetteFit]?[d], c = report.stats[.learned]?[d]
+                    if a != nil || b != nil || c != nil {
                         GridRow {
                             Text(d.title).gridColumnAlignment(.leading)
-                            Text("\(max(a?.n ?? 0, b?.n ?? 0))")
+                            Text("\(max(a?.n ?? 0, b?.n ?? 0, c?.n ?? 0))")
                             Text(Self.cm(a))
                             Text(Self.cm(b))
-                            Text(Self.verdict(decisions[d], a: a, b: b)).foregroundStyle(.secondary)
+                            Text(Self.cm(c))
+                            Text(Self.verdict(decisions[d], a: a, b: b, c: c)).foregroundStyle(.secondary)
                         }
                         .font(.footnote.monospacedDigit())
                     }
@@ -148,14 +150,17 @@ private struct ValidationResultsSection: View {
         return String(format: "%.1f (%+.1f)", s.meanAbsoluteError, s.bias)
     }
 
-    static func verdict(_ d: EngineDecision?, a: ValidationReport.Stats?, b: ValidationReport.Stats?) -> String {
+    static func verdict(_ d: EngineDecision?, a: ValidationReport.Stats?, b: ValidationReport.Stats?,
+                        c: ValidationReport.Stats?) -> String {
         switch d {
         case .useSilhouetteFit?: return "B"
+        case .useLearned?: return "C"
         case .keepCurrent?: return "A"
         default:
-            guard let a, let b else { return "–" }
             // So far, not decided: the leaning, in brackets.
-            return a.meanAbsoluteError <= b.meanAbsoluteError ? "(A)" : "(B)"
+            let all = [("A", a), ("B", b), ("C", c)].compactMap { name, s in s.map { (name, $0.meanAbsoluteError) } }
+            guard all.count >= 2, let best = all.min(by: { $0.1 < $1.1 }) else { return "–" }
+            return "(\(best.0))"
         }
     }
 }
@@ -238,7 +243,7 @@ struct ValidationRecordView: View {
     }
 
     private func row(_ d: BodyDimension) -> some View {
-        let a = record.value(.current, d), b = record.value(.silhouetteFit, d)
+        let a = record.value(.current, d), b = record.value(.silhouetteFit, d), c = record.value(.learned, d)
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(d.title)
@@ -252,6 +257,7 @@ struct ValidationRecordView: View {
             HStack(spacing: 12) {
                 Text("A " + Self.text(a, error: record.error(.current, d)))
                 Text("B " + Self.text(b, error: record.error(.silhouetteFit, d)))
+                if c != nil { Text("C " + Self.text(c, error: record.error(.learned, d))) }
             }
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)

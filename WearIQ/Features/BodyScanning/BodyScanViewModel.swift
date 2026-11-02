@@ -481,7 +481,8 @@ final class BodyScanViewModel {
         }
         guard fit == .ok else { return nudge(fit) }
         recording.add(.init(time: now.timeIntervalSince(started), spanRatio: span / spanReference,
-                            widths: reading.levels.mapValues(\.widthCm)))
+                            widths: reading.levels.mapValues(\.widthCm), profile: reading.profile,
+                            top: reading.top, floor: reading.floor))
         // The ring fills as the user goes round.
         let progress = recording.progress
         if progress > turnProgress + 0.01 { lastProgressAt = now }
@@ -687,13 +688,14 @@ final class BodyScanViewModel {
                 let engineA = ValidationRun.EngineA(profile: try? outcome.get(), milliseconds: milliseconds,
                                                     memoryMB: DeviceInfo.memoryFootprintMB)
                 let profiles = Array(scan.profiles.values)
+                let turn = recording
                 let store = ValidationStore.shared
                 let participant = store.nextParticipant, device = DeviceInfo.model, lidar = DeviceInfo.hasLiDAR
                 // In the background: the result screen doesn't wait for it.
                 Task {
                     let record = await Task.detached(priority: .utility) {
                         ValidationRun.record(participant: participant, device: device, hasLiDAR: lidar, basics: basics,
-                                             engineA: engineA, profiles: profiles, scanSeconds: scanSeconds)
+                                             engineA: engineA, profiles: profiles, scanSeconds: scanSeconds, turn: turn)
                     }.value
                     store.upsert(record)
                 }

@@ -8,6 +8,8 @@ public enum MeasurementEngineID: String, Codable, CaseIterable, Sendable {
     case current = "A"
     /// The SOMA-X body fitted to the same turn's silhouettes (`SilhouetteBodyFit`).
     case silhouetteFit = "B"
+    /// The girth model trained on synthetic turns (`LearnedGirthModel`): chest, waist, hip.
+    case learned = "C"
 }
 
 /// One engine's value for one measurement.
@@ -57,6 +59,9 @@ public struct ValidationRecord: Codable, Sendable, Identifiable, Equatable {
     public var profiles: [StopProfile] = []
     /// The person's height measured from ARKit's floor and camera, when that was done.
     public var arScale: ARScaleReading?
+    /// Engine C's feature vectors for this turn, by level: with the tape values they are
+    /// real training examples for the next model (scripts/scan_training/train.py --real).
+    public var turnFeatures: [String: [Double]]?
     public var notes: String?
 
     public init(participant: String, device: String, hasLiDAR: Bool, clothing: String, sex: BodySex?,
@@ -234,11 +239,15 @@ public enum EngineDecision: Equatable, Sendable {
     case undecided(participants: Int, needed: Int)
     case keepCurrent(advantageCm: Double)
     case useSilhouetteFit(advantageCm: Double)
+    case useLearned(advantageCm: Double)
 
-    /// The engine production should use: the current one unless the other is shown better.
+    /// The engine production should use: the current one unless another is shown better.
     public var engine: MeasurementEngineID {
-        if case .useSilhouetteFit = self { return .silhouetteFit }
-        return .current
+        switch self {
+        case .useSilhouetteFit: .silhouetteFit
+        case .useLearned: .learned
+        default: .current
+        }
     }
 }
 
@@ -250,11 +259,12 @@ public enum EngineSelection {
     /// their scans), the mean of |B − tape| − |A − tape|. B is chosen only when it is
     /// smaller by at least `margin` cm and its 95% interval stays below zero; A is kept
     /// when it is as clearly better; otherwise undecided, and A stays.
-    public static func decide(_ d: BodyDimension, records: [ValidationRecord], margin: Double = 0.3) -> EngineDecision {
+    public static func decide(_ d: BodyDimension, records: [ValidationRecord], margin: Double = 0.3,
+                              challenger: MeasurementEngineID = .silhouetteFit) -> EngineDecision {
         let real = records.filter { !$0.isSynthetic }
         var perPerson: [String: [Double]] = [:]
         for r in real {
-            guard let a = r.error(.current, d), let b = r.error(.silhouetteFit, d) else { continue }
+            guard let a = r.error(.current, d), let b = r.error(challenger, d) else { continue }
             perPerson[r.participant, default: []].append(abs(b) - abs(a))
         }
         let diffs = perPerson.values.map { $0.reduce(0, +) / Double($0.count) }
@@ -264,7 +274,9 @@ public enum EngineSelection {
         let mean = diffs.reduce(0, +) / Double(diffs.count)
         let sd = (diffs.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(diffs.count - 1)).squareRoot()
         let half = 2.09 * sd / Double(diffs.count).squareRoot() // t(0.975, ~19 df)
-        if mean <= -margin, mean + half < 0 { return .useSilhouetteFit(advantageCm: -mean) }
+        if mean <= -margin, mean + half < 0 {
+            return challenger == .learned ? .useLearned(advantageCm: -mean) : .useSilhouetteFit(advantageCm: -mean)
+        }
         if mean >= margin, mean - half > 0 { return .keepCurrent(advantageCm: mean) }
         return .undecided(participants: diffs.count, needed: minimumParticipants)
     }
@@ -272,7 +284,13 @@ public enum EngineSelection {
     /// Every compared measurement's decision; the hybrid falls out of this when the
     /// engines win different measurements.
     public static func decisions(_ records: [ValidationRecord]) -> [BodyDimension: EngineDecision] {
-        Dictionary(uniqueKeysWithValues: ValidationReport.dimensions.map { ($0, decide($0, records: records)) })
+        Dictionary(uniqueKeysWithValues: ValidationReport.dimensions.map { d in
+            // Each challenger against the current engine; a proven one wins (C, the more
+            // accurate in simulation, first when both are).
+            let c = decide(d, records: records, challenger: .learned)
+            if case .useLearned = c { return (d, c) }
+            return (d, decide(d, records: records, challenger: .silhouetteFit))
+        })
     }
 }
 
@@ -280,14 +298,15 @@ extension ValidationRecord {
     /// The records as CSV, one row per record and measurement, for a spreadsheet.
     public static func csv(_ records: [ValidationRecord]) -> String {
         var lines = ["participant,date,synthetic,device,lidar,clothing,sex,height_cm,weight_kg,measurement,tape_cm,"
-            + "A_cm,A_sd,A_source,B_cm,B_sd,B_source,A_error_cm,B_error_cm,scan_s,A_ms,B_ms,ar_height_cm,ar_distance_m"]
+            + "A_cm,A_sd,A_source,B_cm,B_sd,B_source,A_error_cm,B_error_cm,scan_s,A_ms,B_ms,ar_height_cm,ar_distance_m,"
+            + "C_cm,C_sd,C_error_cm"]
         let date = ISO8601DateFormatter()
         func f(_ v: Double?) -> String { v.map { String(format: "%.1f", $0) } ?? "" }
         func q(_ s: String) -> String { "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
         for r in records {
             for d in ValidationReport.dimensions {
-                let a = r.value(.current, d), b = r.value(.silhouetteFit, d)
-                guard r.tape(d) != nil || a != nil || b != nil else { continue }
+                let a = r.value(.current, d), b = r.value(.silhouetteFit, d), c = r.value(.learned, d)
+                guard r.tape(d) != nil || a != nil || b != nil || c != nil else { continue }
                 lines.append([q(r.participant), date.string(from: r.createdAt), r.isSynthetic ? "1" : "0", q(r.device),
                               r.hasLiDAR ? "1" : "0", q(r.clothing), r.sex?.rawValue ?? "", f(r.heightCm), f(r.weightKg),
                               d.rawValue, f(r.tape(d)), f(a?.cm), f(a?.sdCm), a?.provenance.rawValue ?? "",
@@ -295,7 +314,8 @@ extension ValidationRecord {
                               f(r.error(.current, d)), f(r.error(.silhouetteFit, d)), f(r.scanSeconds),
                               f(r.processingMs[MeasurementEngineID.current.rawValue]),
                               f(r.processingMs[MeasurementEngineID.silhouetteFit.rawValue]),
-                              f(r.arScale?.statureCm), r.arScale.map { String(format: "%.2f", $0.distanceM) } ?? ""].joined(separator: ","))
+                              f(r.arScale?.statureCm), r.arScale.map { String(format: "%.2f", $0.distanceM) } ?? "",
+                              f(c?.cm), f(c?.sdCm), f(r.error(.learned, d))].joined(separator: ","))
             }
         }
         return lines.joined(separator: "\n") + "\n"

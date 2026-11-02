@@ -18,11 +18,22 @@ public struct TurnRecording: Sendable {
         /// Arm span over the front view's.
         public var spanRatio: Double
         public var widths: [BodyLevel: Double]
+        /// Widths (cm) on the rows around each level, at `LearnedGirthModel.offsets`, for
+        /// engine C; empty where they weren't read.
+        public var profile: [BodyLevel: [Double?]] = [:]
+        /// The mask's top and floor rows over its height (where the person stands in the
+        /// picture), for engine C.
+        public var top: Double?
+        public var floor: Double?
 
-        public init(time: Double, spanRatio: Double, widths: [BodyLevel: Double]) {
+        public init(time: Double, spanRatio: Double, widths: [BodyLevel: Double],
+                    profile: [BodyLevel: [Double?]] = [:], top: Double? = nil, floor: Double? = nil) {
             self.time = time
             self.spanRatio = spanRatio
             self.widths = widths
+            self.profile = profile
+            self.top = top
+            self.floor = floor
         }
     }
 

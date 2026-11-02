@@ -48,6 +48,8 @@ public struct FrameReading: Sendable, Equatable {
     public var joints: [BodyJoint: Point2D] = [:]
     /// Upper-arm thickness over stature, read with the arms held out; nil otherwise.
     public var armThickness: Double? = nil
+    /// Widths (cm) on the rows around each level (`LearnedGirthModel.offsets`).
+    public var profile: [BodyLevel: [Double?]] = [:]
     /// The person's outer outline, top to bottom, for drawing it live.
     public var outline: [OutlineRow] = []
 }
@@ -144,10 +146,20 @@ public struct RotationScanAnalyzer: Sendable {
         }
         let center = frame.centerX ?? levels[.hip].map { ($0.left + $0.right) / 2 * w } ?? w / 2
         let span = armSpan(frame.mask, top: top, height: floor - top, center: Int(center))
-        return FrameReading(top: Double(top) / h, floor: Double(floor) / h, centerX: center / w, levels: levels,
-                            armSpan: span, joints: frame.joints,
-                            armThickness: (span ?? 0) >= 0.7 ? armThickness(frame.mask, top: top, height: floor - top, center: Int(center)) : nil,
-                            outline: outline(frame.mask, top: top, floor: floor))
+        // The rows around each level, a stature fraction above (+) or below (−) it.
+        var profile: [BodyLevel: [Double?]] = [:]
+        for level in LearnedGirthModel.levels {
+            guard let fraction = levelFractions[level] else { continue }
+            profile[level] = LearnedGirthModel.offsets.map { offset in
+                levelReading(frame, top: top, height: floor - top, fraction: fraction - offset, heightCm: heightCm)?.widthCm
+            }
+        }
+        var reading = FrameReading(top: Double(top) / h, floor: Double(floor) / h, centerX: center / w, levels: levels,
+                                   armSpan: span, joints: frame.joints,
+                                   armThickness: (span ?? 0) >= 0.7 ? armThickness(frame.mask, top: top, height: floor - top, center: Int(center)) : nil,
+                                   outline: outline(frame.mask, top: top, floor: floor))
+        reading.profile = profile
+        return reading
     }
 
     /// The stop as a width profile (see `StopProfile`): the run through the body's middle

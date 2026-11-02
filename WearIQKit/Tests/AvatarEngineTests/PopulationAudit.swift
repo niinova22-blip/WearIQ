@@ -533,10 +533,13 @@ import WearIQCore
                 Self.audit(s, p, into: &findings, stats: &stats)
             }
         }
-        let report = "\(shoppers.count) shoppers, \(garments) garments, \(findings.checks) checks, \(findings.total) findings\n"
-            + Population.describe(shoppers) + "\n"
-            + kinds.sorted { $0.key < $1.key }.map { "\($0.key): \($0.value)" }.joined(separator: ", ") + "\n"
-            + findings.summary + "\n\n" + stats.report + "\n\nsure and clearly worse, examples:\n" + stats.examples.joined(separator: "\n")
+        let kindList: String = kinds.sorted { $0.key < $1.key }.map { "\($0.key): \($0.value)" }.joined(separator: ", ")
+        let parts: [String] = [
+            "\(shoppers.count) shoppers, \(garments) garments, \(findings.checks) checks, \(findings.total) findings",
+            Population.describe(shoppers), kindList, findings.summary, "", stats.report, "",
+            "sure and clearly worse, examples:", stats.examples.joined(separator: "\n"),
+        ]
+        let report: String = parts.joined(separator: "\n")
         print(report)
         if let path = ProcessInfo.processInfo.environment["AUDIT_REPORT"] {
             try report.write(toFile: path, atomically: true, encoding: .utf8)
@@ -625,8 +628,9 @@ import WearIQCore
                 }
             }
         }
-        let report = "\(drapes) drapes, \(findings.checks) checks, \(findings.total) findings\n"
-            + kinds.map { "\($0.key): \($0.value)" }.sorted().joined(separator: ", ") + "\n" + findings.summary
+        let kindList: String = kinds.map { "\($0.key): \($0.value)" }.sorted().joined(separator: ", ")
+        let report: String = ["\(drapes) drapes, \(findings.checks) checks, \(findings.total) findings", kindList, findings.summary]
+            .joined(separator: "\n")
         print(report)
         if let path = ProcessInfo.processInfo.environment["AUDIT_REPORT"] {
             try report.write(toFile: path + ".draped.txt", atomically: true, encoding: .utf8)

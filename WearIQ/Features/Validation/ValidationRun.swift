@@ -15,7 +15,8 @@ enum ValidationRun {
 
     /// Runs engine B (seconds of work; call off the main thread) and assembles the record.
     nonisolated static func record(participant: String, device: String, hasLiDAR: Bool, basics: BodyBasics,
-                                   engineA: EngineA, profiles: [StopProfile], scanSeconds: Double?) -> ValidationRecord {
+                                   engineA: EngineA, profiles: [StopProfile], scanSeconds: Double?,
+                                   turn: TurnRecording? = nil) -> ValidationRecord {
         var record = ValidationRecord(participant: participant, device: device, hasLiDAR: hasLiDAR,
                                       clothing: basics.attire?.rawValue ?? "unspecified", sex: basics.sex,
                                       heightCm: basics.heightCm, weightKg: basics.weightKg)
@@ -63,6 +64,34 @@ enum ValidationRun {
                 + angles.joined(separator: " ")
         } else {
             record.failedEngines.append(b)
+        }
+        // Engine C: the girth model on the turn's frames, and its features kept so the
+        // scan, once taped, can train the next model.
+        if let turn {
+            let c = MeasurementEngineID.learned.rawValue
+            let features = LearnedGirthModel.features(turn, heightCm: basics.heightCm, weightKg: basics.weightKg, sex: basics.sex)
+            if !features.isEmpty {
+                record.turnFeatures = Dictionary(uniqueKeysWithValues: features.map { ($0.key.rawValue, $0.value) })
+            }
+            let started = clock.now
+            let girths = LearnedGirthModel.girths(turn, heightCm: basics.heightCm, weightKg: basics.weightKg, sex: basics.sex)
+            let elapsed = clock.now - started
+            record.processingMs[c] = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
+            if girths.isEmpty {
+                record.failedEngines.append(c)
+            } else {
+                var values: [BodyDimension: EngineMeasurement] = [:]
+                for (level, v) in girths {
+                    let d: BodyDimension = switch level {
+                    case .chest: .chest
+                    case .waist: .waist
+                    case .hip: .hip
+                    case .thigh: .thigh
+                    }
+                    values[d] = EngineMeasurement(cm: v.cm, sdCm: v.uncertaintyCm, provenance: .observed)
+                }
+                record.set(.learned, values)
+            }
         }
         return record
     }
