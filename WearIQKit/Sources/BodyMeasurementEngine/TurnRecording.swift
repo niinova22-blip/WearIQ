@@ -28,8 +28,9 @@ public struct TurnRecording: Sendable {
     /// Above this the user faces (or backs onto) the camera; below `low`, side-on.
     public var high = 0.82
     public var low = 0.5
-    /// A turn quicker than this is too fast to measure well.
-    public var minimumDuration = 6.0
+    /// A turn quicker than this is too fast to measure well (the user is asked to count
+    /// to six while turning: about six seconds, 15 frames a quarter).
+    public var minimumDuration = 4.0
 
     public private(set) var samples: [Sample] = []
 

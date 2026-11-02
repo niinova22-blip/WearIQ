@@ -41,9 +41,10 @@ struct StyleProfileCard: View {
                 }
                 Divider()
                 section(profile.vibe.title, profile.vibe.pieces)
+                advice(profile)
             } else {
                 Label("Find your colours and cuts", systemImage: "paintpalette.fill").font(.headline)
-                Text("Three quick questions about your skin tone and style. With your measurements, WearIQ suggests the colours, cuts and pieces that suit you.")
+                Text("A quick skin tone scan and three questions. With your measurements, WearIQ suggests the style, colours, fabrics and cuts that suit you.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Button("Start") { editing = true }
@@ -53,6 +54,66 @@ struct StyleProfileCard: View {
         .padding(.horizontal, Theme.Spacing.m)
         .sheet(isPresented: $editing) { StyleQuestionsView(stored: $stored, initial: profile) }
     }
+
+    /// What suits this build, the style the user likes measured against it, and how to
+    /// put it together and look after it.
+    @ViewBuilder
+    private func advice(_ profile: StyleProfile) -> some View {
+        let a = StyleAdvice.make(shape: shape, vibe: profile.vibe, occasion: profile.occasion ?? .everyday,
+                                 ease: profile.ease ?? .fitted)
+        Divider()
+        if a.suitsChosen {
+            Label("\(profile.vibe.title) suits your build.", systemImage: "checkmark.seal.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.green)
+        } else if let better = a.bestVibes.first {
+            VStack(alignment: .leading, spacing: 4) {
+                Label("\(profile.vibe.title) works with care; \(better.title) may suit you better.", systemImage: "lightbulb.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.orange)
+                Text(better.pieces).font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        tips(String(localized: "Cuts"), a.cuts)
+        tips(String(localized: "Fabrics"), a.fabrics)
+        tips(String(localized: "Use sparingly"), a.sparingly)
+        let names = profile.palette.flattering.prefix(3).map(\.title)
+        if names.count == 3 {
+            section(String(localized: "Colour proportions"),
+                    String(localized: "60-30-10: about 60% of an outfit in \(names[0]), 30% in \(names[1]) and a 10% accent of \(names[2]). Keep your best colours near your face."))
+        }
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Self.care, id: \.self) { line in
+                    Label(line, systemImage: "drop.fill").font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.top, 4)
+        } label: {
+            Text("Washing and care").font(.subheadline.weight(.semibold))
+        }
+    }
+
+    private func tips(_ title: String, _ list: [StyleAdvice.Tip]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.subheadline.weight(.semibold))
+            ForEach(list, id: \.self) { tip in
+                Label(tip.text, systemImage: "circle.fill")
+                    .labelStyle(BulletLabel())
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    static let care = [
+        String(localized: "Cotton and denim: 30–40 °C, inside out; wash jeans rarely and dry them on a line to keep the colour."),
+        String(localized: "Wool and knitwear: cold hand wash or the wool programme, dry flat; never wring or tumble-dry."),
+        String(localized: "Viscose and modal: 30 °C gentle cycle, low spin; they shrink in heat."),
+        String(localized: "Linen: 30–40 °C gentle, dry on a hanger, iron while slightly damp."),
+        String(localized: "Elastane blends: no tumble dryer; heat ruins the stretch."),
+        String(localized: "Wash dark and bright colours apart the first few times, and check the care label."),
+    ]
 
     private func section(_ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -83,17 +144,33 @@ private struct StyleQuestionsView: View {
     @State private var undertone: StyleProfile.Undertone
     @State private var depth: StyleProfile.SkinDepth
     @State private var vibe: StyleProfile.Vibe
+    @State private var occasion: StyleAdvice.Occasion
+    @State private var ease: StyleAdvice.Ease
+    @State private var scanned: Bool
+    @State private var scanning = false
 
     init(stored: Binding<String>, initial: StyleProfile?) {
         _stored = stored
         _undertone = State(initialValue: initial?.undertone ?? .neutral)
         _depth = State(initialValue: initial?.depth ?? .medium)
         _vibe = State(initialValue: initial?.vibe ?? .casual)
+        _occasion = State(initialValue: initial?.occasion ?? .everyday)
+        _ease = State(initialValue: initial?.ease ?? .fitted)
+        _scanned = State(initialValue: initial?.scanned ?? false)
     }
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Button {
+                        scanning = true
+                    } label: {
+                        Label(scanned ? "Scan my skin tone again" : "Scan my skin tone", systemImage: "camera.viewfinder")
+                    }
+                } footer: {
+                    Text("The front camera reads your skin's depth and undertone in a few seconds, in daylight. Or choose them below.")
+                }
                 Section {
                     Picker("Skin tone", selection: $depth) {
                         ForEach(StyleProfile.SkinDepth.allCases, id: \.self) { Text($0.title).tag($0) }
@@ -112,12 +189,31 @@ private struct StyleQuestionsView: View {
                 } footer: {
                     Text("Look at the veins on your wrist in daylight: greenish means warm, bluish or purple means cool, both means neutral. If gold jewellery suits you better it's warm, silver is cool.")
                 }
-                Section("Your style") {
+                Section("Which style do you like?") {
                     Picker("Style", selection: $vibe) {
                         ForEach(StyleProfile.Vibe.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.inline)
                     .labelsHidden()
+                }
+                Section("What do you dress for most?") {
+                    Picker("Occasion", selection: $occasion) {
+                        ForEach(StyleAdvice.Occasion.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                }
+                Section("How do you like clothes to sit?") {
+                    Picker("Fit", selection: $ease) {
+                        ForEach(StyleAdvice.Ease.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+            .fullScreenCover(isPresented: $scanning) {
+                SkinToneScanView { reading in
+                    depth = reading.depth
+                    undertone = reading.undertone
+                    scanned = true
                 }
             }
             .navigationTitle("Your style")
@@ -126,7 +222,8 @@ private struct StyleQuestionsView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        let profile = StyleProfile(undertone: undertone, depth: depth, vibe: vibe)
+                        let profile = StyleProfile(undertone: undertone, depth: depth, vibe: vibe, occasion: occasion,
+                                                   ease: ease, scanned: scanned)
                         stored = (try? JSONEncoder().encode(profile)).flatMap { String(data: $0, encoding: .utf8) } ?? ""
                         AppSounds.shared.play(.saved)
                         dismiss()
@@ -220,6 +317,67 @@ extension BodyShape {
         case .apple: String(localized: "Long vertical lines and flowing fabrics: V-necks, empire waists, open jackets; avoid tight waistbands.")
         case .triangle: String(localized: "Broaden the shoulders: structured jackets, horizontal stripes or details on top, darker straight trousers.")
         case .oval: String(localized: "Long lines: darker single-colour tops, open jackets, straight cuts that skim rather than cling or balloon.")
+        }
+    }
+}
+
+extension StyleAdvice.Occasion {
+    var title: String {
+        switch self {
+        case .work: String(localized: "Work")
+        case .everyday: String(localized: "Everyday")
+        case .evening: String(localized: "Evenings")
+        case .active: String(localized: "Active")
+        }
+    }
+}
+
+extension StyleAdvice.Ease {
+    var title: String {
+        switch self {
+        case .fitted: String(localized: "Fitted")
+        case .relaxed: String(localized: "Relaxed")
+        }
+    }
+}
+
+extension StyleAdvice.Tip {
+    var text: String {
+        switch self {
+        case .vNeck: String(localized: "V-necks and open collars lengthen the upper body.")
+        case .skimPastWaist: String(localized: "Tops that skim and fall past the waist; no tight waistbands or boxy cropped cuts.")
+        case .detailOnTop: String(localized: "Detail, colour and structure on top: boat necks, a structured jacket.")
+        case .straightBelow: String(localized: "Straight, A-line or wide legs below, in darker colours.")
+        case .softShoulders: String(localized: "V-necks and soft shoulders on top; no shoulder pads or wide stripes across the chest.")
+        case .volumeBelow: String(localized: "Some volume or a lighter colour below: straight or relaxed trousers, A-line skirts.")
+        case .showWaist: String(localized: "Show the waist: wrap and belted pieces, high waists, fitted rather than boxy.")
+        case .createShape: String(localized: "Create shape: layers, a belt or a defined waist, structured shoulders.")
+        case .relaxedBalance: String(localized: "Relaxed doesn't mean big: pair one roomy piece with one fitted one.")
+        case .fittedNoPull: String(localized: "Fitted means following the body, not pulling: no creases across buttons or seams.")
+        case .fluidFabrics: String(localized: "Fluid fabrics that drape: viscose, modal, soft cotton jersey, light wool.")
+        case .structuredTopSoftBelow: String(localized: "Structured fabrics on top (cotton twill, poplin, denim), soft drape below.")
+        case .softTops: String(localized: "Soft, unstructured tops (jersey, merino), heavier fabrics below.")
+        case .stretchDrape: String(localized: "Fabrics with some stretch and drape that follow the shape: jersey, crepe, stretch cotton.")
+        case .bodyFabrics: String(localized: "Fabrics with body that hold a shape: cotton twill, denim, wool, structured knits.")
+        case .workFabrics: String(localized: "For work: wool and wool blends, cotton poplin, crepe; they keep their shape all day.")
+        case .everydayFabrics: String(localized: "Every day: cotton, denim and merino; easy to wash and breathable.")
+        case .eveningFabrics: String(localized: "Evenings: one piece with sheen (satin, silk, velvet), the rest matt.")
+        case .activeFabrics: String(localized: "Active: technical knits with elastane and quick-drying cotton blends.")
+        case .stiffShinyOverMiddle: String(localized: "Stiff or shiny fabrics (satin, taffeta) and thin clingy knits over the middle.")
+        case .clingyOverHips: String(localized: "Thin clingy fabrics over the hips and thighs.")
+        case .bulkyAcrossShoulders: String(localized: "Stiff, bulky fabrics across the shoulders.")
+        case .boxyHidingWaist: String(localized: "Stiff boxy fabrics that hide the waist.")
+        case .limpFabrics: String(localized: "Very limp fabrics that hang straight down.")
+        }
+    }
+}
+
+/// A small dot before each tip.
+private struct BulletLabel: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "circle.fill").font(.system(size: 5)).alignmentGuide(.firstTextBaseline) { $0[.bottom] + 3 }
+            configuration.title
         }
     }
 }

@@ -18,11 +18,21 @@ public struct StyleProfile: Codable, Hashable, Sendable {
     public var undertone: Undertone
     public var depth: SkinDepth
     public var vibe: Vibe
+    /// What the user mostly dresses for, and how they like clothes to sit (nil in
+    /// profiles saved before these were asked).
+    public var occasion: StyleAdvice.Occasion?
+    public var ease: StyleAdvice.Ease?
+    /// Whether depth and undertone came from the camera rather than the user's choice.
+    public var scanned: Bool?
 
-    public init(undertone: Undertone, depth: SkinDepth, vibe: Vibe) {
+    public init(undertone: Undertone, depth: SkinDepth, vibe: Vibe, occasion: StyleAdvice.Occasion? = nil,
+                ease: StyleAdvice.Ease? = nil, scanned: Bool? = nil) {
         self.undertone = undertone
         self.depth = depth
         self.vibe = vibe
+        self.occasion = occasion
+        self.ease = ease
+        self.scanned = scanned
     }
 
     public enum ColorSeason: String, Codable, Sendable { case spring, summer, autumn, winter }

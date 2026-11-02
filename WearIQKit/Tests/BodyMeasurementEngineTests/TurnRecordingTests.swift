@@ -56,7 +56,7 @@ import Testing
     }
 
     @Test func tooFastIsCaught() {
-        let rec = record(duration: 4, uneven: false)
+        let rec = record(duration: 3, uneven: false)
         #expect(rec.tooFast)
         #expect(!rec.isComplete)
     }

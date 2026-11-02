@@ -337,7 +337,7 @@ final class BodyScanViewModel {
         stage = .turning(0)
         let front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
         self.front = front
-        audio.say(String(localized: "Great. Now raise your arms to shoulder height and turn slowly in place to your right, once all the way round. It takes about fifteen seconds."),
+        audio.say(String(localized: "Great. Now, counting to six in your head, turn once all the way round in place, with your arms straight out to the sides."),
                   priority: .high)
         countdownTask = Task { [weak self] in
             do {

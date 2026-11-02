@@ -85,7 +85,7 @@ LINES = [
     "Another 45 degrees to your right, and stop.",
     "Photo taken.",
     "Photos are processed on this phone and deleted right away. Nothing is sent anywhere.",
-    "Great. Now raise your arms to shoulder height and turn slowly in place to your right, once all the way round. It takes about fifteen seconds.",
+    "Great. Now, counting to six in your head, turn once all the way round in place, with your arms straight out to the sides.",
     "Keep turning slowly to your right.",
     "Keep your arms out at shoulder height.",
     "That was a little fast. Once more, more slowly.",
@@ -200,6 +200,22 @@ def clean(wav, sr):
     ramp = np.linspace(0, 1, fade, dtype="float32")
     out[:fade] *= ramp
     out[-fade:] *= ramp[::-1]
+    # Pauses are silence: wherever the level stays 35 dB under the speech for 60 ms or
+    # more, the clip goes to zero (with 15 ms ramps), so no hiss is heard between words.
+    frame = int(0.01 * sr)
+    n = len(out) // frame
+    if n > 0:
+        rms = np.sqrt(np.mean(out[: n * frame].reshape(n, frame) ** 2, axis=1) + 1e-12)
+        loud = rms > np.percentile(rms, 95) * 10 ** (-35 / 20)
+        # Keep 60 ms of quiet after speech and 20 ms before it (soft consonants).
+        keep = loud.copy()
+        for i in np.nonzero(loud)[0]:
+            keep[max(0, i - 2):min(n, i + 7)] = True
+        gate = np.repeat(keep.astype("float32"), frame)
+        gate = np.concatenate([gate, np.full(len(out) - len(gate), gate[-1] if len(gate) else 1, dtype="float32")])
+        smooth = int(0.015 * sr)
+        gate = np.convolve(gate, np.ones(smooth, dtype="float32") / smooth, mode="same")
+        out = out * gate
     return out
 
 

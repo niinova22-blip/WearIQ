@@ -9291,16 +9291,6 @@
         }
       }
     },
-    "Great. Now raise your arms to shoulder height and turn slowly in place to your right, once all the way round. It takes about fifteen seconds.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Harika. Şimdi kollarını omuz hizasında yana aç ve olduğun yerde, sağına doğru yavaşça bir tam tur dön. Yaklaşık on beş saniye sürer."
-          }
-        }
-      }
-    },
     "Keep turning slowly to your right.": {
       "localizations": {
         "tr": {
@@ -9407,6 +9397,626 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sesli yönlendirme eşlik eder; dönüş bu telefonda kaydedilip ölçülür."
+          }
+        }
+      }
+    },
+    "Great. Now, counting to six in your head, turn once all the way round in place, with your arms straight out to the sides.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harika. Şimdi içinden altıya kadar sayarak, kolların iki yana tam açık, kendi etrafında bir tam tur dön."
+          }
+        }
+      }
+    },
+    "A quick skin tone scan and three questions. With your measurements, WearIQ suggests the style, colours, fabrics and cuts that suit you.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kısa bir cilt tonu taraması ve üç soru. Ölçülerinle birlikte WearIQ sana uyan tarzı, renkleri, kumaşları ve kesimleri önerir."
+          }
+        }
+      }
+    },
+    "%@ suits your build.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ vücut yapına uyuyor."
+          }
+        }
+      }
+    },
+    "%@ works with care; %@ may suit you better.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ dikkatle uygulanırsa olur; %2$@ sana daha iyi uyabilir."
+          }
+        }
+      }
+    },
+    "Cuts": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kesimler"
+          }
+        }
+      }
+    },
+    "Fabrics": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumaşlar"
+          }
+        }
+      }
+    },
+    "Use sparingly": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Az kullan"
+          }
+        }
+      }
+    },
+    "Colour proportions": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renk oranları"
+          }
+        }
+      }
+    },
+    "60-30-10: about 60% of an outfit in %@, 30% in %@ and a 10% accent of %@. Keep your best colours near your face.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60-30-10: kombinin yaklaşık %%60'ı %1$@, %%30'u %2$@, %%10 vurgu olarak %3$@. En iyi renklerini yüzüne yakın kullan."
+          }
+        }
+      }
+    },
+    "Washing and care": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yıkama ve bakım"
+          }
+        }
+      }
+    },
+    "Cotton and denim: 30–40 °C, inside out; wash jeans rarely and dry them on a line to keep the colour.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pamuk ve denim: 30–40 °C, ters çevirerek; kotu seyrek yıka, rengi korunsun diye askıda kurut."
+          }
+        }
+      }
+    },
+    "Wool and knitwear: cold hand wash or the wool programme, dry flat; never wring or tumble-dry.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yün ve triko: soğuk elde ya da yünlü programında yıka, yatay kurut; asla sıkma, kurutmaya atma."
+          }
+        }
+      }
+    },
+    "Viscose and modal: 30 °C gentle cycle, low spin; they shrink in heat.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viskon ve modal: 30 °C hassas program, düşük sıkma; sıcakta çeker."
+          }
+        }
+      }
+    },
+    "Linen: 30–40 °C gentle, dry on a hanger, iron while slightly damp.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keten: 30–40 °C hassas, askıda kurut, hafif nemliyken ütüle."
+          }
+        }
+      }
+    },
+    "Elastane blends: no tumble dryer; heat ruins the stretch.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elastanlı kumaşlar: kurutma makinesine atma; ısı esnekliği bozar."
+          }
+        }
+      }
+    },
+    "Wash dark and bright colours apart the first few times, and check the care label.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koyu ve canlı renkleri ilk birkaç yıkamada ayrı yıka, bakım etiketine mutlaka bak."
+          }
+        }
+      }
+    },
+    "Scan my skin tone": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cilt tonumu tara"
+          }
+        }
+      }
+    },
+    "Scan my skin tone again": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cilt tonumu yeniden tara"
+          }
+        }
+      }
+    },
+    "The front camera reads your skin's depth and undertone in a few seconds, in daylight. Or choose them below.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ön kamera gün ışığında birkaç saniyede cildinin tonunu ve alt tonunu okur. Ya da aşağıdan seç."
+          }
+        }
+      }
+    },
+    "Which style do you like?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hangi tarzı seviyorsun?"
+          }
+        }
+      }
+    },
+    "What do you dress for most?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En çok ne için giyiniyorsun?"
+          }
+        }
+      }
+    },
+    "How do you like clothes to sit?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafetlerin nasıl oturmasını seversin?"
+          }
+        }
+      }
+    },
+    "Everyday": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük"
+          }
+        }
+      }
+    },
+    "Evenings": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akşam"
+          }
+        }
+      }
+    },
+    "Active": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spor"
+          }
+        }
+      }
+    },
+    "V-necks and open collars lengthen the upper body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V yaka ve açık yakalar üst gövdeyi uzun gösterir."
+          }
+        }
+      }
+    },
+    "Tops that skim and fall past the waist; no tight waistbands or boxy cropped cuts.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücuda yapışmadan dökülen, beli geçen üstler; dar bel bantları ve kutu kesim kısa üstler yok."
+          }
+        }
+      }
+    },
+    "Detail, colour and structure on top: boat necks, a structured jacket.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detay, renk ve duruş üstte olsun: kayık yaka, duruşlu bir ceket."
+          }
+        }
+      }
+    },
+    "Straight, A-line or wide legs below, in darker colours.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altta düz, A kesim ya da geniş paça, koyu renklerde."
+          }
+        }
+      }
+    },
+    "V-necks and soft shoulders on top; no shoulder pads or wide stripes across the chest.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üstte V yaka ve yumuşak omuzlar; vatka ve göğüste enine geniş çizgi yok."
+          }
+        }
+      }
+    },
+    "Some volume or a lighter colour below: straight or relaxed trousers, A-line skirts.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altta biraz hacim ya da açık renk: düz ya da rahat pantolon, A kesim etek."
+          }
+        }
+      }
+    },
+    "Show the waist: wrap and belted pieces, high waists, fitted rather than boxy.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beli göster: kruvaze ve kemerli parçalar, yüksek bel; kutu değil vücuda oturan."
+          }
+        }
+      }
+    },
+    "Create shape: layers, a belt or a defined waist, structured shoulders.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Form kat: katmanlar, kemer ya da belirgin bel, duruşlu omuzlar."
+          }
+        }
+      }
+    },
+    "Relaxed doesn't mean big: pair one roomy piece with one fitted one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rahat, büyük demek değil: bir bol parçayı bir oturan parçayla eşleştir."
+          }
+        }
+      }
+    },
+    "Fitted means following the body, not pulling: no creases across buttons or seams.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oturan, vücudu takip eder ama çekmez: düğme ya da dikiş boyunca kırışık olmamalı."
+          }
+        }
+      }
+    },
+    "Fluid fabrics that drape: viscose, modal, soft cotton jersey, light wool.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dökümlü akışkan kumaşlar: viskon, modal, yumuşak pamuklu süprem, ince yün."
+          }
+        }
+      }
+    },
+    "Structured fabrics on top (cotton twill, poplin, denim), soft drape below.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üstte duruşlu kumaşlar (pamuk dimi, poplin, denim), altta yumuşak dökümlü."
+          }
+        }
+      }
+    },
+    "Soft, unstructured tops (jersey, merino), heavier fabrics below.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üstte yumuşak, duruşsuz kumaşlar (süprem, merino), altta daha ağır kumaşlar."
+          }
+        }
+      }
+    },
+    "Fabrics with some stretch and drape that follow the shape: jersey, crepe, stretch cotton.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hattı takip eden, biraz esnek ve dökümlü kumaşlar: süprem, krep, esnek pamuk."
+          }
+        }
+      }
+    },
+    "Fabrics with body that hold a shape: cotton twill, denim, wool, structured knits.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formunu koruyan gövdeli kumaşlar: pamuk dimi, denim, yün, duruşlu triko."
+          }
+        }
+      }
+    },
+    "For work: wool and wool blends, cotton poplin, crepe; they keep their shape all day.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İş için: yün ve yün karışımları, pamuk poplin, krep; gün boyu formunu korur."
+          }
+        }
+      }
+    },
+    "Every day: cotton, denim and merino; easy to wash and breathable.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Günlük: pamuk, denim ve merino; kolay yıkanır, nefes alır."
+          }
+        }
+      }
+    },
+    "Evenings: one piece with sheen (satin, silk, velvet), the rest matt.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akşam: tek bir parlak parça (saten, ipek, kadife), gerisi mat."
+          }
+        }
+      }
+    },
+    "Active: technical knits with elastane and quick-drying cotton blends.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spor: elastanlı teknik örgüler ve çabuk kuruyan pamuk karışımları."
+          }
+        }
+      }
+    },
+    "Stiff or shiny fabrics (satin, taffeta) and thin clingy knits over the middle.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gövde ortasında sert ya da parlak kumaşlar (saten, tafta) ve ince yapışan örgüler."
+          }
+        }
+      }
+    },
+    "Thin clingy fabrics over the hips and thighs.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalça ve basende ince, yapışan kumaşlar."
+          }
+        }
+      }
+    },
+    "Stiff, bulky fabrics across the shoulders.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuzlarda sert, hacimli kumaşlar."
+          }
+        }
+      }
+    },
+    "Stiff boxy fabrics that hide the waist.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beli saklayan sert, kutu kumaşlar."
+          }
+        }
+      }
+    },
+    "Very limp fabrics that hang straight down.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dümdüz aşağı sarkan çok yumuşak kumaşlar."
+          }
+        }
+      }
+    },
+    "Use this": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bunu kullan"
+          }
+        }
+      }
+    },
+    "Fit your face in the oval": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yüzünü ovalin içine yerleştir"
+          }
+        }
+      }
+    },
+    "Daylight or a bright room, no filter or heavy make-up. Nothing is saved or sent.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gün ışığı ya da aydınlık oda; filtre ve yoğun makyaj olmasın. Hiçbir şey kaydedilmez ya da gönderilmez."
+          }
+        }
+      }
+    },
+    "60-30-10: about 60%% of an outfit in %@, 30%% in %@ and a 10%% accent of %@. Keep your best colours near your face.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "60-30-10: kombinin yaklaşık %%60'ı %1$@, %%30'u %2$@, %%10 vurgu olarak %3$@. En iyi renklerini yüzüne yakın kullan."
+          }
+        }
+      }
+    },
+    "Turning: %lld%": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dönüş: %%%lld"
+          }
+        }
+      }
+    },
+    "Prop the phone upright at waist height": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonu bel hizasında dik koy"
+          }
+        }
+      }
+    },
+    "Step back about three steps": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üç adım kadar geri çekil"
+          }
+        }
+      }
+    },
+    "Arms slightly out: the front photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar hafif açık: önden fotoğraf"
+          }
+        }
+      }
+    },
+    "Listen: 3, 2, 1": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dinle: 3, 2, 1"
+          }
+        }
+      }
+    },
+    "Arms straight out, turn once round slowly": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar iki yana açık, yavaşça bir tur dön"
+          }
+        }
+      }
+    },
+    "Done: your measurements are ready": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitti: ölçülerin hazır"
+          }
+        }
+      }
+    },
+    "How the scan works: prop the phone at waist height, step back, hold the front pose, then turn once round slowly with your arms out.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarama nasıl yapılır: telefonu bel hizasına koy, geri çekil, önden poz ver, sonra kolların açık yavaşça bir tur dön."
+          }
+        }
+      }
+    },
+    "After 3, 2, 1: arms straight out to the sides, turn once round while counting to six.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3, 2, 1'den sonra: kollar iki yana tam açık, altıya kadar sayarak bir tur dön."
           }
         }
       }
