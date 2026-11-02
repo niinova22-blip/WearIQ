@@ -187,3 +187,77 @@ enum SurfaceNets {
         return mesh
     }
 }
+
+/// A distance field sampled on a grid as it is asked for, and interpolated trilinearly
+/// between the samples. The cloth solver asks for the body's distance tens of millions
+/// of times while a garment settles (every vertex, every iteration, plus the gradient's
+/// six), and each analytic evaluation walks the torso's rings, the limbs and the blends.
+/// Cached at 4 mm the field is the same to well under a tenth of a millimetre on the
+/// body's curves (the error of linear interpolation is about cell²·curvature/8), while
+/// each corner is computed once. Corners are kept in 8×8×8 blocks allocated only where
+/// the garment goes, so the memory follows the cloth, not the box. Outside the box the
+/// field itself is used.
+final class SampledField: @unchecked Sendable {
+    private let field: (Vec3) -> Float
+    private let lo: Vec3
+    private let cell: Float, inverse: Float
+    private let nx, ny, nz: Int
+    private let bx, by: Int
+    private let blockCount: Int
+    /// Per 8×8×8 block of corners, its samples (NaN until computed), or nil until the
+    /// cloth comes near it. Raw storage: this is the solver's innermost loop.
+    private let blocks: UnsafeMutablePointer<UnsafeMutablePointer<Float>?>
+
+    init(_ field: @escaping (Vec3) -> Float, from lo: Vec3, to hi: Vec3, cell: Float = 0.004) {
+        self.field = field
+        self.lo = lo
+        self.cell = cell
+        inverse = 1 / cell
+        nx = max(2, Int(((hi.x - lo.x) / cell).rounded(.up)) + 2)
+        ny = max(2, Int(((hi.y - lo.y) / cell).rounded(.up)) + 2)
+        nz = max(2, Int(((hi.z - lo.z) / cell).rounded(.up)) + 2)
+        bx = (nx + 7) / 8
+        by = (ny + 7) / 8
+        blockCount = bx * by * ((nz + 7) / 8)
+        blocks = .allocate(capacity: blockCount)
+        blocks.initialize(repeating: nil, count: blockCount)
+    }
+
+    deinit {
+        for b in 0..<blockCount { blocks[b]?.deallocate() }
+        blocks.deallocate()
+    }
+
+    @inline(__always) private func corner(_ i: Int, _ j: Int, _ k: Int) -> Float {
+        let b = (i >> 3) + bx * ((j >> 3) + by * (k >> 3))
+        let block: UnsafeMutablePointer<Float>
+        if let existing = blocks[b] {
+            block = existing
+        } else {
+            block = .allocate(capacity: 512)
+            block.initialize(repeating: .nan, count: 512)
+            blocks[b] = block
+        }
+        let index = (i & 7) + 8 * ((j & 7) + 8 * (k & 7))
+        let cached = block[index]
+        if !cached.isNaN { return cached }
+        let v = field(Vec3(lo.x + Float(i) * cell, lo.y + Float(j) * cell, lo.z + Float(k) * cell))
+        block[index] = v
+        return v
+    }
+
+    func callAsFunction(_ p: Vec3) -> Float {
+        let gx = (p.x - lo.x) * inverse, gy = (p.y - lo.y) * inverse, gz = (p.z - lo.z) * inverse
+        guard gx >= 0, gy >= 0, gz >= 0 else { return field(p) }
+        let i = Int(gx), j = Int(gy), k = Int(gz)
+        guard i < nx - 1, j < ny - 1, k < nz - 1 else { return field(p) }
+        let fx = gx - Float(i), fy = gy - Float(j), fz = gz - Float(k)
+        let c00 = corner(i, j, k) + (corner(i + 1, j, k) - corner(i, j, k)) * fx
+        let c10 = corner(i, j + 1, k) + (corner(i + 1, j + 1, k) - corner(i, j + 1, k)) * fx
+        let c01 = corner(i, j, k + 1) + (corner(i + 1, j, k + 1) - corner(i, j, k + 1)) * fx
+        let c11 = corner(i, j + 1, k + 1) + (corner(i + 1, j + 1, k + 1) - corner(i, j + 1, k + 1)) * fx
+        let c0 = c00 + (c10 - c00) * fy
+        let c1 = c01 + (c11 - c01) * fy
+        return c0 + (c1 - c0) * fz
+    }
+}

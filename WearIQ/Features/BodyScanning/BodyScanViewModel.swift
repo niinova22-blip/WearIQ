@@ -148,6 +148,8 @@ final class BodyScanViewModel {
     /// How long the pose must be held before the countdown starts.
     private let holdDuration: TimeInterval = 1.0
     private let maxTurnDuration: TimeInterval = 45
+    /// How long one turn round should take: ten seconds gives about 25 frames a quarter.
+    static let turnSeconds: TimeInterval = 10
     private let defaultFractions: [BodyLevel: Double] = [.chest: 0.27, .waist: 0.39, .hip: 0.5]
 
     init(basics: BodyBasics) {
@@ -337,7 +339,7 @@ final class BodyScanViewModel {
         stage = .turning(0)
         let front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
         self.front = front
-        audio.say(String(localized: "Great. Now, counting to six in your head, turn once all the way round in place, with your arms straight out to the sides."),
+        audio.say(String(localized: "Great. Now, counting slowly to ten in your head, turn once all the way round in place, with your arms straight out to the sides."),
                   priority: .high)
         countdownTask = Task { [weak self] in
             do {
@@ -394,9 +396,14 @@ final class BodyScanViewModel {
             }
             guard let self, !Task.isCancelled, case .turning = self.stage else { return }
             self.beginRecording()
+            // A soft tick each second for the ten seconds the turn should take, so the
+            // pace doesn't have to be kept by counting alone.
+            var halfSeconds = 0
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
                 guard case .turning = self.stage else { return }
+                halfSeconds += 1
+                if halfSeconds.isMultiple(of: 2), halfSeconds <= 2 * Int(Self.turnSeconds) { self.audio.play(.tick) }
                 self.coach()
             }
         }

@@ -235,7 +235,7 @@ struct ScanGuideView: View {
     private var steps: some View {
         VStack(alignment: .leading, spacing: 12) {
             step(1, "A front photo", "Face the phone, arms slightly away from your body.")
-            step(2, "One slow turn", "After 3, 2, 1: arms straight out to the sides, turn once round while counting to six.")
+            step(2, "One slow turn", "After 3, 2, 1: arms straight out to the sides, turn once round slowly while counting to ten.")
             step(3, "Your measurements", "Chest, waist, hips and lengths, ready to check.")
         }
         .padding(Theme.Spacing.m)

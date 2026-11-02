@@ -29,8 +29,8 @@ public struct TurnRecording: Sendable {
     public var high = 0.82
     public var low = 0.5
     /// A turn quicker than this is too fast to measure well (the user is asked to count
-    /// to six while turning: about six seconds, 15 frames a quarter).
-    public var minimumDuration = 4.0
+    /// to ten while turning: about ten seconds, 25 frames a quarter at 10 fps).
+    public var minimumDuration = 6.0
 
     public private(set) var samples: [Sample] = []
 

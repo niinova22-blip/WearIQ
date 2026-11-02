@@ -64,7 +64,10 @@ struct ScanEntryView: View {
             guard let item else { return }
             Task { await readPhoto(item) }
         }
-        .task(id: container.pendingProductLink) { await checkSharedLink() }
+        // Not `.task(id:)`: clearing the pending link changes the id, which would cancel
+        // the very load it started (the shared link then showed a "cancelled" warning).
+        .onAppear { checkSharedLink() }
+        .onChange(of: container.pendingProductLink) { _, _ in checkSharedLink() }
     }
 
     // MARK: Cards
@@ -189,15 +192,18 @@ struct ScanEntryView: View {
         }
     }
 
-    /// A link shared from a store app: checked like a pasted one.
-    private func checkSharedLink() async {
-        guard let link = container.pendingProductLink else { return }
+    /// A link shared from a store app: checked like a pasted one, straight away.
+    private func checkSharedLink() {
+        guard let link = container.pendingProductLink, !loadingLink else { return }
         container.pendingProductLink = nil
+        route = nil
         linkText = link.absoluteString
-        await loadLink()
+        Task { await loadLink(retries: 1) }
     }
 
-    private func loadLink() async {
+    /// `retries`: a shared link arrives while the app is still waking up, when the first
+    /// request can fail on a network that isn't up yet; it is tried again before warning.
+    private func loadLink(retries: Int = 0) async {
         linkError = nil
         failedLinkURL = nil
         guard let url = ProductDataService.normalizedURL(from: linkText) else {
@@ -217,7 +223,16 @@ struct ScanEntryView: View {
             }
             open(draft, autoAnalyze: true)
             linkText = ""
+        } catch is CancellationError {
+            return
+        } catch let error as URLError where error.code == .cancelled {
+            return
         } catch {
+            if retries > 0 {
+                try? await Task.sleep(for: .seconds(1.5))
+                loadingLink = false
+                return await loadLink(retries: retries - 1)
+            }
             failedLinkURL = url
             linkError = error.localizedDescription
         }

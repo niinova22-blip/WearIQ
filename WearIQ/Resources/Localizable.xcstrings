@@ -9401,16 +9401,6 @@
         }
       }
     },
-    "Great. Now, counting to six in your head, turn once all the way round in place, with your arms straight out to the sides.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Harika. Şimdi içinden altıya kadar sayarak, kolların iki yana tam açık, kendi etrafında bir tam tur dön."
-          }
-        }
-      }
-    },
     "A quick skin tone scan and three questions. With your measurements, WearIQ suggests the style, colours, fabrics and cuts that suit you.": {
       "localizations": {
         "tr": {
@@ -9971,26 +9961,6 @@
         }
       }
     },
-    "Listen: 3, 2, 1": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dinle: 3, 2, 1"
-          }
-        }
-      }
-    },
-    "Arms straight out, turn once round slowly": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kollar iki yana açık, yavaşça bir tur dön"
-          }
-        }
-      }
-    },
     "Done: your measurements are ready": {
       "localizations": {
         "tr": {
@@ -10011,12 +9981,42 @@
         }
       }
     },
-    "After 3, 2, 1: arms straight out to the sides, turn once round while counting to six.": {
+    "Great. Now, counting slowly to ten in your head, turn once all the way round in place, with your arms straight out to the sides.": {
       "localizations": {
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "3, 2, 1'den sonra: kollar iki yana tam açık, altıya kadar sayarak bir tur dön."
+            "value": "Harika. Şimdi içinden yavaşça ona kadar sayarak, kolların iki yana tam açık, kendi etrafında bir tam tur dön."
+          }
+        }
+      }
+    },
+    "After 3, 2, 1: arms straight out to the sides, turn once round slowly while counting to ten.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3, 2, 1'den sonra: kollar iki yana tam açık, ona kadar sayarak yavaşça bir tur dön."
+          }
+        }
+      }
+    },
+    "Listen: 3, 2, 1, then arms straight out": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dinle: 3, 2, 1, sonra kollar iki yana"
+          }
+        }
+      }
+    },
+    "Turn once round slowly, counting to ten": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ona kadar sayarak yavaşça bir tur dön"
           }
         }
       }

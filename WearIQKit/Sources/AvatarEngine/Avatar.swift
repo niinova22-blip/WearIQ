@@ -243,14 +243,25 @@ public struct Avatar: Sendable {
             func inner(_ i: Int) -> Int { garments[i].kind.isBottom ? 0 : 1 }
             return inner(a) < inner(b)
         }
+        // Each garment rests on the cut shells of those beneath it, which don't depend
+        // on how those drape, so all of them are draped at once, each on its own core.
+        let patterns = garments.map(model.pattern)
         var cover: ((Vec3) -> Float)?
-        var dressed: [Int: BodyModel.Dressed] = [:]
+        var under: [Int: (Vec3) -> Float] = [:]
         for i in order {
-            let d = model.dress(garments[i], cell: detail.garment, animated: detail.animated, under: cover)
-            dressed[i] = d
-            let cut = d.cut
-            cover = cover.map { previous in { p in min(previous(p), cut(p)) } } ?? cut
+            if let cover { under[i] = cover }
+            let shell = model.shell(patterns[i])
+            cover = cover.map { previous in { p in min(previous(p), shell(p)) } } ?? shell
         }
+        let results = DressingResults(count: garments.count)
+        // The patterns' closures only read the body model and their own cut values.
+        let inputs = Unchecked((patterns, under))
+        DispatchQueue.concurrentPerform(iterations: garments.count) { i in
+            let (patterns, under) = inputs.value
+            results.set(i, model.dress(patterns[i], cell: detail.garment, animated: detail.animated, under: under[i]))
+        }
+        var dressed: [Int: BodyModel.Dressed] = [:]
+        for i in garments.indices { dressed[i] = results.value(i) }
         for i in garments.indices.reversed() {
             guard let d = dressed[i] else { continue }
             anchors.merge(d.anchors) { _, new in new }
@@ -276,6 +287,21 @@ public struct Avatar: Sendable {
         mesh.computeNormals()
         return mesh
     }
+}
+
+/// Hands values made of pure closures to the threads that drape garments side by side.
+private struct Unchecked<T>: @unchecked Sendable {
+    let value: T
+    init(_ value: T) { self.value = value }
+}
+
+/// Garments draped side by side write their results here, each to its own slot.
+private final class DressingResults: @unchecked Sendable {
+    private var slots: [BodyModel.Dressed?]
+    private let lock = NSLock()
+    init(count: Int) { slots = Array(repeating: nil, count: count) }
+    func set(_ i: Int, _ value: BodyModel.Dressed) { lock.lock(); slots[i] = value; lock.unlock() }
+    func value(_ i: Int) -> BodyModel.Dressed? { lock.lock(); defer { lock.unlock() }; return slots[i] }
 }
 
 /// Positions, sizes and the body's distance field, from the measurements.
@@ -540,6 +566,26 @@ extension BodyModel {
     /// Cuts the garment and drapes it. `under` is what's already worn beneath (trousers
     /// under a top), as a distance field the garment rests on as on the body.
     func dress(_ fit: Avatar.GarmentFit, cell: Float, animated: Bool = false, under: ((Vec3) -> Float)? = nil) -> Dressed {
+        dress(pattern(fit), cell: cell, animated: animated, under: under)
+    }
+
+    /// The garment as cut, before it is draped: its parts, the box it is meshed in, where
+    /// it hangs from and how its looseness is laid out. What goes over it rests on its
+    /// `shell`, which needs only this, so garments worn together can drape at once.
+    struct Pattern {
+        var fit: Avatar.GarmentFit
+        var fabric: Fabric
+        fileprivate var parts: [GarmentPart]
+        var lo: Vec3, hi: Vec3
+        var pinnedAbove: Float
+        var anchors: [Avatar.Anchor: Vec3]
+        var stacks: [(part: Int, axis: Vec3, start: Vec3, length: Float)]
+        var hang: (Int, Vec3) -> (amount: Float, axis: Vec3)?
+        var cutEase: (Int, Float) -> Float
+        var shape: GarmentShape
+    }
+
+    func pattern(_ fit: Avatar.GarmentFit) -> Pattern {
         let fabric = fit.resolvedFabric
         func cm(_ v: Double) -> Float { Float(v / 100) }
         var parts: [GarmentPart] = []
@@ -726,15 +772,42 @@ extension BodyModel {
             anchors[.shoulder] = Vec3(shoulderHalf + dropped, shoulderY, 0)
         }
 
+        return Pattern(fit: fit, fabric: fabric, parts: parts, lo: lo, hi: hi, pinnedAbove: pinnedAbove, anchors: anchors,
+                       stacks: stacks, hang: hang, cutEase: cutEase, shape: shape)
+    }
+
+    /// The cut garment's surface, smoothly joined: limbs join the body part but never
+    /// each other, so trouser legs and sleeves stay separate tubes.
+    func cutField(_ pattern: Pattern) -> (Vec3) -> Float {
         let blend = 0.012 * h
-        let garmentParts = parts
-        // Limbs join the body part smoothly but never each other: trouser legs and
-        // sleeves stay separate tubes.
-        let cut = { (p: Vec3) -> Float in
+        let garmentParts = pattern.parts
+        return { (p: Vec3) -> Float in
             var limbs = Float.greatestFiniteMagnitude
             for part in garmentParts.dropFirst() { limbs = min(limbs, part.distance(p)) }
             return smin(garmentParts[0].distance(p), limbs, blend)
         }
+    }
+
+    /// What goes on over the garment rests on: over its height, the skin it covers plus
+    /// the margin and the fabric, or the cut where that stands further out. The gap keeps
+    /// whatever goes over it from resting in the same place.
+    func shell(_ pattern: Pattern) -> (Vec3) -> Float {
+        let cut = cutField(pattern)
+        let margin = skinMargin, thickness = pattern.fabric.thickness
+        let top: Float = pattern.fit.kind.isBottom ? (waistY + hipY) / 2 : necklineTop
+        let bottom = pattern.shape.hemY
+        return { (p: Vec3) -> Float in
+            min(cut(p), max(self.distance(p) - margin - thickness - 0.002, p.y - top, bottom - p.y))
+        }
+    }
+
+    func dress(_ pattern: Pattern, cell: Float, animated: Bool = false, under: ((Vec3) -> Float)? = nil) -> Dressed {
+        let fit = pattern.fit, fabric = pattern.fabric
+        let parts = pattern.parts, lo = pattern.lo, hi = pattern.hi, pinnedAbove = pattern.pinnedAbove
+        var anchors = pattern.anchors
+        let stacks = pattern.stacks, hang = pattern.hang, cutEase = pattern.cutEase, shape = pattern.shape
+        let garmentParts = parts
+        let cut = cutField(pattern)
         /// The part that dominates at a point.
         func owner(_ p: Vec3) -> Int {
             var best = 0, bestD = Float.greatestFiniteMagnitude
@@ -761,9 +834,18 @@ extension BodyModel {
         for i in Self.boundaryVertices(mesh) {
             let p = mesh.positions[i]
             let planes = garmentParts[owner(p)].planes
-            guard let plane = planes.max(by: { $0.normal.dot(p) - $0.offset < $1.normal.dot(p) - $1.offset }) else { continue }
+            guard var plane = planes.max(by: { $0.normal.dot(p) - $0.offset < $1.normal.dot(p) - $1.offset }) else { continue }
+            var off = plane.normal.dot(p) - plane.offset
+            if abs(off) >= 2 * cell {
+                // An edge vertex the neighbouring part owns (a trouser leg's, up at the
+                // back of the waistband): the nearest of any part's cutting planes.
+                let all = garmentParts.flatMap(\.planes)
+                if let near = all.min(by: { abs($0.normal.dot(p) - $0.offset) < abs($1.normal.dot(p) - $1.offset) }) {
+                    plane = near
+                    off = near.normal.dot(p) - near.offset
+                }
+            }
             // Only onto a plane it's beside: an edge far from every plane is no cut edge.
-            let off = plane.normal.dot(p) - plane.offset
             guard abs(off) < 2 * cell else { continue }
             mesh.positions[i] = p - plane.normal * off
         }
@@ -792,7 +874,12 @@ extension BodyModel {
             if case .top = fit.kind, tag > 0, tag <= arms.count { return arms[tag - 1].dir }
             return Vec3(0, 1, 0)
         }
-        cloth.drape(body: rests, fabric: fabric, pinned: pinned, motion: motion)
+        // The solver's many queries go to a sampled copy of the field (see SampledField),
+        // over the box the garment can move in; what it reports as contact at the end is
+        // measured on the exact field.
+        let reach = Vec3(0.1, 0.1 + motion.lift, 0.1)
+        let sampled = SampledField(rests, from: lo - reach, to: hi + reach)
+        cloth.drape(body: { sampled($0) }, exact: rests, fabric: fabric, pinned: pinned, motion: motion)
         mesh.positions = cloth.positions
         // The skin shown is finer than the field the cloth collided with: wherever the
         // cloth ended inside it or right on it (the small of the back under loose
@@ -855,14 +942,7 @@ extension BodyModel {
         if case .trousers = fit.kind, let lowest = mesh.positions.filter({ $0.x > 0 }).min(by: { $0.y < $1.y }) {
             anchors[.hem] = Vec3(anchors[.hem]?.x ?? lowest.x, lowest.y, 0)
         }
-        // Over its height, the skin it covers plus the margin and the fabric; the gap
-        // keeps whatever goes over it from resting in the same place.
-        let top: Float = fit.kind.isBottom ? (waistY + hipY) / 2 : necklineTop
-        let bottom = shape.hemY
-        let covered = { (p: Vec3) -> Float in
-            max(self.distance(p) - margin - thickness - 0.002, p.y - top, bottom - p.y)
-        }
-        let shell = { (p: Vec3) -> Float in min(cut(p), covered(p)) }
+        let shell = self.shell(pattern)
         let placed = placements(shape, lengthKnown: fit.lengthFromChart, sleeveKnown: fit.sleeveFromChart)
         return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: shell, report: report, frames: frames, lines: lines,
                        placements: placed)

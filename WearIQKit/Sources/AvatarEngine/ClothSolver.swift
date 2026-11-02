@@ -102,7 +102,10 @@ struct TriangleCloth {
 
     /// Settles the cloth on the body. `pinned` vertices don't fall or get pulled, but are
     /// still pushed out of the body.
-    mutating func drape(body: (Vec3) -> Float, fabric: Fabric, pinned: [Bool], motion: Motion = .settle, iterations: Int = 4) {
+    /// `exact`, when given, is the same field as `body` without approximation, for
+    /// measuring the final contact.
+    mutating func drape(body: (Vec3) -> Float, exact: ((Vec3) -> Float)? = nil, fabric: Fabric, pinned: [Bool],
+                        motion: Motion = .settle, iterations: Int = 4) {
         let steps = motion.steps
         let thickness = fabric.thickness
         let dt: Float = 1.0 / 60
@@ -182,24 +185,58 @@ struct TriangleCloth {
         }
         // Fabric against itself: a spatial hash with cells the size of the minimum
         // distance; pairs closer than it that aren't mesh neighbours are pushed apart.
+        // The hash is a flat table (counting sort of the vertices by cell hash) rebuilt
+        // each step, rather than a dictionary of arrays, which allocated thousands of
+        // buckets a step; the cheap distance test comes before the neighbour lookup.
         let selfDistance = 0.5 * meanEdge
+        let inverseSelf = 1 / selfDistance
+        var tableSize = 1
+        while tableSize < 2 * max(1, positions.count) { tableSize <<= 1 }
+        let mask = tableSize - 1
+        var bucketStart = [Int32](repeating: 0, count: tableSize + 1)
+        var bucketFill = [Int32](repeating: 0, count: tableSize)
+        var sortedVertices = [Int32](repeating: 0, count: positions.count)
+        var vertexCell = [SIMD3<Int32>](repeating: .zero, count: positions.count)
+        @inline(__always) func hash(_ c: SIMD3<Int32>) -> Int {
+            let h = (Int(c.x) &* 73_856_093) ^ (Int(c.y) &* 19_349_663) ^ (Int(c.z) &* 83_492_791)
+            return h & mask
+        }
         func separate() {
-            func key(_ p: Vec3) -> SIMD3<Int32> {
-                SIMD3(Int32((p.x / selfDistance).rounded(.down)), Int32((p.y / selfDistance).rounded(.down)),
-                      Int32((p.z / selfDistance).rounded(.down)))
-            }
-            var grid: [SIMD3<Int32>: [Int]] = [:]
-            for i in positions.indices { grid[key(positions[i]), default: []].append(i) }
+            for k in bucketStart.indices { bucketStart[k] = 0 }
             for i in positions.indices {
-                let k = key(positions[i])
+                let p = positions[i]
+                let c = SIMD3(Int32((p.x * inverseSelf).rounded(.down)), Int32((p.y * inverseSelf).rounded(.down)),
+                              Int32((p.z * inverseSelf).rounded(.down)))
+                vertexCell[i] = c
+                bucketStart[hash(c) + 1] += 1
+            }
+            for k in 0..<tableSize { bucketStart[k + 1] += bucketStart[k] }
+            for k in 0..<tableSize { bucketFill[k] = bucketStart[k] }
+            for i in positions.indices {
+                let h = hash(vertexCell[i])
+                sortedVertices[Int(bucketFill[h])] = Int32(i)
+                bucketFill[h] += 1
+            }
+            var visited = [Int](repeating: -1, count: 27)
+            for i in positions.indices {
+                let c = vertexCell[i]
+                var seen = 0
                 for dx: Int32 in -1...1 {
                     for dy: Int32 in -1...1 {
                         for dz: Int32 in -1...1 {
-                            guard let bucket = grid[k &+ SIMD3(dx, dy, dz)] else { continue }
-                            for j in bucket where j > i && !nearby[i].contains(j) {
+                            let h = hash(c &+ SIMD3(dx, dy, dz))
+                            // Two neighbouring cells can share a hash: visit it once.
+                            var again = false
+                            for v in 0..<seen where visited[v] == h { again = true; break }
+                            guard !again else { continue }
+                            visited[seen] = h
+                            seen += 1
+                            for slot in Int(bucketStart[h])..<Int(bucketStart[h + 1]) {
+                                let j = Int(sortedVertices[slot])
+                                guard j > i else { continue }
                                 let d = positions[j] - positions[i]
                                 let len = d.length
-                                guard len < selfDistance, len > 1e-7 else { continue }
+                                guard len < selfDistance, len > 1e-7, !nearby[i].contains(j) else { continue }
                                 let wa = inverseMass[i], wb = inverseMass[j]
                                 guard wa + wb > 0 else { continue }
                                 let push = d * ((selfDistance - len) / len / (wa + wb))
@@ -270,7 +307,9 @@ struct TriangleCloth {
         }
         if motion.recordEvery > 0 { frames.append(positions) }
         // Resting on the body: pushed back out of it just now, or lying within 1.5 mm of it.
-        let clearance = positions.indices.map { body(positions[$0]) - thickness }
+        let clearance = positions.indices.map { i -> Float in
+            (exact.map { $0(positions[i]) } ?? body(positions[i])) - thickness
+        }
         contact = positions.indices.map { touching[$0] || clearance[$0] < 0.0015 }
         gap = positions.indices.map { contact[$0] ? 0 : max(0, clearance[$0]) }
 

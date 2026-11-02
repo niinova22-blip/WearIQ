@@ -85,7 +85,7 @@ LINES = [
     "Another 45 degrees to your right, and stop.",
     "Photo taken.",
     "Photos are processed on this phone and deleted right away. Nothing is sent anywhere.",
-    "Great. Now, counting to six in your head, turn once all the way round in place, with your arms straight out to the sides.",
+    "Great. Now, counting slowly to ten in your head, turn once all the way round in place, with your arms straight out to the sides.",
     "Keep turning slowly to your right.",
     "Keep your arms out at shoulder height.",
     "That was a little fast. Once more, more slowly.",
