@@ -19,7 +19,16 @@ public struct FitEngine: FitAnalyzing {
     public func analyze(body: BodyProfile, garment: GarmentSpec, preference: FitPreference = .asDesigned) -> FitAnalysis {
         let rules = EaseTable.rules(for: garment.category, fit: garment.fitStyle, leg: garment.legCut)
         let sizes = garment.sizes.map { evaluate(size: $0, body: body, garment: garment, rules: rules, preference: preference) }
-        return FitAnalysis(recommendation: recommend(sizes: sizes, rules: rules), sizes: sizes)
+        var analysis = FitAnalysis(recommendation: recommend(sizes: sizes, rules: rules), sizes: sizes)
+        let critical = rules.filter(\.critical)
+        if let rule = critical.first, analysis.recommendedSize != nil,
+           !sizes.contains(where: { s in s.region(rule.region).map { $0.verdict != .tight && $0.verdict != .loose } ?? false }) {
+            analysis.noSizeFits = rule.region
+        }
+        if critical.contains(where: { body[$0.body]?.source == .estimated }) { analysis.fromEstimates = true }
+        analysis.recommendation = settled(analysis.recommendation, body: body, garment: garment, rules: rules,
+                                          preference: preference)
+        return analysis
     }
 
     // MARK: - Per size
@@ -64,10 +73,16 @@ public struct FitEngine: FitAnalyzing {
                 range = -tol...tol
                 sigma = (b.uncertaintyCm * b.uncertaintyCm + g.uncertaintyCm * g.uncertaintyCm).squareRoot()
             } else {
-                let tol = rule.bodyChartTolerance + g.uncertaintyCm
+                // A chart value's spread is partly the size's own range (M: chest 96–104)
+                // and partly how far the brand may run from it (about 2 cm, the extra a
+                // standard chart carries). The range is room; the brand's drift is doubt.
+                // Counting both as room made a standard chart's sizes ±8.5 cm wide, and a
+                // 103 cm chest "slightly tight" in a size for 92.
+                let drift = min(g.uncertaintyCm, 2)
+                let tol = rule.bodyChartTolerance + g.uncertaintyCm - drift
                 let shift = preferenceShift(preference, width: 2 * tol, kind: rule.kind)
                 range = (-tol + shift)...(tol + rule.bodyChartLooseAllowance + shift)
-                sigma = b.uncertaintyCm
+                sigma = (b.uncertaintyCm * b.uncertaintyCm + drift * drift).squareRoot()
             }
         }
 
@@ -100,7 +115,12 @@ public struct FitEngine: FitAnalyzing {
 
         // Confidence: how sure are we about the verdict, given the uncertainty?
         let decisive = outside == 0 ? pIdeal : 1 - pIdeal
-        let confidence: ConfidenceLevel = decisive > 0.8 ? .high : (decisive > 0.6 ? .medium : .low)
+        var confidence: ConfidenceLevel = decisive > 0.8 ? .high : (decisive > 0.6 ? .medium : .low)
+        // A body known only from height and weight is a population's average for them: the
+        // people it stands for differ by a size either way. Advice from it is never sure;
+        // of 776 garments checked on 400 shoppers it named a different size from the tape
+        // a third of the time while calling itself sure (docs/VALIDATION.md §15).
+        if b.source == .estimated { confidence = min(confidence, .medium) }
 
         let expected = Self.expectedPenalty(ease: ease, sigma: sigma, range: range, rule: rule, comfort: comfort)
         var fit = RegionFit(region: rule.region, verdict: verdict, severity: severity,
@@ -152,12 +172,56 @@ public struct FitEngine: FitAnalyzing {
 
     // MARK: - Recommendation
 
+    /// How sure a size is, is how sure it is to stay the best: a size whose every region
+    /// is surely right can still be the wrong pick if a body a little off the measured
+    /// one would be better in the next size. The deciding measurements (chest for a top,
+    /// waist for trousers) are moved by their own uncertainty both ways and the
+    /// recommendation found again: if it changes within 0.6 σ the advice is unsure, within
+    /// 1.6 σ at most fairly sure. A scan's chest is good to ±2.5 cm, which is a third of a
+    /// size step, and without this a fifth of "sure" sizes from a scan were not the size
+    /// the tape gives (docs/VALIDATION.md §15).
+    private func settled(_ rec: SizeRecommendation, body: BodyProfile, garment: GarmentSpec, rules: [RegionRule],
+                         preference: FitPreference) -> SizeRecommendation {
+        guard case let .size(label, confidence) = rec, confidence > .low else { return rec }
+        let dims = rules.filter(\.critical).map(\.body)
+        func pick(_ k: Double) -> String? {
+            var moved = body
+            for d in dims {
+                guard let v = body[d] else { continue }
+                moved[d] = MeasuredValue(cm: v.cm + k * v.uncertaintyCm, uncertaintyCm: v.uncertaintyCm, source: v.source)
+            }
+            let sizes = garment.sizes.map { evaluate(size: $0, body: moved, garment: garment, rules: rules, preference: preference) }
+            switch recommend(sizes: sizes, rules: rules) {
+            case let .size(l, _): return l
+            case let .between(a, b): return a == label || b == label ? label : a
+            case .insufficientData: return nil
+            }
+        }
+        if pick(-0.6) != label || pick(0.6) != label { return .size(label: label, confidence: .low) }
+        if confidence == .high, pick(-1.6) != label || pick(1.6) != label { return .size(label: label, confidence: .medium) }
+        return rec
+    }
+
     private func recommend(sizes: [SizeFit], rules: [RegionRule]) -> SizeRecommendation {
-        let usable = sizes.enumerated().filter { $0.element.hasCriticalData }
+        let criticalRegions = Set(rules.filter(\.critical).map(\.region))
+        var usable = sizes.enumerated().filter { $0.element.hasCriticalData }
+        // A size that fits where it matters (the chest of a top, the waist of trousers)
+        // beats one that doesn't, however the rest adds up: a chest you can't close, or a
+        // waistband that falls down, isn't made up for by sleeves the right length.
+        func fitsWhereItMatters(_ s: SizeFit) -> Bool {
+            s.regions.filter { criticalRegions.contains($0.region) }
+                .allSatisfy { $0.verdict != .tight && $0.verdict != .loose }
+        }
+        let fitting = usable.filter { fitsWhereItMatters($0.element) }
+        if !fitting.isEmpty { usable = fitting }
         guard let best = usable.min(by: { $0.element.penalty < $1.element.penalty }) else {
             let missing = rules.filter(\.critical).map(\.region)
             return .insufficientData(missing: missing)
         }
+
+        // No size fits where it matters (a body beyond the chart's ends): the nearest one
+        // is named, but never with confidence.
+        if fitting.isEmpty { return .size(label: best.element.label, confidence: .low) }
 
         // Neighbouring size almost as good → be honest that it's a toss-up.
         let neighbours = usable.filter { abs($0.offset - best.offset) == 1 }
@@ -168,7 +232,6 @@ public struct FitEngine: FitAnalyzing {
         }
 
         let measured = best.element.regions.filter { $0.verdict != .insufficientData }
-        let criticalRegions = Set(rules.filter(\.critical).map(\.region))
         let criticalConfidence = measured.filter { criticalRegions.contains($0.region) }.map(\.confidence).min() ?? .low
         let coverage = Double(measured.count) / Double(max(rules.count, 1))
         var confidence = criticalConfidence

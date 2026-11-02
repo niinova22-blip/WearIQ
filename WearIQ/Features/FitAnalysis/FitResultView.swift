@@ -139,7 +139,7 @@ struct FitResultView: View {
                         .accessibilityHidden(true)
                 }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(analysis.recommendation.headline)
+                    Text(analysis.headline)
                         .font(.title3.bold())
                         .fixedSize(horizontal: false, vertical: true)
                     if case let .size(_, confidence) = analysis.recommendation {

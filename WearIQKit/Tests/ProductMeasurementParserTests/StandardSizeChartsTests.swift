@@ -39,3 +39,29 @@ import WearIQCore
         #expect(GarmentClassifier.audience(from: "Yünlü Regular Fit Ceket") == nil)
     }
 }
+
+/// Women's trousers in EU sizes (34–44, most European and Turkish sites) are not waist
+/// inches; jeans in W26–W32 are. Plus sizes have charts too.
+@Suite struct StandardChartSizingSystems {
+    @Test func womensEUTrousersAreNotInches() throws {
+        let eu = try #require(StandardSizeCharts.chart(for: ["34", "36", "38", "40", "42"], category: .pants, audience: .women))
+        let w38 = try #require(eu.sizes.first { $0.label == "38" }?.values[.waist]?.cm)
+        #expect((68...74).contains(w38))
+        let jeans = try #require(StandardSizeCharts.chart(for: ["26", "27", "28", "29", "30"], category: .pants, audience: .women))
+        let w28 = try #require(jeans.sizes.first { $0.label == "28" }?.values[.waist]?.cm)
+        #expect(abs(w28 - 71.1) < 1)
+        let men = try #require(StandardSizeCharts.chart(for: ["32", "34", "36"], category: .pants, audience: .men))
+        #expect(abs((men.sizes.first { $0.label == "34" }?.values[.waist]?.cm ?? 0) - 86.4) < 1)
+    }
+
+    @Test func plusSizesHaveCharts() throws {
+        let women = try #require(StandardSizeCharts.chart(for: ["XL", "2XL", "3XL", "4XL", "5XL"], category: .dress, audience: .women))
+        #expect(women.sizes.count == 5)
+        let chests = women.sizes.compactMap { $0.values[.chest]?.cm }
+        #expect(chests == chests.sorted() && chests.last! > 130)
+        let men = try #require(StandardSizeCharts.chart(for: ["2XL", "3XL", "4XL", "5XL"], category: .tshirt, audience: .men))
+        #expect(men.sizes.count == 4)
+        let eu = try #require(StandardSizeCharts.chart(for: ["50", "52", "54", "56", "58"], category: .dress, audience: .women))
+        #expect(eu.sizes.count == 5)
+    }
+}

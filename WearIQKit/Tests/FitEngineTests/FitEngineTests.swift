@@ -177,7 +177,9 @@ private let regularShirt = shirt([
         ])
         let a = FitEngine().analyze(body: body, garment: g)
         #expect(a.sizes[0].region(.chest)?.verdict == .ideal)
-        #expect(a.sizes[1].region(.chest)?.verdict == .slightlyLoose)
+        // A size for a body 8 cm bigger: its ±2 cm is the brand's drift (doubt), not
+        // room, so that is a size too big, not "slightly" loose.
+        #expect(a.sizes[1].region(.chest)?.verdict == .loose)
         #expect(a.recommendedSize?.label == "M")
     }
 }
@@ -215,5 +217,51 @@ private let regularShirt = shirt([
         #expect(abs(s.easeCm! - (46.5 - 41.6 * 1.085)) < 0.01)
         // Typed in with a tape it is taken as it is.
         #expect(FitEngine.acrossBack(m(46)).cm == 46)
+    }
+}
+
+/// Honest advice: a body beyond the chart is told no size fits; advice from height and
+/// weight alone is never sure.
+@Suite struct HonestAdvice {
+    static func shirt() -> GarmentSpec {
+        GarmentSpec(category: .shirt, chartKind: .garment, sizes: ["S", "M", "L"].enumerated().map { i, l in
+            SizeEntry(label: l, values: [.chest: MeasuredValue(cm: 100 + Double(i) * 6, uncertaintyCm: 0.5, source: .manual)])
+        })
+    }
+
+    @Test func bodyBeyondTheChartIsToldSo() {
+        var body = BodyProfile(values: [.chest: MeasuredValue(cm: 125, uncertaintyCm: 1, source: .manual)])
+        var a = FitEngine().analyze(body: body, garment: Self.shirt())
+        #expect(a.noSizeFits == .chest)
+        #expect(a.recommendation == .size(label: "L", confidence: .low))
+        body[.chest] = MeasuredValue(cm: 97, uncertaintyCm: 1, source: .manual)
+        a = FitEngine().analyze(body: body, garment: Self.shirt())
+        #expect(a.noSizeFits == nil)
+    }
+
+    @Test func estimatesAreNeverSure() {
+        let body = BodyProfile(values: [.chest: MeasuredValue(cm: 94, uncertaintyCm: 0.3, source: .estimated)])
+        let a = FitEngine().analyze(body: body, garment: Self.shirt())
+        #expect(a.fromEstimates == true)
+        if case let .size(_, c) = a.recommendation { #expect(c <= .medium) }
+    }
+
+    /// A chest that won't close isn't made up for by the rest: the size that fits at the
+    /// chest wins over one with better sleeves.
+    @Test func fitWhereItMattersComesFirst() {
+        let g = GarmentSpec(category: .sweater, chartKind: .garment, sizes: [
+            SizeEntry(label: "S", values: [.chest: MeasuredValue(cm: 103, uncertaintyCm: 0.5, source: .manual),
+                                           .sleeveLength: MeasuredValue(cm: 62, uncertaintyCm: 0.5, source: .manual),
+                                           .waist: MeasuredValue(cm: 100, uncertaintyCm: 0.5, source: .manual)]),
+            SizeEntry(label: "M", values: [.chest: MeasuredValue(cm: 111, uncertaintyCm: 0.5, source: .manual),
+                                           .sleeveLength: MeasuredValue(cm: 64, uncertaintyCm: 0.5, source: .manual),
+                                           .waist: MeasuredValue(cm: 112, uncertaintyCm: 0.5, source: .manual)]),
+        ])
+        let body = BodyProfile(values: [.chest: MeasuredValue(cm: 102.5, uncertaintyCm: 1, source: .manual),
+                                        .waist: MeasuredValue(cm: 80, uncertaintyCm: 1, source: .manual),
+                                        .armLength: MeasuredValue(cm: 59, uncertaintyCm: 1, source: .manual)])
+        let a = FitEngine().analyze(body: body, garment: g)
+        #expect(a.sizes[0].region(.chest)?.verdict == .tight)
+        #expect(a.recommendedSize?.label == "M")
     }
 }

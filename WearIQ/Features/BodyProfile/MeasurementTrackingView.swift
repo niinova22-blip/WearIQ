@@ -76,7 +76,7 @@ struct MeasurementTrackingView: View {
                                         .font(.subheadline).foregroundStyle(.secondary)
                                 }
                                 if impact.recommendationChanged {
-                                    Text(impact.after.recommendation.headline).font(.subheadline)
+                                    Text(impact.after.headline).font(.subheadline)
                                 }
                             }
                         }

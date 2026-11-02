@@ -10570,6 +10570,46 @@
           }
         }
       }
+    },
+    "No size of this garment fits your %@: even %@, the largest that comes closest, is tight there. Another brand or cut is a safer buy.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ürünün hiçbir bedeni %1$@ ölçüne uymuyor: en yakın olan %2$@ bile orada dar. Başka bir marka ya da kesim daha güvenli olur."
+          }
+        }
+      }
+    },
+    "No size of this garment fits your %@: even %@, the smallest that comes closest, is loose there. Another brand or cut is a safer buy.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ürünün hiçbir bedeni %1$@ ölçüne uymuyor: en yakın olan %2$@ bile orada bol. Başka bir marka ya da kesim daha güvenli olur."
+          }
+        }
+      }
+    },
+    "This is from your height and weight only, and people of the same height and weight differ by a size. A scan or a tape measurement makes it sure.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu sonuç yalnızca boyuna ve kilona dayanıyor; aynı boy ve kilodaki insanlar bir beden farklı olabilir. Tarama ya da mezura ölçüsü sonucu kesinleştirir."
+          }
+        }
+      }
+    },
+    "No size fits well · nearest %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İyi oturan beden yok · en yakını %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

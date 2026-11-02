@@ -25,7 +25,7 @@ import Testing
     func bodyMeasuresAsAsked(_ which: Int) throws {
         let model = try #require(SomaModel.shared)
         let m = [man, woman, large][which]
-        let got = model.measure(model.vertices(model.coefficients(for: m.somaTarget)))
+        let got = model.measure(model.body(for: m.somaTarget))
         for (i, (want, have)) in zip(m.somaTarget, got).enumerated() {
             #expect(abs(want - have) < 1.2, "measurement \(i): wanted \(want), built \(have)")
         }

@@ -9,7 +9,7 @@ extension BodyModel {
         // The sex, when known, sets how far the breasts stand out from the ribcage: the
         // measurements alone (a chest girth) can't tell a full bust from a broad chest.
         let bust = m.sex.map { SomaModel.typicalBust(female: $0 == .female, chest: m.chest) }
-        var v = model.vertices(model.coefficients(for: m.somaTarget, bust: bust))
+        var v = model.body(for: m.somaTarget, bust: bust)
         let floor = v.map(\.y).min() ?? 0
         v = v.map { Vec3($0.x, $0.y - floor, $0.z) }
         let pts = model.points, rings = model.rings

@@ -82,6 +82,14 @@ public struct FitAnalysis: Codable, Hashable, Sendable {
     public var recommendation: SizeRecommendation
     /// In size chart order.
     public var sizes: [SizeFit]
+    /// No size fits where it matters (this region: the chest of a top, the waist of
+    /// trousers): the body is beyond the chart's ends. The recommendation is then only
+    /// the nearest size, and the app says so. Nil when a size fits (and in analyses
+    /// saved before it was kept).
+    public var noSizeFits: FitRegion?
+    /// Advice from a body known only from height and weight (or with its deciding
+    /// measurement estimated): never sure, and the app suggests a scan.
+    public var fromEstimates: Bool?
 
     public init(recommendation: SizeRecommendation, sizes: [SizeFit]) {
         self.recommendation = recommendation

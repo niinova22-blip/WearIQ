@@ -179,6 +179,107 @@ struct SomaModel: Sendable {
         return c
     }
 
+    /// The body for these measurements: the shape model's most likely body, then its
+    /// girths brought to the asked ones where the model can't reach them.
+    ///
+    /// Thirty-two components at most ±3.5 SD cover most people but not all: a woman
+    /// with a 160 cm waist (BMI 50+, about 1 in 30 US women in NHANES 2017–2020) came back
+    /// 20 cm slimmer, and so would every garment drawn on her. Where the model falls
+    /// short, the torso is widened (or narrowed) level by level about its own centre, by
+    /// the ratio asked ÷ built at the chest, the navel and the seat, blended between them
+    /// and back to nothing at the shoulder tops; the legs about their own centres by the
+    /// thigh's ratio, half of it left at the knee and none at the ankle; the arms move
+    /// out with the chest's side so they don't sink into it. A convex outline scaled about
+    /// any point scales its perimeter by the same factor, so three passes settle it.
+    func body(for target: [Double], bust: Double? = nil) -> [Vec3] {
+        var v = vertices(coefficients(for: target, bust: bust))
+        for _ in 0..<3 {
+            let got = measure(v)
+            let ratios = (1...4).map { max(0.75, min(1.35, target[$0] / max(got[$0], 1))) }
+            guard ratios.contains(where: { abs($0 - 1) > 0.004 }) else { break }
+            v = reshaped(v, chest: Float(ratios[0]), waist: Float(ratios[1]), hip: Float(ratios[2]), thigh: Float(ratios[3]))
+        }
+        return v
+    }
+
+    private func reshaped(_ v: [Vec3], chest rc: Float, waist rw: Float, hip rh: Float, thigh rt: Float) -> [Vec3] {
+        let yChest = v[points.nipple].y, yWaist = v[points.navel].y, yHip = v[points.buttock].y
+        let yCrotch = v[points.crotch].y
+        let yTop = min(v[points.acromion[0]].y, v[points.acromion[1]].y)
+        let floor = v.map(\.y).min() ?? 0
+        let height = v[points.top].y - floor
+        let yThigh = yCrotch - 0.018 * height
+        // Each level's centre and half width (the torso's outline there).
+        func frame(_ y: Float) -> (z: Float, half: Float) {
+            let s = slice(v, at: y, parts: [.torso])
+            guard let x0 = s.map(\.0).min(), let x1 = s.map(\.0).max(),
+                  let z0 = s.map(\.1).min(), let z1 = s.map(\.1).max() else { return (0, 0) }
+            return ((z0 + z1) / 2, (x1 - x0) / 2)
+        }
+        let fc = frame(yChest), fw = frame(yWaist), fh = frame(yHip)
+        func lerp(_ a: Float, _ b: Float, _ t: Float) -> Float { a + (b - a) * max(0, min(1, t)) }
+        // Torso ratio and centre by height.
+        func torso(_ y: Float) -> (r: Float, z: Float) {
+            if y >= yChest { return (lerp(rc, 1, (y - yChest) / max(yTop - yChest, 1e-4)), fc.z) }
+            if y >= yWaist {
+                let t = (yChest - y) / max(yChest - yWaist, 1e-4)
+                return (lerp(rc, rw, t), lerp(fc.z, fw.z, t))
+            }
+            if y >= yHip {
+                let t = (yWaist - y) / max(yWaist - yHip, 1e-4)
+                return (lerp(rw, rh, t), lerp(fw.z, fh.z, t))
+            }
+            return (rh, fh.z)
+        }
+        // Each leg's centre at the thigh, the knee and the ankle.
+        func legCentre(_ side: Int, _ y: Float) -> (Float, Float) {
+            let kneeC = centroid(rings.knee[side], v), ankleC = centroid(rings.ankle[side], v)
+            let s = slice(v, at: yThigh, parts: [side == 0 ? .leftLeg : .rightLeg])
+            let tx = s.isEmpty ? kneeC.x : (s.map(\.0).min()! + s.map(\.0).max()!) / 2
+            let tz = s.isEmpty ? kneeC.z : (s.map(\.1).min()! + s.map(\.1).max()!) / 2
+            if y >= kneeC.y {
+                let t = (yThigh - y) / max(yThigh - kneeC.y, 1e-4)
+                return (lerp(tx, kneeC.x, t), lerp(tz, kneeC.z, t))
+            }
+            let t = (kneeC.y - y) / max(kneeC.y - ankleC.y, 1e-4)
+            return (lerp(kneeC.x, ankleC.x, t), lerp(kneeC.z, ankleC.z, t))
+        }
+        let kneeY = (centroid(rings.knee[0], v).y + centroid(rings.knee[1], v).y) / 2
+        let ankleY = (centroid(rings.ankle[0], v).y + centroid(rings.ankle[1], v).y) / 2
+        func legRatio(_ y: Float) -> Float {
+            if y >= yThigh { return rt }
+            if y >= kneeY { return lerp(rt, 1 + (rt - 1) / 2, (yThigh - y) / max(yThigh - kneeY, 1e-4)) }
+            return lerp(1 + (rt - 1) / 2, 1, (kneeY - y) / max(kneeY - ankleY, 1e-4))
+        }
+        // How far the chest's side moves out: the arms go with it.
+        let armShift = (rc - 1) * fc.half
+        let armpitY = rings.shoulder[0].map { v[$0].y }.min() ?? yChest
+        var out = v
+        for i in v.indices {
+            let p = v[i]
+            switch parts[i] {
+            case .torso:
+                let (r, z) = torso(p.y)
+                out[i] = Vec3(p.x * r, p.y, z + (p.z - z) * r)
+            case .leftLeg, .rightLeg:
+                let (r, z) = torso(p.y)
+                let upper = Vec3(p.x * r, p.y, z + (p.z - z) * r)
+                let (cx, cz) = legCentre(parts[i] == .leftLeg ? 0 : 1, p.y)
+                let lr = legRatio(p.y)
+                let lower = Vec3(cx + (p.x - cx) * lr, p.y, cz + (p.z - cz) * lr)
+                // Over the seat the leg is part of the hip's outline; below the thigh its own.
+                out[i] = p.y >= yCrotch ? upper : p.y <= yThigh ? lower
+                    : upper + (lower - upper) * ((yCrotch - p.y) / max(yCrotch - yThigh, 1e-4))
+            case .leftArm, .rightArm, .leftHand, .rightHand:
+                let w = max(0, min(1, (yTop - p.y) / max(yTop - armpitY, 1e-4)))
+                out[i] = Vec3(p.x + (p.x > 0 ? 1 : -1) * armShift * w, p.y, p.z)
+            default:
+                break
+            }
+        }
+        return out
+    }
+
     /// The usual bust (`bust(_:)`, chest minus underbust, cm): a man's chest is little
     /// more than his ribcage, a woman's is about a B to C cup over it. On the shape
     /// model's own measure, whose average body sits at 11 cm with a spread of about 3.

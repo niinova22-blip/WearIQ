@@ -122,6 +122,17 @@ extension SizeRecommendation {
     }
 }
 
+extension FitAnalysis {
+    /// The result's title: the recommendation, or, when no size fits where it matters,
+    /// only the nearest one, said as such.
+    var headline: String {
+        if noSizeFits != nil, let best = recommendedSize {
+            return String(localized: "No size fits well · nearest \(best.label)")
+        }
+        return recommendation.headline
+    }
+}
+
 /// Plain-language summary built only from the engine's results.
 enum FitExplanation {
     /// "leg length about 5–8 cm long." for one size: only what doesn't fit (the rows
@@ -137,6 +148,14 @@ enum FitExplanation {
 
     static func text(for analysis: FitAnalysis) -> String {
         var sentences: [String] = []
+        // Said first: no size of this garment fits, the size named is only the nearest.
+        if let region = analysis.noSizeFits, let best = analysis.recommendedSize,
+           let verdict = best.region(region)?.verdict, verdict == .tight || verdict == .loose {
+            let name = region.title.lowercased()
+            sentences.append(verdict == .tight
+                ? String(localized: "No size of this garment fits your \(name): even \(best.label), the largest that comes closest, is tight there. Another brand or cut is a safer buy.")
+                : String(localized: "No size of this garment fits your \(name): even \(best.label), the smallest that comes closest, is loose there. Another brand or cut is a safer buy."))
+        }
         switch analysis.recommendation {
         case let .insufficientData(missing):
             let names = missing.map(\.title).joined(separator: ", ")
@@ -164,7 +183,9 @@ enum FitExplanation {
                     sentences.append(String(localized: "\(smaller.label) would likely be tight in the \(tight.region.title.lowercased())."))
                 }
             }
-            if best.regions.contains(where: { $0.confidence == .low && $0.verdict != .insufficientData }) {
+            if analysis.fromEstimates == true {
+                sentences.append(String(localized: "This is from your height and weight only, and people of the same height and weight differ by a size. A scan or a tape measurement makes it sure."))
+            } else if best.regions.contains(where: { $0.confidence == .low && $0.verdict != .insufficientData }) {
                 sentences.append(String(localized: "Some of your measurements are estimates, so treat this as a guide."))
             }
         }

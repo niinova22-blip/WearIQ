@@ -229,3 +229,98 @@ Düzeltmelerden sonra: 46.551 kontrolde 0 bulgu. Giydirme örnekleminde 201 kont
 **Maske temizleme** (`isolatingPerson`): kişi maskesine karışan sandalye, askı ya da kapı gibi nesneler ayıklanıyor. Yalnızca iskelete bağlı ve kemiklerin çevresindeki ölçeğe göre genişletilmiş kapsüllerin içinde kalan pikseller tutuluyor. Kapsüller boyun–kalça uzunluğuyla ölçeklendiği için mesafeden bağımsız; bol kıyafet ve etek için pay bırakılıyor.
 
 **Yandan ek çekim** (`FollowUpShot`): dönüşten sonra göğüs, bel ya da kalçadan biri belirsiz kalırsa tek bir fotoğraf daha isteniyor. Belirsizlik ölçütü: ±%2,5'ten geniş olması ya da 8 yön ile her kare yönteminin %3'ten fazla ayrışması. Kullanıcı sağına çeyrek dönüp hareketsiz durduğunda fotoğraf otomatik çekiliyor. Bu net kare yan yönü ve karşısını temsil ediyor, dönüşün sonucuyla güven ağırlıklı birleştiriliyor. Simülasyonda bel hatasını yarıdan fazla azaltıyor (`FollowUpShotTests`).
+
+## 15. 400 kişilik güven denetimi (2026-11-03)
+
+### Araştırma: kullanıcının bu araca güvenmesi için ne gerekiyor?
+
+- **İadelerin başlıca sebebi beden ve kalıp.** Coresight anketinde iade sebeplerinin %53'ü beden/kalıp. McKinsey (2021) giyim iadelerinin yaklaşık %70'ini kalıba ya da stile bağlıyor. Narvar (2019): ABD'li alışverişçilerin %48'i aynı ürünü birkaç bedende sipariş edip birini tutuyor ("bracketing").
+- **Kullanıcı tek ve net bir cevap istiyor, ama dürüst olanını.** İki beden arasında kalmak, tablonun yazı-tura attırdığı yer. Etkili öneri, ürüne özel tek bir beden söyler. Zalando'nun kontrollü testinde (KDD 2021, grup başına 720 bin kullanıcı) beden önerisi bedenle ilgili iadeleri %3,8 azalttı. Satıcıların "%20–50 azalma" iddiaları bağımsız doğrulanmamış.
+- **Kalıp tercihi bedeni değiştiriyor.** 175 kadınla yapılan bir çalışmada (3DBody.Tech 2023) tercih edilen oturuş, seçilen bedeni anlamlı şekilde etkiledi.
+- **Avatar gerçekçiliği ve benzerlik güveni artırıyor.** Avatarın gerçekçiliği hem bilişsel hem duygusal güveni artırıyor (ITAA 2025). Kişinin kendine benzemesi satın alma niyetini artırıyor. Vücut şeklinde yaklaşık doğru bir temsil, yüz ve saç detayından daha önemli (Brunel tezi).
+- **Vücut çeşitliliği.** ABD'li kadınların büyük kısmı büyük beden sayılıyor, ama yalnızca %24'ü kendini öyle tanımlıyor (Baymard 2026). Yorumlarda en çok aranan bilgi beden ve kalıp (%48). SizeUSA'da kadınların en yaygın vücut şekli dikdörtgen (~%49), ardından kaşık/armut. Kum saati yalnızca ~%8–12.
+
+Buradan çıkan dört ilke testlere dönüştürüldü:
+1. **Çelişki yok.**
+2. **Doğru beden, açıkça söylenmiş.**
+3. **Emin değilse bunu söylüyor.**
+4. **Deneme kabini gibi tepki veriyor:** daha dar istersen daha büyük beden, esnek kumaşta daha büyük beden, daha iri vücuda daha küçük beden önerilmiyor.
+
+### Nüfus (`Population`)
+
+- **ANSUR II'den 240 kişi** (120 erkek, 120 kadın). Her ölçüsü mezurayla alınmış. BMI, boy ve basen−göğüs farkı boyunca eşit adımlarla seçildi, en uçlar dahil.
+- **NHANES 2017–2020'den 160 kişi** (80 erkek, 80 kadın; ABD sivil nüfusu). Daha yaşlı ve daha kilolu, BMI 60'a kadar. Boy, kilo, bel ve basen ölçülmüş; diğer ölçüler ANSUR ilişkilerinden.
+
+Toplam 400 kişi. BMI dağılımı: 18,5 altı 7, 18,5–25 arası 124, 25–30 arası 158, 30–35 arası 71, 35 üstü 40. Yaş 18–79, 21 kişi 60 yaş üstü. Kadınlarda beş vücut şekli var (dikdörtgen, armut, kaşık/alt kum saati, elma, ters üçgen), erkeklerde dört.
+
+Her kişi üç şekilde biliniyor:
+- mezura (referans),
+- tarama (±2,5 cm gerçek gürültü eklendi),
+- yalnızca boy ve kilo.
+
+### Avatar vücudu kişinin ölçülerinde mi? (`PopulationBodyTests`)
+
+Önce: şekil modeli (SOMA-X, 32 bileşen, ±3,5 SD) BMI 45 üstü vücutları 10–20 cm ince kuruyordu. Bir örnek: 161 cm beli olan kadın 141 cm çıkıyordu; giysiler de buna göre çiziliyordu.
+
+Düzeltme (`SomaModel.body(for:)`): model sınırına geldiğinde gövde göğüs, göbek ve basen hizasında kendi merkezi etrafında, istenen÷çıkan oranıyla genişletiliyor. Bacaklar uyluk oranıyla genişliyor; dizde bu oranın yarısı kalıyor, bilekte hiç kalmıyor. Kollar göğsün yanıyla birlikte dışa kayıyor.
+
+400 kişide sonuç:
+
+| | Ortalama hata | En büyük hata |
+|---|---|---|
+| Göğüs | 0,03 cm | 0,40 cm (önce 20,1) |
+| Bel | 0,11 cm | 0,46 cm (önce 20,4) |
+| Basen | 0,03 cm | 0,34 cm (önce 13,9) |
+| Uyluk | 0,03 cm | 0,34 cm (önce 16,4) |
+
+En uç vücutlar render edilerek kontrol edildi (`RenderProbe/population`).
+
+### Denetim (`PopulationAudit`)
+
+- **Kapsam:** 400 kişi × 10 ürün = 4.000 ürün. Ürün tipleri: tişört, gömlek, kazak, ceket, kaban, elbise, etek, her paça kesiminde pantolon ve şort.
+- **Kumaş:** her esneklikte.
+- **Mağaza türleri:** ölçü tablolu, vücut tablolu (harf, EU ya da inç; 4XL/5XL dahil), tablosuz.
+- **Ölçek:** 383.407 kontrol ve 385 giydirme (her tipten).
+
+İlk çalıştırmada bulunan ve düzeltilen hatalar:
+- **Kimseye uymayan ürün.** Çok zayıf ya da çok iri bir vücuda tablonun ucundaki beden "yüksek güvenle" öneriliyordu (207 bulgu). Artık güven düşük, başlıkta "İyi oturan beden yok · en yakını L" yazıyor ve açıklama başka marka ya da kesim öneriyor (`FitAnalysis.noSizeFits`).
+- **Önemli bölgede uymayan beden.** Kolu kısa ya da beli bol olan beden yerine göğsü dar beden seçilebiliyordu (56 bulgu). Artık önemli bölgede (üstte göğüs, altta bel) uyan bir beden varsa, uymayan beden önerilmiyor.
+- **Tablosuz kabanlar.** Kaban boyu vücut ölçüsü gibi yazılıyordu. Her beden "uzun" görünüyor, bu da öneriyi en küçük bedene itiyordu. Artık kabanın boyu stil sayılıyor, karşılaştırmaya girmiyor.
+- **Standart tablonun aralığı.** Markanın ±2 cm sapması da tolerans sayılınca bedenler ±8,5 cm genişliyordu: 103 cm göğse 92'lik beden "biraz dar" deniyordu. Artık beden aralığı tolerans, marka sapması belirsizlik olarak işleniyor.
+- **Kadın pantolonunda EU numaraları.** 36/38/40 inç olarak okunuyordu: 38 bedenin beli ~70 cm yerine 97 cm sanılıyordu. Artık çift ve 34'ün üstündeki numaralar EU, tek numaralar ya da 33'e kadar olanlar inç (W) olarak okunuyor. Kadın 3XL–5XL, erkek 4XL–5XL ve EU 56–60 tabloları eklendi.
+- **Boy ve kiloyla tahmin.** "Yüksek güven" deyip mezuranın bulduğundan farklı beden öneriyordu (%34). Artık tahminden gelen öneri hiçbir zaman "emin" değil, ve kullanıcıya bunun yalnızca boy ve kiloya dayandığı, taramanın sonucu kesinleştireceği söyleniyor.
+- **Taramadan gelen güven.** Güven, bölgenin uyma olasılığına göre hesaplanıyordu. Bu yüzden "emin" denen önerilerin %22'si mezuranınkinden farklıydı. Artık önemli ölçü kendi belirsizliği kadar oynatılınca önerilen beden değişiyorsa güven düşüyor: ±0,6σ içinde değişiyorsa düşük, ±1,6σ içinde değişiyorsa orta. "Emin" denip gerçek vücutta belirgin şekilde daha kötü olan beden oranı %0,8.
+
+Düzeltmelerden sonra: 383.407 kontrolde 0 bulgu. Giydirmede 2.701 kontrolde 0 bulgu (kumaş vücudun içinde değil, uzun giysiler kalçanın altına iniyor).
+
+Sonuçlar:
+
+| | Hepsi | BMI 35+ |
+|---|---|---|
+| Bir beden göğse uyuyor (üst) | %96,4 | %76,7 |
+| Bir beden bele uyuyor (alt) | %91,3 | %37,5 |
+| Tarama, mezurayla aynı beden | %78,8 | %88,0 |
+| Tarama, en fazla bir beden fark | %99,9 | %100 |
+| Tarama, belirgin şekilde daha kötü beden | %7,2 | %4,0 |
+| Yalnızca boy ve kilo, mezurayla aynı beden | %65,5 | %79,2 |
+| Yalnızca boy ve kilo, belirgin şekilde daha kötü beden | %16,8 | %11,0 |
+
+Ne söylüyor:
+- Çok kilolu kullanıcılarda bel için çoğu zaman tabloda uyan beden yok. Uygulama bunu artık açıkça söylüyor.
+- Boy ve kiloyla tahmin, altı üründen birinde belirgin şekilde daha kötü bir beden seçiyor. Taramanın değeri burada. Tahmin bu yüzden hiçbir zaman "emin" değil.
+
+Sınırlar:
+- NHANES kişilerinin göğüs, uyluk ve boy ölçüleri ölçülmüş değil, ANSUR ilişkilerinden tahmin.
+- Mağaza tabloları üretildi; gerçek mağazalardan değil.
+- Gevşeklik payları hâlâ mezura ve kullanıcı geri bildirimiyle kalibre edilmeli (§6).
+
+Kaynaklar:
+- [Coresight / 3DLOOK](https://3dlook.ai/content-hub/the-true-cost-of-apparel-returns/)
+- [Zalando, Narvar özeti](https://www.size.ly/blog/ecommerce-return-statistics)
+- [Baymard 2026](https://baymard.com/blog/apparel-and-accessories-quantitative-ux-insights-2026)
+- [ITAA 2025 VTO güveni](https://www.iastatedigitalpress.com/itaa/article/id/18719/)
+- [Brunel avatar tezi](https://bura.brunel.ac.uk/handle/2438/14433?mode=full)
+- [3DBody.Tech 2023](https://proc.3dbody.tech/papers/2023/2360peng.pdf)
+- [Virtusize](https://virtusize.com/articles/why-size-charts-alone-dont-solve-fit)
+- [Kleep](https://kleep.ai/blog/size-charts-are-lying-to-your-customers)
+- [SizeUSA vücut şekilleri](https://www.degruyterbrill.com/document/doi/10.1515/aut-2024-0021/html)

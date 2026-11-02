@@ -87,6 +87,24 @@ import WearIQCore
         FileManager.default.createFile(atPath: dir + "/" + name + ".rgb", contents: Data(color))
     }
 
+    /// The population's far ends, bare and dressed: `VARIANTS` takes shopper ids.
+    @Test func population() {
+        guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
+        let people = Population.shared
+        let ids = ProcessInfo.processInfo.environment["VARIANTS"].map { $0.split(separator: ",").compactMap { Int($0) } }
+            ?? [380, 339, 352, 300, 0, 200]
+        for id in ids where id < people.count {
+            let m = people[id].measurements
+            render(Avatar(m), yaw: 0, fitMap: false, name: "p\(id)_front")
+            render(Avatar(m), yaw: 1.3, fitMap: false, name: "p\(id)_side")
+            var tee = Avatar.GarmentFit(kind: .top(longSleeves: false))
+            tee.chestEase = 10; tee.waistEase = 12; tee.hipEase = 12
+            var pants = Avatar.GarmentFit(kind: .trousers)
+            pants.waistEase = 1.5; pants.hipEase = 7; pants.thighEase = 9
+            render(Avatar(m, garments: [tee, pants]), yaw: 0.4, fitMap: true, name: "p\(id)_outfit")
+        }
+    }
+
     @Test func renders() {
         guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
         render(Avatar(me), yaw: 0, fitMap: false, name: "body_front")
