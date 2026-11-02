@@ -155,3 +155,19 @@ import WearIQCore
         #expect(AmazonPage.brand(fromByline: "Levi's Mağazasını ziyaret edin") == "Levi's")
     }
 }
+
+@Suite struct LegCutNames {
+    @Test(arguments: [
+        ("Erkek Skinny Fit Jean Pantolon", LegCut.skinny), ("Kadın Yüksek Bel Boru Paça Jean", .straight),
+        ("Wide Leg Trousers", .wide), ("İspanyol Paça Kot Pantolon", .flare), ("Slim Straight Jeans", .straight),
+        ("Jogger Eşofman Altı", .tapered), ("Slim Fit Chino", .slim), ("Geniş Paça Kumaş Pantolon", .wide),
+        ("Mom Jean", .tapered), ("Bootcut Jeans", .flare),
+    ])
+    func names(_ name: String, _ cut: LegCut) {
+        #expect(GarmentClassifier.legCut(from: name) == cut)
+    }
+
+    @Test func noCutInTheName() {
+        #expect(GarmentClassifier.legCut(from: "Pamuklu Pantolon") == nil)
+    }
+}

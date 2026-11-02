@@ -127,6 +127,12 @@ public struct Avatar: Sendable {
 
         public var kind: Kind
         public var style: Style = .plain
+        /// The cut the garment is made in: an oversized top is roomy by design, so its
+        /// room only counts as loose past what the cut has (`looseEase`).
+        public var cut: FitStyle = .regular
+        /// Trousers: how the legs are cut from the knee down (skinny to the ankle, straight
+        /// from the knee, wide…). Nil: a regular leg, tapering a little to the hem.
+        public var legCut: LegCut?
         /// How much wider the garment gets below the hips, metres of radius per metre
         /// down: 0 straight, about 0.1 for a coat, 0.15–0.3 for an A-line skirt or dress.
         /// Nil takes the style's usual one.
@@ -203,8 +209,13 @@ public struct Avatar: Sendable {
             judged.sleeve.map { ($0, 0.5) } ?? (sleeveDelta, 1.5)
         }
 
+        /// Without a verdict, a seam dropped as far as the cut drops it (an oversized top
+        /// up to about 6 cm a side, a relaxed one 2) is where it belongs.
         var shownShoulderPerSide: (delta: Double, threshold: Double) {
-            judged.shoulderPerSide.map { ($0, 0.5) } ?? (shoulderDelta / 2, 1)
+            if let judged = judged.shoulderPerSide { return (judged, 0.5) }
+            let designed: Double = cut == .oversized ? 6 : cut == .relaxed ? 2 : 0
+            let d = shoulderDelta / 2
+            return (d > 0 ? max(0, d - designed) : d, 1)
         }
 
         var resolvedFabric: Fabric {
@@ -618,6 +629,32 @@ extension BodyModel {
             let stacked = max(0, extra - (ankleY - 0.012 * h))
             let thighOff = cm(fit.thighEase) / (2 * .pi)
             shape.hemY = hemY
+            // How the leg is cut from the knee down. Skinny, slim and tapered legs follow
+            // the leg, closer or roomier (an offset of the leg's own shape, calf and all);
+            // straight, wide and flared legs hang as a tube of their own from the seat to
+            // the hem, whatever the calf and ankle do inside it. Either way the thigh keeps
+            // the size chart's room; below the knee the room is the cut's, a little more
+            // for a bigger size of it.
+            let legCut = fit.legCut
+            let taper: (shape: Float, knee: Float, hem: Float)
+            switch legCut {
+            case .skinny?: taper = (0.85, 0.003, 0.001)
+            case .slim?: taper = (0.6, 0.005, 0.004)
+            case .tapered?: taper = (0.8, 0.012, -0.01)
+            // A flare is close down to the knee; its tube opens it below.
+            case .flare?: taper = (0.8, 0.004, 0.002)
+            default: taper = (0.4, 0.006, 0.003)
+            }
+            // Girth ease at the knee and how much wider (+) the hem opening is than that,
+            // cm, for the cuts that hang free of the leg; and the thigh ease the cut's
+            // usual size has, to grade the rest with the size.
+            let tubeCut: (knee: Double, hemOverKnee: Double, usualThigh: Double)? = switch legCut {
+            case .straight?: (9, 0, 9)
+            case .wide?: (18, 8, 18)
+            case .flare?: (2, 15, 5)
+            default: nil
+            }
+            var hemRadius: [Float] = []
             for (i, leg) in legs.enumerated() {
                 var limb = leg.limb
                 if hemY < ankleY {
@@ -627,21 +664,44 @@ extension BodyModel {
                 let legEase = { (y: Float) -> Float in
                     let f = min(1, max(0, (top - y) / (top - hemY)))
                     // Full thigh ease at the top, tapering towards the knee and hem.
-                    return thighOff * (1 - 0.4 * min(1, f * 1.6)) + 0.006 + 0.003 * f
+                    return thighOff * (1 - taper.shape * min(1, f * 1.6)) + taper.knee + taper.hem * f
+                }
+                var tube: Limb?
+                if let cut = tubeCut {
+                    let grade = min(6, max(-4, (fit.thighEase - cut.usualThigh) * 0.5))
+                    let kneeBody = max(0.03, -leg.limb.distance(leg.knee))
+                    let kneeR = kneeBody + cm(cut.knee + grade) / (2 * .pi)
+                    let hemR = max(kneeR * 0.75, kneeR + cm(cut.hemOverKnee) / (2 * .pi))
+                    let down = (leg.ankle - leg.knee).normalized
+                    let reach = (leg.knee.y - hemY) / max(0.2, -down.y)
+                    let hem = leg.knee + down * reach
+                    // From the seat, as wide as the chart's thigh there, to the knee and hem.
+                    // Started a little below the groin, so its rounded end stays inside the seat.
+                    let start = leg.hip + (leg.knee - leg.hip) * 0.15
+                    let topR = thighR * 0.95 + thighOff * 0.9
+                    tube = Limb(bones: [Bone(a: start, b: leg.knee, ra: topR, rb: kneeR),
+                                        Bone(a: leg.knee, b: hem, ra: kneeR, rb: hemR)], blend: 0.02)
+                    hemRadius.append(hemR - max(0.02, -leg.limb.distance(leg.ankle)))
                 }
                 // Each leg stays on its own side of the middle: where thighs meet, the two
                 // legs of the trousers meet too instead of merging into one tube.
                 let side: Float = leg.knee.x > 0 ? 1 : -1
-                parts.append(GarmentPart(shape: { p in max(limb.distance(p) - legEase(p.y) - lift, 0.003 - side * p.x) },
-                                         planes: [(Vec3(0, -1, 0), -hemY)]))
+                let free = tube
+                parts.append(GarmentPart(shape: { p in
+                    var d = limb.distance(p) - legEase(p.y)
+                    if let free { d = min(d, free.distance(p)) }
+                    return max(d - lift, 0.003 - side * p.x)
+                }, planes: [(Vec3(0, -1, 0), -hemY)]))
                 if stacked > 0 {
                     stacks.append((i + 1, Vec3(0, 1, 0), Vec3(leg.ankle.x, hemY, 0), min(0.09, stacked * 1.4)))
                 }
             }
+            // A free-hanging leg folds as much as it has room round the ankle.
+            let freeRoom = hemRadius.max() ?? 0
             hang = { part, _ in
                 guard part > 0 else { return nil }
                 let leg = self.legs[part - 1]
-                return (thighOff - 0.02, Vec3(leg.knee.x, 0, leg.knee.z))
+                return (max(thighOff - 0.02, freeRoom * 0.5), Vec3(leg.knee.x, 0, leg.knee.z))
             }
             cutEase = { part, y in
                 if part == 0 {
@@ -655,11 +715,11 @@ extension BodyModel {
             // The box the cut is meshed in reaches past the body by the garment's room:
             // fabric outside it would be cut away, leaving a hole (loose trousers opened
             // at the back, where the seat stands out furthest).
-            let pad = max(0, cm(max(fit.hipEase, fit.waistEase, fit.thighEase))) / (2 * .pi) + lift + 0.03
+            let pad = max(0, cm(max(fit.hipEase, fit.waistEase, fit.thighEase))) / (2 * .pi) + lift + 0.03 + freeRoom
             lo = Vec3(bodyLo.x - pad, max(-0.01, hemY - 0.03), bodyLo.z - pad)
             hi = Vec3(bodyHi.x + pad, waistband + 0.03, bodyHi.z + pad)
             pinnedAbove = waistband - 0.025 * h
-            anchors[.hem] = Vec3(legs[0].ankle.x + thighR * 0.4, hemY, 0)
+            anchors[.hem] = Vec3(legs[0].ankle.x + thighR * 0.4 + freeRoom, hemY, 0)
             anchors[.waist] = Vec3(waist.0 + cm(fit.waistEase) / (2 * .pi), waistband, 0)
             anchors[.hip] = Vec3(hip.0 + cm(fit.hipEase) / (2 * .pi), hipY, 0)
 

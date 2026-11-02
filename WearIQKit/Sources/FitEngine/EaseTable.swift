@@ -42,12 +42,12 @@ struct RegionRule {
 }
 
 enum EaseTable {
-    static func rules(for category: GarmentCategory, fit: FitStyle) -> [RegionRule] {
+    static func rules(for category: GarmentCategory, fit: FitStyle, leg: LegCut? = nil) -> [RegionRule] {
         switch category {
         case .shirt, .tshirt, .jacket, .coat, .dress, .sweater: topRules(category, fit)
-        case .pants: pantsRules(fit)
+        case .pants: pantsRules(fit, leg: leg)
         // Shorts are sized like trousers; their legs are short by design.
-        case .shorts: pantsRules(fit).filter { $0.region != .inseam && $0.region != .outseam }
+        case .shorts: pantsRules(fit, leg: leg).filter { $0.region != .inseam && $0.region != .outseam }
         case .skirt: skirtRules(fit)
         }
     }
@@ -131,18 +131,38 @@ enum EaseTable {
         ]
     }
 
-    private static func pantsRules(_ f: FitStyle) -> [RegionRule] {
-        let hipEase: ClosedRange<Double> = switch f {
+    /// The leg cut, where known, decides the thigh's room (and a skinny's seat): skinny
+    /// jeans sit close where wide-leg trousers are roomy by design, whatever the fit is
+    /// called. The waist is sized the same for every cut.
+    private static func pantsRules(_ f: FitStyle, leg: LegCut? = nil) -> [RegionRule] {
+        var hipEase: ClosedRange<Double> = switch f {
         case .slim: 2...6
         case .regular: 4...11
         case .relaxed: 8...16
         case .oversized: 14...30
         }
-        let thighEase: ClosedRange<Double> = switch f {
+        var thighEase: ClosedRange<Double> = switch f {
         case .slim: 3...7
         case .regular: 6...12
         case .relaxed: 10...20
         case .oversized: 16...32
+        }
+        switch leg {
+        case .skinny:
+            hipEase = 0...5
+            thighEase = 0...5
+        case .slim, .flare:
+            thighEase = 3...8
+        case .straight:
+            thighEase = max(thighEase.lowerBound, 6)...max(thighEase.upperBound, 13)
+        case .wide:
+            hipEase = max(hipEase.lowerBound, 6)...max(hipEase.upperBound, 18)
+            thighEase = max(thighEase.lowerBound, 12)...max(thighEase.upperBound, 26)
+        case .tapered:
+            hipEase = max(hipEase.lowerBound, 5)...max(hipEase.upperBound, 14)
+            thighEase = max(thighEase.lowerBound, 8)...max(thighEase.upperBound, 16)
+        case nil:
+            break
         }
         return [
             .init(region: .waist, kind: .girth, garment: .waist, body: .waist,

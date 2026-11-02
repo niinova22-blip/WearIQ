@@ -133,8 +133,10 @@ extension BodyModel {
             // Trouser knees and hems hang off the leg as they're cut: never "loose".
             // Nor sleeves: they hang off an arm held out, and the chart has no sleeve width.
             let sleeve = zone == .sleeve || zone == .elbow
-            let threshold = Self.looseEase(zone, fit.kind, style: fit.style).map(Double.init)
-                ?? (trousers || sleeve ? .infinity : nil)
+            // A dropped shoulder is an oversized or relaxed cut's design, not looseness.
+            let designedShoulder = zone == .shoulder && (fit.cut == .oversized || fit.cut == .relaxed)
+            let threshold = Self.looseEase(zone, fit).map(Double.init)
+                ?? (trousers || sleeve || designedShoulder ? .infinity : nil)
             var tension = ZoneReport.classify(stretchUsed: used, contactShare: contact, gapCm: gap,
                                               easeCm: threshold == nil ? nil : zoneEase, looseAbove: threshold)
             // Where the size chart judged the zone, the report says the same; only a

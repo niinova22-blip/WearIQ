@@ -22,6 +22,8 @@ public struct ProductInfo: Equatable, Sendable {
     /// Inferred from name/category; `nil` when the text doesn't say.
     public var category: GarmentCategory?
     public var fitStyle: FitStyle?
+    /// Trousers: skinny, straight, wide… as the name says.
+    public var legCut: LegCut?
     public var stretch: FabricStretch?
     public var audience: GarmentAudience?
     /// The model's measurements and worn size, if the page states them.
@@ -80,6 +82,8 @@ public struct ProductPageParser: Sendable {
         let withoutBrand = info.brand.map { text.replacingOccurrences(of: $0, with: " ", options: .caseInsensitive) } ?? text
         info.category = GarmentClassifier.category(from: withoutBrand)
         info.fitStyle = GarmentClassifier.fitStyle(from: text)
+        info.legCut = GarmentClassifier.legCut(from: text)
+        if info.fitStyle == nil, let cut = info.legCut, info.category?.isBottom ?? true { info.fitStyle = cut.impliedFit }
         info.stretch = info.material.flatMap(GarmentClassifier.stretch(fromComposition:))
         info.audience = GarmentClassifier.audience(from: text + " " + (pageURL?.path ?? "") + " " + (og["og:description"] ?? ""))
         return info
@@ -323,6 +327,22 @@ public enum GarmentClassifier {
             (.shirt, ["gomlek", "shirt", "bluz", "blouse", "tunik", "tunic"]),
         ]
         return rules.first { _, keys in keys.contains { t.contains($0) } }?.0
+    }
+
+    /// The leg cut a trouser's name gives: "skinny jean", "boru paça", "wide leg"…
+    /// Checked most specific first ("super skinny" before "slim", "slim straight" is
+    /// straight: its legs are what the second word says).
+    public static func legCut(from text: String) -> LegCut? {
+        let t = " " + SizeChartParser.fold(text) + " "
+        let table: [(LegCut, [String])] = [
+            (.flare, ["flare", "bootcut", "boot cut", "ispanyol", "bell bottom", "genisleyen paca"]),
+            (.wide, ["wide leg", "wide-leg", "genis paca", "bol paca", "palazzo", "baggy", "culotte", "genis kesim", "wide fit"]),
+            (.skinny, ["skinny", "super slim", "dar paca", "jegging", "tayt"]),
+            (.tapered, ["jogger", "carrot", "havuc", "tapered", "mom jean", "mom fit", "daralan paca", "lastikli paca"]),
+            (.straight, ["straight", "boru paca", "duz paca", "regular straight", "dad jean", "dad fit"]),
+            (.slim, ["slim"]),
+        ]
+        return table.first { _, keys in keys.contains { t.contains($0) } }?.0
     }
 
     public static func fitStyle(from text: String) -> FitStyle? {

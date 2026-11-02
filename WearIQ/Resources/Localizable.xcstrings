@@ -9471,16 +9471,6 @@
         }
       }
     },
-    "60-30-10: about 60% of an outfit in %@, 30% in %@ and a 10% accent of %@. Keep your best colours near your face.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "60-30-10: kombinin yaklaşık %%60'ı %1$@, %%30'u %2$@, %%10 vurgu olarak %3$@. En iyi renklerini yüzüne yakın kullan."
-          }
-        }
-      }
-    },
     "Washing and care": {
       "localizations": {
         "tr": {
@@ -9921,16 +9911,6 @@
         }
       }
     },
-    "Turning: %lld%": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dönüş: %%%lld"
-          }
-        }
-      }
-    },
     "Prop the phone upright at waist height": {
       "localizations": {
         "tr": {
@@ -10017,6 +9997,426 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ona kadar sayarak yavaşça bir tur dön"
+          }
+        }
+      }
+    },
+    "Leg cut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paça kesimi"
+          }
+        }
+      }
+    },
+    "Skinny": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skinny (dar)"
+          }
+        }
+      }
+    },
+    "Straight leg": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boru paça"
+          }
+        }
+      }
+    },
+    "Wide leg": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geniş paça"
+          }
+        }
+      }
+    },
+    "Flare / bootcut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İspanyol paça"
+          }
+        }
+      }
+    },
+    "Tapered / jogger": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daralan paça / jogger"
+          }
+        }
+      }
+    },
+    "Oversized cut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oversize kesim"
+          }
+        }
+      }
+    },
+    "Relaxed cut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rahat kesim"
+          }
+        }
+      }
+    },
+    "Slim cut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar kesim"
+          }
+        }
+      }
+    },
+    "Skinny leg": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skinny paça"
+          }
+        }
+      }
+    },
+    "Slim leg": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slim paça"
+          }
+        }
+      }
+    },
+    "Flared leg": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İspanyol paça"
+          }
+        }
+      }
+    },
+    "Tapered leg": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daralan paça"
+          }
+        }
+      }
+    },
+    "For this cut, size %@ suits your measurements.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu kesim için %@ beden ölçülerine uygun."
+          }
+        }
+      }
+    },
+    "For a less roomy look in the same style, size %@ is still oversized, just less so.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aynı tarzda daha az bol bir görünüm için %@ beden de oversize kalır, sadece daha az."
+          }
+        }
+      }
+    },
+    "This fabric has no stretch, so a skinny leg can feel stiff. Between two sizes, take the larger one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu kumaş esnemiyor; skinny paça sert hissettirebilir. İki beden arasında kalırsan büyüğünü al."
+          }
+        }
+      }
+    },
+    "Cut roomy on purpose: the shoulder seams sit about %lld cm down your arms and the body hangs loose. That is the style, not a size too big.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilerek bol kesilmiş: omuz dikişleri kolundan yaklaşık %lld cm aşağıda durur, gövde bol düşer. Bu, büyük beden değil, tarzın kendisi."
+          }
+        }
+      }
+    },
+    "Cut roomy on purpose: dropped shoulders and a loose body are the style, not a size too big.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilerek bol kesilmiş: düşük omuz ve bol gövde tarzın kendisi, büyük beden değil."
+          }
+        }
+      }
+    },
+    "Cut with more room than a regular fit, so it hangs easily from the shoulders by design.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal kesimden daha bol kesilmiştir; omuzlardan rahatça düşmesi tasarımdan gelir."
+          }
+        }
+      }
+    },
+    "Cut close to the body by design: it follows your chest and waist.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasarımı gereği vücuda yakın kesilmiştir: göğsünü ve belini takip eder."
+          }
+        }
+      }
+    },
+    "Close to your legs from thigh to ankle by design. The size is chosen by your waist and hips, so it hugs without pinching.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasarımı gereği uyluktan bileğe bacaklarını sarar. Beden belin ve kalçana göre seçilir; sıkmadan sarar."
+          }
+        }
+      }
+    },
+    "Narrow legs that taper gently to a small hem.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar paçalar, aşağı doğru hafifçe daralarak küçük bir paçada biter."
+          }
+        }
+      }
+    },
+    "The same width from the knee to the hem: roomier round the calves and ankles because of the cut, not the size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dizden paçaya aynı genişlikte iner: baldır ve bilek çevresindeki bolluk bedenden değil, kesimden gelir."
+          }
+        }
+      }
+    },
+    "Roomy legs that widen to the hem: the extra width is the style. The size is chosen by your waist and hips.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paçaya doğru genişleyen bol bacaklar: fazladan genişlik tarzın kendisi. Beden belin ve kalçana göre seçilir."
+          }
+        }
+      }
+    },
+    "Close through the thigh and knee, opening out below the knee by design.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyluk ve dizde dar, dizin altından itibaren tasarımı gereği açılır."
+          }
+        }
+      }
+    },
+    "Room at the seat and thighs, narrowing to the ankle by design.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basen ve uylukta bol, tasarımı gereği bileğe doğru daralır."
+          }
+        }
+      }
+    },
+    "If you don't want an oversized look, choose a regular-fit top in your usual size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oversize bir görünüm istemiyorsan her zamanki bedeninde regular kesim bir üst seç."
+          }
+        }
+      }
+    },
+    "If you don't want an oversized look, choose a regular-fit top whose chest measures %lld–%lld cm.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oversize bir görünüm istemiyorsan göğüs ölçüsü %lld–%lld cm olan regular kesim bir üst seç."
+          }
+        }
+      }
+    },
+    "If you'd rather it sat closer, choose a regular fit with a chest of %lld–%lld cm.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha yakın oturmasını istersen göğsü %lld–%lld cm olan regular kesimi seç."
+          }
+        }
+      }
+    },
+    "For more room, choose a regular fit with a chest of %lld–%lld cm.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha fazla rahatlık için göğsü %lld–%lld cm olan regular kesimi seç."
+          }
+        }
+      }
+    },
+    "If you don't want it this close at the legs, choose a slim or straight cut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacaklarında bu kadar dar olmasını istemiyorsan slim ya da boru paça seç."
+          }
+        }
+      }
+    },
+    "If you don't want it this close at the legs, choose a slim or straight cut whose thigh measures %lld–%lld cm.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacaklarında bu kadar dar olmasını istemiyorsan uyluk ölçüsü %lld–%lld cm olan slim ya da boru paça seç."
+          }
+        }
+      }
+    },
+    "For more room below the knee, choose a straight leg.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diz altında daha fazla rahatlık için boru paça seç."
+          }
+        }
+      }
+    },
+    "For more room below the knee, choose a straight leg with a thigh of about %lld–%lld cm.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diz altında daha fazla rahatlık için uyluğu yaklaşık %lld–%lld cm olan boru paça seç."
+          }
+        }
+      }
+    },
+    "For a leg without the flare, choose a straight cut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paçası açılmayan bir model için boru paça seç."
+          }
+        }
+      }
+    },
+    "For a closer leg, choose a slim or skinny cut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacağa daha yakın bir model için slim ya da skinny kesim seç."
+          }
+        }
+      }
+    },
+    "For a closer leg, choose a slim or skinny cut with a thigh of about %lld–%lld cm.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacağa daha yakın bir model için uyluğu yaklaşık %lld–%lld cm olan slim ya da skinny kesim seç."
+          }
+        }
+      }
+    },
+    "For less volume, choose a straight or slim cut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha az hacim için boru paça ya da slim kesim seç."
+          }
+        }
+      }
+    },
+    "For less volume, choose a straight or slim cut with a thigh of about %lld–%lld cm.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha az hacim için uyluğu yaklaşık %lld–%lld cm olan boru paça ya da slim kesim seç."
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dil"
+          }
+        }
+      }
+    },
+    "Change language": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dili değiştir"
+          }
+        }
+      }
+    },
+    "WearIQ is in English and Turkish. The language is chosen in the app's settings.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ İngilizce ve Türkçe kullanılabilir. Dil, uygulamanın ayarlarından seçilir."
           }
         }
       }

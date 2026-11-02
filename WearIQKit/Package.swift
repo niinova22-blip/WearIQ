@@ -37,6 +37,6 @@ let package = Package(
         .testTarget(name: "ProductMeasurementParserTests", dependencies: ["ProductMeasurementParser"]),
         .testTarget(name: "ScanQuotaTests", dependencies: ["ScanQuota"]),
         .testTarget(name: "OutfitRecommendationEngineTests", dependencies: ["OutfitRecommendationEngine"]),
-        .testTarget(name: "AvatarEngineTests", dependencies: ["AvatarEngine"]),
+        .testTarget(name: "AvatarEngineTests", dependencies: ["AvatarEngine", "WearIQCore"]),
     ]
 )

@@ -5,6 +5,13 @@ import WearIQCore
 
 struct ProfileView: View {
     @Environment(AppContainer.self) private var container
+    @Environment(\.openURL) private var openURL
+
+    /// The language the app is shown in, in that language ("English", "Türkçe").
+    static var languageName: String {
+        let code = Bundle.main.preferredLocalizations.first ?? "en"
+        return Locale(identifier: code).localizedString(forLanguageCode: code)?.capitalized(with: Locale(identifier: code)) ?? code
+    }
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
     @State private var confirmDelete = false
     @State private var deleteError: String?
@@ -61,6 +68,18 @@ struct ProfileView: View {
                 Toggle("Interface sounds", isOn: $soundsEnabled)
                 Toggle("Morning outfit reminder", isOn: $outfitReminder)
                     .onChange(of: outfitReminder) { _, on in Task { await OutfitReminder.set(on) } }
+            }
+            Section {
+                // iOS keeps a language per app (English or Turkish) in the app's own
+                // settings page; the voice guidance follows it too.
+                LabeledContent("Language", value: Self.languageName)
+                Button("Change language") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
+            } header: {
+                Text("Language")
+            } footer: {
+                Text("WearIQ is in English and Turkish. The language is chosen in the app's settings.")
             }
             Section("Subscription") {
                 if container.isPremium {

@@ -95,7 +95,7 @@ private struct ValidationResultsSection: View {
             Grid(alignment: .trailing, horizontalSpacing: 10, verticalSpacing: 6) {
                 GridRow {
                     Text("").gridColumnAlignment(.leading)
-                    Text("n")
+                    Text(verbatim: "n")
                     Text("A error")
                     Text("B error")
                     Text("Better")

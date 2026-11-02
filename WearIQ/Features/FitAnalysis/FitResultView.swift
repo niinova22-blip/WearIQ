@@ -67,6 +67,7 @@ struct FitResultView: View {
                 BrandNoteView(brand: brand, category: category, recommended: analysis.recommendedSize?.label)
                 if analysis.sizes.count > 1 { sizePicker }
                 if let selected { regionsCard(selected) }
+                CutCard(spec: spec, analysis: analysis)
                 FabricCard(material: material, category: category, productName: productName, selected: selected)
                 WardrobeComparisonCard(category: category, spec: spec, sizeLabel: selectedLabel)
                 actions

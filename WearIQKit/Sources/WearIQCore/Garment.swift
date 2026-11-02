@@ -21,6 +21,33 @@ public enum FitStyle: String, Codable, CaseIterable, Sendable {
     case slim, regular, relaxed, oversized
 }
 
+/// How trouser legs are cut below the seat, which the fit name alone doesn't say: two
+/// slim-fit jeans can be skinny to the ankle or straight from the knee. The leg's room
+/// from the knee down is the cut's, not the size's.
+public enum LegCut: String, Codable, CaseIterable, Sendable {
+    /// Close from thigh to ankle (usually stretch denim).
+    case skinny
+    /// Narrow, tapering gently to a small hem.
+    case slim
+    /// The same width from the knee to the hem ("boru paça").
+    case straight
+    /// Roomy all the way down, widest at the hem (wide leg, palazzo, baggy).
+    case wide
+    /// Close through the knee, opening out below it (bootcut, flare).
+    case flare
+    /// Room at the seat and thigh, narrowing to a small or cuffed hem (jogger, carrot).
+    case tapered
+
+    /// The fit the cut implies when the product names no fit of its own.
+    public var impliedFit: FitStyle {
+        switch self {
+        case .skinny, .slim, .flare: .slim
+        case .straight, .tapered: .regular
+        case .wide: .relaxed
+        }
+    }
+}
+
 public enum FabricStretch: String, Codable, CaseIterable, Sendable {
     case none, low, medium, high
 
@@ -92,6 +119,9 @@ public struct GarmentSpec: Codable, Hashable, Sendable {
     public var thickness: FabricThickness
     public var chartKind: SizeChartKind
     public var sizes: [SizeEntry]
+    /// Trousers and shorts: how the legs are cut. Nil when the product doesn't say (and
+    /// in analyses saved before it was kept).
+    public var legCut: LegCut?
 
     public init(
         category: GarmentCategory,
@@ -99,8 +129,10 @@ public struct GarmentSpec: Codable, Hashable, Sendable {
         stretch: FabricStretch = .none,
         thickness: FabricThickness = .thin,
         chartKind: SizeChartKind,
-        sizes: [SizeEntry]
+        sizes: [SizeEntry],
+        legCut: LegCut? = nil
     ) {
+        self.legCut = legCut
         self.category = category
         self.fitStyle = fitStyle
         self.stretch = stretch

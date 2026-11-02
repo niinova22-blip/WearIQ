@@ -29,6 +29,18 @@ extension Avatar.Landmark.Kind {
 /// charts give the ease directly; body charts describe the body a size suits, so the
 /// garment is taken as that body plus the usual ease for the fit (see EaseTable).
 enum AvatarFitMapper {
+    /// Thigh ease of a leg cut's usual size, cm, for charts without a thigh.
+    static func typicalThigh(_ cut: LegCut?) -> Double? {
+        switch cut {
+        case .skinny?: 2
+        case .slim?, .flare?: 5
+        case .straight?: 9
+        case .tapered?: 12
+        case .wide?: 18
+        case nil: nil
+        }
+    }
+
     /// With `regions` (the size-chart verdicts for this size), the avatar's colours,
     /// lines and labels say what those verdicts say.
     static func fit(spec: GarmentSpec, size: SizeEntry, body: BodyProfile, regions: [RegionFit] = [],
@@ -43,6 +55,10 @@ enum AvatarFitMapper {
         default: .plain
         }
         fit.judged = judged(regions, trousers: bottom)
+        // The cut decides what counts as loose (an oversized tee is roomy by design) and,
+        // for trousers, how the legs hang from the knee down.
+        fit.cut = spec.fitStyle
+        fit.legCut = bottom ? spec.legCut : nil
         let height = body[.height]?.cm ?? 170
         func diff(_ g: GarmentDimension, _ b: BodyDimension) -> Double? {
             guard let gv = size.values[g]?.cm, let bv = body[b]?.cm else { return nil }
@@ -94,7 +110,8 @@ enum AvatarFitMapper {
         } else if isTrousers {
             fit.waistEase = ease(.waist, .waist, typical: 1.5)
             fit.hipEase = ease(.hip, .hip, typical: [FitStyle.slim: 4, .regular: 7, .relaxed: 12, .oversized: 20][style] ?? 7)
-            fit.thighEase = ease(.thigh, .thigh, typical: [FitStyle.slim: 5, .regular: 9, .relaxed: 15, .oversized: 24][style] ?? 9)
+            fit.thighEase = ease(.thigh, .thigh, typical: Self.typicalThigh(spec.legCut)
+                ?? [FitStyle.slim: 5, .regular: 9, .relaxed: 15, .oversized: 24][style] ?? 9)
             fit.lengthDelta = diff(.inseam, .inseam) ?? diff(.outseam, .outseam) ?? 0
         } else {
             let over: Double = spec.category == .coat ? 6 : 0

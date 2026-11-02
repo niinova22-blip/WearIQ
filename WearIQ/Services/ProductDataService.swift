@@ -156,6 +156,7 @@ struct ProductDataService: ProductDataServicing {
         if a.sizeChartSections.isEmpty { m.sizeChartSections = b.sizeChartSections }
         m.category = a.category ?? b.category
         m.fitStyle = a.fitStyle ?? b.fitStyle
+        m.legCut = a.legCut ?? b.legCut
         m.stretch = a.stretch ?? b.stretch
         m.audience = a.audience ?? b.audience
         m.modelFit = a.modelFit ?? b.modelFit

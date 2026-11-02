@@ -98,6 +98,9 @@ struct GarmentDraftView: View {
         Section {
             if let category = draft.category { LabeledContent("Category", value: category.title) }
             LabeledContent("Fit", value: draft.fitStyle.title)
+            if let cut = draft.legCut, draft.category == .pants || draft.category == .shorts {
+                LabeledContent("Leg cut", value: cut.title)
+            }
             LabeledContent("Sizes", value: draft.sizes.map(\.label).joined(separator: ", "))
             if let note = chartNote {
                 Label(note, systemImage: draft.chartSource == .standard ? "info.circle" : "checkmark.seal")
@@ -139,6 +142,12 @@ struct GarmentDraftView: View {
             }
             Picker("Fit", selection: $draft.fitStyle) {
                 ForEach(FitStyle.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            if draft.category == .pants || draft.category == .shorts {
+                Picker("Leg cut", selection: $draft.legCut) {
+                    Text("Not specified").tag(LegCut?.none)
+                    ForEach(LegCut.allCases, id: \.self) { Text($0.title).tag(LegCut?.some($0)) }
+                }
             }
             Picker("Stretch", selection: $draft.stretch) {
                 ForEach(FabricStretch.allCases, id: \.self) { Text($0.title).tag($0) }

@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import AvatarEngine
+import WearIQCore
 
 /// Renders avatars to raw RGB files for eyeballing (converted to PNG outside).
 @Suite struct RenderProbe {
@@ -114,6 +115,35 @@ import Testing
     }
     /// Garment kinds and the body by sex: a coat, a jacket, a dress, a skirt; the same
     /// measurements as a man and as a woman.
+    /// Leg cuts and top cuts: skinny to wide trousers, a regular and an oversized tee.
+    @Test func cuts() {
+        guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
+        let only = ProcessInfo.processInfo.environment["VARIANTS"].map { Set($0.split(separator: ",").map(String.init)) }
+        func trousers(_ cut: LegCut?, thigh: Double, fit: FitStyle) -> Avatar.GarmentFit {
+            var f = Avatar.GarmentFit(kind: .trousers)
+            f.waistEase = 1.5; f.hipEase = cut == .skinny ? 2 : cut == .wide ? 12 : 7; f.thighEase = thigh
+            f.legCut = cut; f.cut = fit; f.fabric = cut == .skinny ? .stretchJersey : .denim
+            return f
+        }
+        var tee = Avatar.GarmentFit(kind: .top(longSleeves: false))
+        tee.chestEase = 12; tee.waistEase = 15; tee.hipEase = 15; tee.fabric = .cottonJersey
+        var over = tee; over.cut = .oversized; over.chestEase = 30; over.waistEase = 34; over.hipEase = 34
+        over.shoulderDelta = 8; over.hemOffset = 5
+        let cases: [(String, [Avatar.GarmentFit])] = [
+            ("skinny", [trousers(.skinny, thigh: 2, fit: .slim)]), ("slim", [trousers(.slim, thigh: 5, fit: .slim)]),
+            ("regular", [trousers(nil, thigh: 9, fit: .regular)]), ("straight", [trousers(.straight, thigh: 9, fit: .regular)]),
+            ("wide", [trousers(.wide, thigh: 18, fit: .relaxed)]), ("flare", [trousers(.flare, thigh: 5, fit: .slim)]),
+            ("tapered", [trousers(.tapered, thigh: 12, fit: .regular)]),
+            ("tee", [tee]), ("oversized", [over]),
+        ]
+        for (name, garments) in cases where only?.contains(name) ?? true {
+            let a = Avatar(me, garments: garments)
+            render(a, yaw: 0, fitMap: true, name: "cut_\(name)_front")
+            render(a, yaw: -.pi / 2, fitMap: true, name: "cut_\(name)_side")
+            print("CUT", name, a.fitReport.map { "\($0.key) \($0.value.tension)" }.sorted())
+        }
+    }
+
     @Test func styles() {
         guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
         let only = ProcessInfo.processInfo.environment["VARIANTS"].map { Set($0.split(separator: ",").map(String.init)) }

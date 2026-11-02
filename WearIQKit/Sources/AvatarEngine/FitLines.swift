@@ -1,4 +1,5 @@
 import Foundation
+import WearIQCore
 
 /// How a part of a garment sits, for colouring it on the avatar: blue where it fits,
 /// yellow where it's loose, red where it's too long, purple where it's tight, orange
@@ -109,7 +110,7 @@ extension BodyModel {
                 weights[i] = weight
                 continue
             }
-            guard let threshold = Self.looseEase(zone, kind, style: shape.fit.style) else { continue }
+            guard let threshold = Self.looseEase(zone, shape.fit) else { continue }
             let e = ease[i]
             switch verdict {
             case .loose?:
@@ -174,20 +175,49 @@ extension BodyModel {
         }
     }
 
-    /// Girth ease that counts as loose in a zone, cm: just past what a regular fit has
-    /// there (the fit engine's regular ranges: chest 9–16, a top's waist 12–19, trouser
-    /// waist up to about 4, seat 4–11, thigh 6–12). Nil where looseness isn't judged:
-    /// shoulders, sleeves, knees and hems hang as they're cut.
-    static func looseEase(_ zone: FitZone, _ kind: Avatar.GarmentFit.Kind, style: Avatar.GarmentFit.Style = .plain) -> Float? {
+    /// Girth ease that counts as loose in a zone, cm: just past what the garment's own
+    /// cut has there (the fit engine's ranges, `EaseTable`). A regular top's chest is cut
+    /// 9–16 cm over the body, an oversized one's 22–40: the oversized T-shirt in its right
+    /// size isn't loose, it is oversized, and shows as fitting. Trousers likewise by fit
+    /// and leg cut (a wide leg's thigh is roomy by design). Nil where looseness isn't
+    /// judged: shoulders, sleeves, knees and hems hang as they're cut.
+    static func looseEase(_ zone: FitZone, _ fit: Avatar.GarmentFit) -> Float? {
         // A jacket or coat goes over other clothes and is cut with that much more room.
-        let over: Float = style.isOuter ? 8 : 0
-        return switch (kind, zone) {
-        case (.trousers, .waist), (.skirt, .waist): 5
-        case (.trousers, .hip), (.skirt, .hip): 12
-        case (.trousers, .thigh): 13
-        case (.top, .chest), (.top, .back): 17 + over
-        case (.top, .waist), (.top, .abdomen), (.top, .hip): 19 + over
-        default: nil
+        let over: Float = fit.style.isOuter ? 8 : 0
+        let cut = fit.cut
+        func by(_ slim: Float, _ regular: Float, _ relaxed: Float, _ oversized: Float) -> Float {
+            switch cut {
+            case .slim: slim
+            case .regular: regular
+            case .relaxed: relaxed
+            case .oversized: oversized
+            }
+        }
+        switch (fit.kind, zone) {
+        // The waist zone reaches down towards the seat: a seat roomy by its cut (wide,
+        // tapered) raises it as much as half the seat's extra.
+        case (.trousers, .waist), (.skirt, .waist):
+            guard let seat = looseEase(.hip, fit), fit.legCut == .wide || fit.legCut == .tapered else { return 5 }
+            return 5 + max(0, seat - 12) / 2
+        case (.trousers, .hip), (.skirt, .hip):
+            switch fit.legCut {
+            case .skinny?: return 6
+            case .wide?: return max(19, by(7, 12, 17, 31))
+            case .tapered?: return max(15, by(7, 12, 17, 31))
+            default: return by(7, 12, 17, 31)
+            }
+        case (.trousers, .thigh):
+            switch fit.legCut {
+            case .skinny?: return 6
+            case .slim?, .flare?: return 9
+            case .straight?: return max(14, by(8, 13, 21, 33))
+            case .wide?: return max(27, by(8, 13, 21, 33))
+            case .tapered?: return max(17, by(8, 13, 21, 33))
+            case nil: return by(8, 13, 21, 33)
+            }
+        case (.top, .chest), (.top, .back): return by(11, 17, 25, 41) + over
+        case (.top, .waist), (.top, .abdomen), (.top, .hip): return by(13, 19, 31, 51) + over
+        default: return nil
         }
     }
 

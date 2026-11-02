@@ -12,6 +12,8 @@ final class GarmentDraft {
     var info: ProductInfo
     var category: GarmentCategory?
     var fitStyle: FitStyle
+    /// Trousers and shorts: how the legs are cut, as the name says or the user picks.
+    var legCut: LegCut?
     var stretch: FabricStretch
     var thickness: FabricThickness = .thin
     var chartKind: SizeChartKind?
@@ -35,6 +37,7 @@ final class GarmentDraft {
         self.info = info
         category = info.category
         fitStyle = info.fitStyle ?? .regular
+        legCut = info.legCut
         stretch = info.stretch ?? .none
     }
 
@@ -142,7 +145,8 @@ final class GarmentDraft {
     var spec: GarmentSpec? {
         guard issues.isEmpty, let category, let chartKind else { return nil }
         return GarmentSpec(category: category, fitStyle: fitStyle, stretch: stretch,
-                           thickness: thickness, chartKind: chartKind, sizes: sizes)
+                           thickness: thickness, chartKind: chartKind, sizes: sizes,
+                           legCut: category == .pants || category == .shorts ? legCut : nil)
     }
 
     /// Identifies the product for quota purposes. Without a link or barcode, the size

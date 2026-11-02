@@ -17,7 +17,7 @@ public struct FitEngine: FitAnalyzing {
     public init() {}
 
     public func analyze(body: BodyProfile, garment: GarmentSpec, preference: FitPreference = .asDesigned) -> FitAnalysis {
-        let rules = EaseTable.rules(for: garment.category, fit: garment.fitStyle)
+        let rules = EaseTable.rules(for: garment.category, fit: garment.fitStyle, leg: garment.legCut)
         let sizes = garment.sizes.map { evaluate(size: $0, body: body, garment: garment, rules: rules, preference: preference) }
         return FitAnalysis(recommendation: recommend(sizes: sizes, rules: rules), sizes: sizes)
     }
