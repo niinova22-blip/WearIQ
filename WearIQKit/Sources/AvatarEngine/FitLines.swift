@@ -72,8 +72,8 @@ extension BodyModel {
     /// - Long and short: where the garment ends against the body.
     /// - Loose: the girth ease the garment is cut with at that level (garment minus body
     ///   girth, as on the size chart), beyond what a regular fit has (`looseEase`), only
-    ///   in zones where looseness means something (not round the knees or hems, where
-    ///   trousers hang by design). How the fabric falls and folds doesn't make it loose,
+    ///   in zones where looseness means something (knees and hems by the thigh's room
+    ///   they're cut from). How the fabric falls and folds doesn't make it loose,
     ///   so the gap between the legs or under the seat isn't coloured. Where the
     ///   size-chart check gave a zone a verdict, that verdict decides.
     ///
@@ -110,7 +110,8 @@ extension BodyModel {
                 weights[i] = weight
                 continue
             }
-            guard let threshold = Self.looseEase(zone, shape.fit) else { continue }
+            // Sleeves have no ease of their own on the chart: loose where the chart's chest is.
+            guard let threshold = Self.looseEase(zone, shape.fit) ?? (verdict == .loose ? 0 : nil) else { continue }
             let e = ease[i]
             switch verdict {
             case .loose?:
@@ -180,7 +181,7 @@ extension BodyModel {
     /// 9–16 cm over the body, an oversized one's 22–40: the oversized T-shirt in its right
     /// size isn't loose, it is oversized, and shows as fitting. Trousers likewise by fit
     /// and leg cut (a wide leg's thigh is roomy by design). Nil where looseness isn't
-    /// judged: shoulders, sleeves, knees and hems hang as they're cut.
+    /// judged by the ease: shoulders and sleeves hang as they're cut.
     static func looseEase(_ zone: FitZone, _ fit: Avatar.GarmentFit) -> Float? {
         // A jacket or coat goes over other clothes and is cut with that much more room.
         let over: Float = fit.style.isOuter ? 8 : 0
@@ -215,6 +216,13 @@ extension BodyModel {
             case .tapered?: return max(17, by(8, 13, 21, 33))
             case nil: return by(8, 13, 21, 33)
             }
+        // Knees and hems are cut from the thigh (`cutEase` narrows it down the leg): loose
+        // there when the thigh is, as a bigger size of the same cut is loose all the way
+        // down. Their share of the thigh's room is the cut's own.
+        case (.trousers, .knee):
+            return looseEase(.thigh, fit).map { $0 * 0.7 }
+        case (.trousers, .hem):
+            return looseEase(.thigh, fit).map { $0 * 0.6 }
         case (.top, .chest), (.top, .back): return by(11, 17, 25, 41) + over
         case (.top, .waist), (.top, .abdomen), (.top, .hip): return by(13, 19, 31, 51) + over
         default: return nil

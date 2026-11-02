@@ -59,6 +59,11 @@ extension RegionFit {
 
     /// Room in the hips or thighs of trousers is comfort, not a fault: said as "roomy".
     var verdictTitle: String {
+        // Outside the cut's range with an everyday fit's room: said against the cut.
+        if byCutOnly == true {
+            if verdict == .slightlyTight { return String(localized: "Closer than its cut") }
+            if verdict == .slightlyLoose { return String(localized: "Roomier than its cut") }
+        }
         if verdict == .slightlyLoose, region == .hip || region == .thigh { return String(localized: "Roomy") }
         return verdict.title
     }
@@ -119,15 +124,15 @@ extension SizeRecommendation {
 
 /// Plain-language summary built only from the engine's results.
 enum FitExplanation {
-    /// "waist fits, hips fit, leg length about 5–8 cm long." for one size.
-    static func regionSentence(_ size: SizeFit) -> String {
-        let parts = size.regions.filter { $0.verdict != .insufficientData }.map { r -> String in
+    /// "leg length about 5–8 cm long." for one size: only what doesn't fit (the rows
+    /// below list every region); nil when everything fits.
+    static func regionSentence(_ size: SizeFit) -> String? {
+        let parts = size.regions.filter { $0.verdict != .insufficientData && $0.severity != .good }.map { r -> String in
             let name = r.region.title.lowercased()
-            guard r.severity != .good else { return String(localized: "\(name) fits") }
             let amount = r.offsetText.map { " (\($0))" } ?? ""
             return "\(name) \(r.verdictTitle.lowercased())\(amount)"
         }
-        return parts.joined(separator: ", ") + "."
+        return parts.isEmpty ? nil : parts.joined(separator: ", ") + "."
     }
 
     static func text(for analysis: FitAnalysis) -> String {
@@ -138,10 +143,10 @@ enum FitExplanation {
             return String(localized: "We need the \(names) measurement for both you and the garment to recommend a size.")
         case let .between(smaller, larger):
             sentences.append(String(localized: "\(smaller) and \(larger) fit about equally well. Pick \(smaller) for a closer fit or \(larger) for more room."))
-            // Say how each of the two will fit, region by region.
+            // What each of the two gets wrong, if anything.
             for label in [smaller, larger] {
-                if let size = analysis.sizes.first(where: { $0.label == label }) {
-                    sentences.append("\(label): " + regionSentence(size))
+                if let size = analysis.sizes.first(where: { $0.label == label }), let issues = regionSentence(size) {
+                    sentences.append("\(label): " + issues)
                 }
             }
         case .size:
@@ -149,7 +154,9 @@ enum FitExplanation {
         }
 
         if let best = analysis.recommendedSize {
-            sentences.append("\(best.label): " + regionSentence(best))
+            if case .size = analysis.recommendation, let issues = regionSentence(best) {
+                sentences.append("\(best.label): " + issues)
+            }
             // Explain why the neighbouring smaller size lost, if it did on a key region.
             if let index = analysis.sizes.firstIndex(where: { $0.label == best.label }), index > 0 {
                 let smaller = analysis.sizes[index - 1]
@@ -182,7 +189,8 @@ extension FitExplanation {
         switch girth {
         case .loose?:
             parts.append(String(localized: "Clearly roomy through the body."))
-            if sleeve != .short || length != .short {
+            // Long sleeves or length are said below in their own words.
+            if sleeve != .long, length != .long, sleeve != .short || length != .short {
                 parts.append(String(localized: "The shoulder seam will sit lower, so sleeves and length can look a little longer."))
             }
             parts.append(isRecommended || recommended == nil
@@ -193,6 +201,8 @@ extension FitExplanation {
         case .tight?:
             parts.append(String(localized: "Tight through the body; it may pull when you move."))
             if let recommended, !isRecommended { parts.append(String(localized: "\(recommended) will be more comfortable.")) }
+        case .slightlyTight? where size.regions.contains(where: { $0.byCutOnly == true && $0.verdict == .slightlyTight }):
+            parts.append(String(localized: "Less roomy than its cut: it sits like a regular fit."))
         case .slightlyTight?:
             parts.append(String(localized: "Close-fitting; fine if you like it snug."))
         default:
@@ -207,8 +217,9 @@ extension FitExplanation {
             let amount = size.regions.first { $0.region == .inseam }?.offsetText
             parts.append(amount.map { String(localized: "The legs will be long (\($0)); roll or hem them.") }
                 ?? String(localized: "The legs will be a little long; roll or hem them."))
-        case (.long?, _), (_, .long?):
-            if girth != .loose { parts.append(String(localized: "A bit long; you may want to roll the sleeves or tuck it in.")) }
+        case (.long?, .long?): parts.append(String(localized: "Sleeves and length will be long."))
+        case (.long?, _): parts.append(String(localized: "Sleeves will be long; roll them back."))
+        case (_, .long?): parts.append(String(localized: "Longer than usual; tuck it in or wear it loose."))
         default: break
         }
         return parts.joined(separator: " ")

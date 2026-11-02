@@ -37,7 +37,7 @@ public enum StandardSizeCharts {
         guard let anchor, let worn = anchor.size,
               let reference = chart.sizes.first(where: { $0.label.uppercased() == worn }) else { return chart }
         if let height = anchor.heightCm, (140...210).contains(height) {
-            addLengths(to: &chart, modelHeight: height, category: category)
+            addLengths(to: &chart, modelHeight: height, category: category, worn: reference.label)
         }
         guard anchor.isAnchor else { return chart }
         var shifted = false
@@ -56,11 +56,17 @@ public enum StandardSizeCharts {
         return chart
     }
 
-    /// The garment was made to look right on the model, so its lengths suit a body of the
-    /// model's height; sizes of one style usually share the length. From ANSUR II stature
-    /// fractions: crotch height 0.481 (inseam), cervicale − navel 0.262 (top length),
-    /// acromion − wrist 0.3375 (sleeve). Stated as the body each size fits (body chart).
-    static func addLengths(to chart: inout ParsedSizeChart, modelHeight h: Double, category: GarmentCategory?) {
+    /// The garment was made to look right on the model, so the size the model wears has
+    /// lengths that suit a body of the model's height. From ANSUR II stature fractions:
+    /// crotch height 0.481 (inseam), cervicale − navel 0.262 (top length), acromion −
+    /// wrist 0.3375 (sleeve). Stated as the body each size fits (body chart).
+    ///
+    /// The other sizes are graded from it (`Grading`): a top two sizes up is longer in
+    /// the body and the sleeves, as its pattern is, so an XL on someone who wears an M
+    /// reads long, not "ideal" like every other size. Trouser inseams are left alone:
+    /// they come in their own lengths (W/L) or are hemmed.
+    static func addLengths(to chart: inout ParsedSizeChart, modelHeight h: Double, category: GarmentCategory?,
+                           worn: String? = nil) {
         var lengths: [GarmentDimension: Double] = [:]
         switch category {
         case .pants?: lengths[.inseam] = 0.481 * h
@@ -77,10 +83,17 @@ public enum StandardSizeCharts {
             break
         case nil: break
         }
+        let reference = chart.sizes.first { $0.label == worn }?.values[.chest]?.cm
         for i in chart.sizes.indices {
+            let chestSteps = reference.flatMap { r in chart.sizes[i].values[.chest].map { $0.cm - r } } ?? 0
             for (dim, cm) in lengths where chart.sizes[i].values[dim] == nil {
+                let grade: Double = switch dim {
+                case .bodyLength: chestSteps * Grading.lengthPerChest
+                case .sleeveLength: chestSteps * Grading.sleevePerChest
+                default: 0
+                }
                 // Where the hem falls on the model is a judgement call; ±3.5 cm.
-                chart.sizes[i].values[dim] = MeasuredValue(cm: cm, uncertaintyCm: 3.5, source: .manual)
+                chart.sizes[i].values[dim] = MeasuredValue(cm: cm + grade, uncertaintyCm: 3.5, source: .manual)
             }
         }
     }

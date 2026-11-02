@@ -1,8 +1,8 @@
 import SceneKit
 import SwiftUI
 
-/// How the scan goes, shown before it as a looping 3D scene: a little character props
-/// the phone up at waist height, steps back, holds the front pose for the photo, hears
+/// How the scan goes, shown before it as a looping 3D scene: a little character leans
+/// the phone against a pile of books on a side table at waist height, steps back, holds the front pose for the photo, hears
 /// 3, 2, 1 and turns once round with the arms out, in the same ten seconds the real
 /// turn takes. Eight dots on the floor light up as it comes round, the way the scan
 /// collects its eight directions.
@@ -13,8 +13,8 @@ struct ScanTutorialView: View {
         case place, stepBack, front, countdown, turn, done
 
         /// When each step starts, seconds into the loop; the turn lasts the real ten.
-        static let starts: [Double] = [0, 1.6, 3.6, 5.8, 8.8, 18.8]
-        static let length = 21.0
+        static let starts: [Double] = [0, 2.6, 4.6, 6.8, 9.8, 19.8]
+        static let length = 22.0
 
         static func at(_ t: Double) -> (Step, Double) {
             let step = allCases.last { starts[$0.rawValue] <= t } ?? .place
@@ -23,7 +23,7 @@ struct ScanTutorialView: View {
 
         var caption: LocalizedStringKey {
             switch self {
-            case .place: "Prop the phone upright at waist height"
+            case .place: "Lean the phone upright against something at waist height"
             case .stepBack: "Step back about three steps"
             case .front: "Arms slightly out: the front photo"
             case .countdown: "Listen: 3, 2, 1, then arms straight out"
@@ -84,7 +84,7 @@ struct ScanTutorialView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("How the scan works: prop the phone at waist height, step back, hold the front pose, then turn once round slowly with your arms out."))
+        .accessibilityLabel(Text("How the scan works: lean the phone upright against something at waist height, step back, hold the front pose, then turn once round slowly with your arms out."))
     }
 
     static func loopTime(_ date: Date, start: Date) -> Double {
@@ -92,7 +92,7 @@ struct ScanTutorialView: View {
     }
 }
 
-/// The SceneKit side of the tutorial: the character, the phone on its tripod, the floor
+/// The SceneKit side of the tutorial: the character, the phone leaning on its books, the floor
 /// dots and the numbers above the phone, all posed every frame from the loop's clock.
 private struct TutorialSceneView: UIViewRepresentable {
     let start: Date
@@ -144,7 +144,10 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
 
     /// Where the character stands for the photo and the turn (the phone is at the origin
     /// facing +z, the character faces it, towards −z).
-    private let near: Float = 0.75, far: Float = 1.95
+    private let near: Float = 0.52, far: Float = 1.95
+    /// Where the phone rests, leaning back against the books, and how far it leans.
+    private let rest = SCNVector3(0, 0.615, 0.02)
+    private let lean: Float = -0.16
 
     private static let coral = UIColor(red: 1.0, green: 0.52, blue: 0.42, alpha: 1)
     private static let pink = UIColor(red: 0.93, green: 0.32, blue: 0.52, alpha: 1)
@@ -219,6 +222,41 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
         scene.rootNode.addChildNode(camera)
     }
 
+    /// The phone's screen: the camera view with a person standing in its frame.
+    private static func screenImage() -> UIImage {
+        let size = CGSize(width: 200, height: 424)
+        return UIGraphicsImageRenderer(size: size).image { ctx in
+            let cg = ctx.cgContext
+            let colors = [UIColor(red: 0.35, green: 0.38, blue: 0.56, alpha: 1).cgColor,
+                          UIColor(red: 0.18, green: 0.2, blue: 0.32, alpha: 1).cgColor]
+            if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0, 1]) {
+                cg.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: 0, y: size.height), options: [])
+            }
+            // Viewfinder corners.
+            cg.setStrokeColor(UIColor.white.withAlphaComponent(0.9).cgColor)
+            cg.setLineWidth(7)
+            cg.setLineCap(.round)
+            let r = CGRect(origin: .zero, size: size).insetBy(dx: 26, dy: 58)
+            let arm: CGFloat = 34
+            let corners: [(CGPoint, CGFloat, CGFloat)] = [(CGPoint(x: r.minX, y: r.minY), arm, arm), (CGPoint(x: r.maxX, y: r.minY), -arm, arm),
+                                                          (CGPoint(x: r.minX, y: r.maxY), arm, -arm), (CGPoint(x: r.maxX, y: r.maxY), -arm, -arm)]
+            for (corner, dx, dy) in corners {
+                cg.move(to: CGPoint(x: corner.x + dx, y: corner.y))
+                cg.addLine(to: corner)
+                cg.addLine(to: CGPoint(x: corner.x, y: corner.y + dy))
+            }
+            cg.strokePath()
+            // The person in frame.
+            if let figure = UIImage(systemName: "figure.stand")?
+                .withTintColor(UIColor(red: 0.55, green: 1, blue: 0.7, alpha: 1), renderingMode: .alwaysOriginal) {
+                figure.draw(in: CGRect(x: 55, y: 120, width: 90, height: 190))
+            }
+            // The record dot.
+            cg.setFillColor(UIColor(red: 1, green: 0.3, blue: 0.4, alpha: 1).cgColor)
+            cg.fillEllipse(in: CGRect(x: 86, y: 362, width: 28, height: 28))
+        }
+    }
+
     /// A soft peach-to-lilac wall.
     private static func backdrop() -> UIImage {
         let size = CGSize(width: 4, height: 256)
@@ -232,31 +270,53 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
     }
 
     private func buildPhone() {
-        let dark = material(UIColor(white: 0.12, alpha: 1), roughness: 0.3)
-        let case_ = SCNBox(width: 0.085, height: 0.165, length: 0.014, chamferRadius: 0.012)
-        phone.addChildNode(node(case_, dark))
+        // A phone at a glance: a rounded slab, a lit camera screen with a person in its
+        // viewfinder, the island at the top, the lenses on the back.
+        let dark = material(UIColor(white: 0.1, alpha: 1), roughness: 0.25)
+        let frame = material(UIColor(red: 0.78, green: 0.8, blue: 0.86, alpha: 1), roughness: 0.2)
+        phone.addChildNode(node(SCNBox(width: 0.118, height: 0.232, length: 0.016, chamferRadius: 0.018), frame))
+        phone.addChildNode(node(SCNBox(width: 0.11, height: 0.224, length: 0.017, chamferRadius: 0.016), dark))
         screen.lightingModel = .constant
-        screen.diffuse.contents = UIColor(red: 0.3, green: 0.32, blue: 0.45, alpha: 1)
-        let glass = SCNPlane(width: 0.072, height: 0.15)
-        glass.cornerRadius = 0.01
-        phone.addChildNode(node(glass, screen, at: SCNVector3(0, 0, 0.0075)))
-        let lens = node(SCNSphere(radius: 0.006), material(.black, roughness: 0.1), at: SCNVector3(0, 0.066, 0.008))
-        phone.addChildNode(lens)
-        phone.position = SCNVector3(0, 0.62, 0)
+        screen.diffuse.contents = Self.screenImage()
+        let glass = SCNPlane(width: 0.1, height: 0.212)
+        glass.cornerRadius = 0.014
+        phone.addChildNode(node(glass, screen, at: SCNVector3(0, 0, 0.0088)))
+        let pill = node(SCNCapsule(capRadius: 0.0055, height: 0.03), material(.black, roughness: 0.1),
+                        at: SCNVector3(0, 0.094, 0.0092))
+        pill.eulerAngles.z = .pi / 2
+        pill.scale = SCNVector3(1, 1, 0.3)
+        phone.addChildNode(pill)
+        phone.addChildNode(node(SCNBox(width: 0.045, height: 0.045, length: 0.006, chamferRadius: 0.01), dark,
+                                at: SCNVector3(-0.025, 0.08, -0.01)))
+        for (x, y) in [(-0.035, 0.09), (-0.015, 0.07)] as [(Float, Float)] {
+            let lens = node(SCNCylinder(radius: 0.008, height: 0.004), material(.black, roughness: 0.05),
+                            at: SCNVector3(x, y, -0.014))
+            lens.eulerAngles.x = .pi / 2
+            phone.addChildNode(lens)
+        }
+        phone.enumerateHierarchy { n, _ in n.castsShadow = true }
+        phone.position = rest
+        phone.eulerAngles.x = lean
         scene.rootNode.addChildNode(phone)
 
-        // Tripod: a stem and three legs to the floor.
-        let metal = material(UIColor(white: 0.55, alpha: 1), roughness: 0.35)
-        let tripod = SCNNode()
-        tripod.addChildNode(node(SCNCylinder(radius: 0.008, height: 0.2), metal, at: SCNVector3(0, 0.44, 0)))
-        for k in 0..<3 {
-            let a = Float(k) * 2 * .pi / 3
-            let leg = node(SCNCylinder(radius: 0.007, height: 0.38), metal)
-            leg.position = SCNVector3(0.06 * sin(a), 0.17, 0.06 * cos(a))
-            leg.eulerAngles = SCNVector3(0.32 * cos(a), 0, -0.32 * sin(a))
-            tripod.addChildNode(leg)
+        // The side table it leans on: a top, four legs, two books behind the phone.
+        let wood = material(UIColor(red: 0.86, green: 0.66, blue: 0.5, alpha: 1), roughness: 0.6)
+        let table = SCNNode()
+        table.addChildNode(node(SCNBox(width: 0.36, height: 0.03, length: 0.3, chamferRadius: 0.012), wood,
+                                at: SCNVector3(0, 0.485, -0.04)))
+        for (x, z) in [(-0.15, -0.16), (0.15, -0.16), (-0.15, 0.08), (0.15, 0.08)] as [(Float, Float)] {
+            table.addChildNode(node(SCNCylinder(radius: 0.016, height: 0.47), wood, at: SCNVector3(x, 0.235, z)))
         }
-        scene.rootNode.addChildNode(tripod)
+        let books: [(UIColor, Float, Float)] = [(UIColor(red: 0.42, green: 0.62, blue: 0.86, alpha: 1), 0.522, -0.05),
+                                                (UIColor(red: 0.98, green: 0.78, blue: 0.36, alpha: 1), 0.567, 0.12)]
+        for (color, y, turn) in books {
+            let book = node(SCNBox(width: 0.2, height: 0.045, length: 0.14, chamferRadius: 0.006), material(color, roughness: 0.7),
+                            at: SCNVector3(0, y, -0.1))
+            book.eulerAngles.y = turn
+            table.addChildNode(book)
+        }
+        table.enumerateHierarchy { n, _ in n.castsShadow = true }
+        scene.rootNode.addChildNode(table)
 
         // Font units are points: set at 10 and scaled down, so the curves stay smooth.
         let text = SCNText(string: "3", extrusionDepth: 1.5)
@@ -264,7 +324,7 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
         text.flatness = 0.1
         text.firstMaterial = material(Self.pink, roughness: 0.4, emission: Self.pink.withAlphaComponent(0.35))
         number.geometry = text
-        number.position = SCNVector3(0, 1.0, 0)
+        number.position = SCNVector3(0, 0.92, 0)
         number.scale = SCNVector3(0.022, 0.022, 0.022)
         number.constraints = [SCNBillboardConstraint()]
         number.opacity = 0
@@ -357,22 +417,11 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
         return f * f * (3 - 2 * f)
     }
 
-    /// Overshoots a little before settling: the phone dropping into its stand.
-    private static func backOut(_ x: Double) -> Double {
-        let f = min(1, max(0, x)) - 1
-        return 1 + f * f * (2.7 * f + 1.7)
-    }
-
     private func pose(_ t: Double) {
         let (step, local) = Step.at(t)
         let turnLength = Step.starts[Step.done.rawValue] - Step.starts[Step.turn.rawValue]
 
-        // The phone drops onto the tripod at the start of the loop.
-        let drop = step == .place ? Self.backOut(local / 0.9) : 1
-        phone.position = SCNVector3(0, Float(0.62 + (1 - drop) * 1.1), 0)
-        phone.opacity = CGFloat(min(1, drop * 3))
-
-        // Where the character stands: by the phone, then three steps back.
+        // Where the character stands: at the table, then three steps back.
         var z = Double(near), walk = 0.0
         switch step {
         case .place: z = Double(near)
@@ -391,11 +440,18 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
         rightLeg.eulerAngles.x = Float(-walk * 0.45)
 
         // Arms: at the sides, slightly out for the photo, straight out from the countdown.
+        // At the start the right hand holds the phone up, reaches out and leans it on the
+        // books, then comes back down.
         let down = 0.1, slightly = 0.38, out = Double.pi / 2
         let arm: Double
         var swing = 0.0
+        var reach = 0.0
         switch step {
-        case .place: arm = down
+        case .place:
+            arm = down
+            reach = local < 0.6 ? 0.75
+                : local < 1.6 ? 0.75 + 0.6 * Self.smooth((local - 0.6) / 0.8)
+                : 1.35 * (1 - Self.smooth((local - 1.6) / 0.7))
         case .stepBack: arm = down; swing = walk * 0.35
         case .front: arm = down + (slightly - down) * Self.smooth(local / 0.5)
         case .countdown: arm = slightly + (out - slightly) * Self.smooth((local - 1.6) / 0.8)
@@ -403,7 +459,7 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
         case .done: arm = out + (down - out) * Self.smooth(local / 0.5)
         }
         leftArm.eulerAngles = SCNVector3(Float(swing), 0, Float(-arm))
-        rightArm.eulerAngles = SCNVector3(Float(-swing), 0, Float(arm))
+        rightArm.eulerAngles = SCNVector3(Float(-swing + reach), 0, Float(arm))
 
         // One turn round, clockwise from above (to the character's right), mostly steady.
         var turned = 0.0
@@ -415,6 +471,20 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
         }
         person.eulerAngles.y = Float(-turned * 2 * .pi)
 
+        // The phone: in the hand, carried to the books, leaning on them with a little wobble.
+        if step == .place, local < 1.45 {
+            let hand = rightArm.convertPosition(SCNVector3(0, -0.4, 0), to: nil)
+            let held = SCNVector3(hand.x - 0.02, hand.y + 0.06, hand.z - 0.03)
+            let f = Float(Self.smooth((local - 0.7) / 0.75))
+            phone.position = SCNVector3(held.x + (rest.x - held.x) * f, held.y + (rest.y - held.y) * f,
+                                        held.z + (rest.z - held.z) * f)
+            phone.eulerAngles.x = lean * f
+        } else {
+            let since = step == .place ? local - 1.45 : 9
+            phone.position = rest
+            phone.eulerAngles.x = lean + (since < 1 ? Float(0.05 * sin(since * 14) * (1 - since)) : 0)
+        }
+
         for (k, dot) in dots.enumerated() {
             let lit = step == .done || (step == .turn && turned * 8 >= Double(k) + 0.001) || (step == .turn && k == 0)
             dot.diffuse.contents = lit ? UIColor(red: 0.2, green: 0.78, blue: 0.45, alpha: 1) : UIColor(white: 1, alpha: 1)
@@ -424,9 +494,9 @@ private final class TutorialScene: NSObject, SCNSceneRendererDelegate, @unchecke
         // The phone's screen: lit while it speaks, a flash for the photo.
         let flash = step == .front && local > 1.3 && local < 1.75
         let speaking = step == .countdown || step == .turn
-        screen.diffuse.contents = flash ? UIColor.white
-            : speaking ? Self.pink.withAlphaComponent(0.6 + 0.4 * CGFloat(abs(sin(t * 5))))
-            : UIColor(red: 0.3, green: 0.32, blue: 0.45, alpha: 1)
+        let pulse = CGFloat(abs(sin(t * 5)))
+        screen.emission.contents = flash ? UIColor.white : UIColor.black
+        screen.multiply.contents = speaking ? UIColor(red: 1, green: 0.75 + 0.25 * pulse, blue: 0.85 + 0.15 * pulse, alpha: 1) : UIColor.white
 
         // The numbers the phone says: 3, 2, 1 before the turn, then 1 to 10 through it.
         var label = ""

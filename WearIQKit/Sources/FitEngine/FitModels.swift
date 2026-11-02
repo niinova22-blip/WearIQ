@@ -32,6 +32,11 @@ public struct RegionFit: Codable, Hashable, Sendable {
     /// Garment minus body for this region, cm (for a body chart, the size's body minus
     /// yours). Nil without data and in analyses saved before it was kept.
     public var easeCm: Double?
+    /// Outside the cut's own range but within what an everyday fit has there: a relaxed
+    /// tee in a size with a regular tee's room is closer than its cut, not tight; a slim
+    /// shirt with a regular one's room is roomier than its cut, not loose. The verdict is
+    /// then a slight one.
+    public var byCutOnly: Bool?
 
     public enum MissingData: String, Codable, Sendable {
         case bodyMeasurement, garmentMeasurement

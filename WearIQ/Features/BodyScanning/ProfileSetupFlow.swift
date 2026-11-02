@@ -223,9 +223,6 @@ struct ScanGuideView: View {
             .shadow(color: .pink.opacity(0.35), radius: 12, y: 6)
             VStack(alignment: .leading, spacing: 4) {
                 Text("About a minute").font(.title2.bold())
-                Text("Voice guidance leads you; the turn is filmed and measured on this phone.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -236,7 +233,7 @@ struct ScanGuideView: View {
         VStack(alignment: .leading, spacing: 12) {
             step(1, "A front photo", "Face the phone, arms slightly away from your body.")
             step(2, "One slow turn", "After 3, 2, 1: arms straight out to the sides, turn once round slowly while counting to ten.")
-            step(3, "Your measurements", "Chest, waist, hips and lengths, ready to check.")
+            step(3, "Your measurements", "If a part needs a closer look, one side photo; then chest, waist, hips and lengths.")
         }
         .padding(Theme.Spacing.m)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -260,7 +257,7 @@ struct ScanGuideView: View {
     /// Getting ready, as four tiles.
     private var prepGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-            prepTile("iphone.gen3", "Phone upright at waist height, 3 m away")
+            prepTile("iphone.gen3", "Phone leaning upright at waist height, 3 m away")
             prepTile("lightbulb.max", "Bright room, plain background")
             prepTile("shoeprints.fill", "Barefoot, long hair tied up")
             prepTile("speaker.wave.2.fill", "Sound on: you'll be facing away")

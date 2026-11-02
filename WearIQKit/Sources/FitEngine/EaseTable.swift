@@ -30,6 +30,14 @@ struct RegionRule {
     /// Extra room allowed on the loose side of a body chart. Trousers are sized by the
     /// waist; hips and thighs smaller than the size's are just room, not a misfit.
     var bodyChartLooseAllowance: Double = 0
+    /// Girths and widths, cuts other than regular: from a slim fit's least room to a
+    /// regular fit's most, where a size outside the cut's own range still wears fine
+    /// (`RegionFit.byCutOnly`).
+    var comfort: ClosedRange<Double>?
+    /// How much a size too roomy here costs against one too small: trousers' seat and
+    /// thighs are room (a waist that won't close can't be worn, a roomy seat can), and
+    /// shoulders too wide only drop the seams down the arm.
+    var loosePenalty: Double = 1
 
     /// Beyond this many cm outside the range a mismatch is "major" rather than "minor".
     var majorThreshold: Double {
@@ -43,6 +51,22 @@ struct RegionRule {
 
 enum EaseTable {
     static func rules(for category: GarmentCategory, fit: FitStyle, leg: LegCut? = nil) -> [RegionRule] {
+        var rules = cutRules(for: category, fit: fit, leg: leg)
+        for i in rules.indices {
+            if rules[i].kind == .width { rules[i].loosePenalty = 0.35 }
+            if category.isBottom, rules[i].region == .hip || rules[i].region == .thigh { rules[i].loosePenalty = 0.4 }
+        }
+        guard fit != .regular else { return rules }
+        let slim = cutRules(for: category, fit: .slim, leg: leg), regular = cutRules(for: category, fit: .regular, leg: leg)
+        for i in rules.indices where rules[i].kind != .length {
+            guard let lo = slim.first(where: { $0.region == rules[i].region })?.ease.lowerBound,
+                  let hi = regular.first(where: { $0.region == rules[i].region })?.ease.upperBound else { continue }
+            rules[i].comfort = min(lo, rules[i].ease.lowerBound)...max(hi, rules[i].ease.upperBound)
+        }
+        return rules
+    }
+
+    private static func cutRules(for category: GarmentCategory, fit: FitStyle, leg: LegCut?) -> [RegionRule] {
         switch category {
         case .shirt, .tshirt, .jacket, .coat, .dress, .sweater: topRules(category, fit)
         case .pants: pantsRules(fit, leg: leg)

@@ -331,26 +331,45 @@ public enum GarmentClassifier {
 
     /// The leg cut a trouser's name gives: "skinny jean", "boru paça", "wide leg"…
     /// Checked most specific first ("super skinny" before "slim", "slim straight" is
-    /// straight: its legs are what the second word says).
+    /// straight: its legs are what the second word says). Women's cuts by their own
+    /// names too: mom and carrot jeans taper, boyfriend and dad jeans hang straight,
+    /// palazzo and culotte are wide, cigarette trousers slim.
     public static func legCut(from text: String) -> LegCut? {
         let t = " " + SizeChartParser.fold(text) + " "
         let table: [(LegCut, [String])] = [
-            (.flare, ["flare", "bootcut", "boot cut", "ispanyol", "bell bottom", "genisleyen paca"]),
-            (.wide, ["wide leg", "wide-leg", "genis paca", "bol paca", "palazzo", "baggy", "culotte", "genis kesim", "wide fit"]),
-            (.skinny, ["skinny", "super slim", "dar paca", "jegging", "tayt"]),
-            (.tapered, ["jogger", "carrot", "havuc", "tapered", "mom jean", "mom fit", "daralan paca", "lastikli paca"]),
-            (.straight, ["straight", "boru paca", "duz paca", "regular straight", "dad jean", "dad fit"]),
-            (.slim, ["slim"]),
+            (.flare, ["flare", "bootcut", "boot cut", "ispanyol", "bell bottom", "genisleyen paca", "trompet"]),
+            (.wide, ["wide leg", "wide-leg", "genis paca", "bol paca", "palazzo", "baggy", "culotte", "genis kesim", "wide fit",
+                     "barrel", "loose leg", "bol kesim pantolon", "salvar"]),
+            (.skinny, ["skinny", "super slim", "dar paca", "jegging", "tayt", "legging"]),
+            (.tapered, ["jogger", "carrot", "havuc", "tapered", "mom jean", "mom fit", " mom ", "daralan paca", "lastikli paca",
+                        "balon", "balloon", "paperbag", "esofman alti", "slouchy", "girlfriend"]),
+            (.straight, ["straight", "boru paca", "duz paca", "regular straight", "dad jean", "dad fit", "boyfriend",
+                         "kargo", "cargo", "carpenter"]),
+            (.slim, ["slim", "cigarette", "sigaret", "kalem pantolon"]),
         ]
         return table.first { _, keys in keys.contains { t.contains($0) } }?.0
     }
 
+    /// The fit a product's name or category gives, Turkish or English. The tightest
+    /// explicit word wins over a looser one only when it says so ("slim cargo" is slim);
+    /// an oversize word wins over both. Women's names: bodycon, pencil (kalem) and
+    /// corset are close-fitting; boyfriend, mom, A-line and pleated skirts relaxed.
     public static func fitStyle(from text: String) -> FitStyle? {
-        let t = SizeChartParser.fold(text)
-        if ["oversize", "oversized", "bol kesim", "boxy"].contains(where: t.contains) { return .oversized }
-        if ["relaxed", "loose", "rahat kesim", "wide leg", "genis paca"].contains(where: t.contains) { return .relaxed }
-        if ["slim", "skinny", "dar kesim", "muscle fit", "super slim"].contains(where: t.contains) { return .slim }
-        if ["regular", "standart kesim", "classic fit", "normal kesim"].contains(where: t.contains) { return .regular }
+        let t = " " + SizeChartParser.fold(text) + " "
+        let oversized = ["oversize", "over size", "oversized", "bol kesim", "boxy", "baggy", "extra bol", "dusuk omuz",
+                         "drop shoulder", "dropped shoulder", "salas"]
+        let slim = ["slim", "skinny", "dar kesim", "muscle fit", "super slim", "extra slim", "bodycon", "kalem", "pencil",
+                    "vucuda oturan", "fitted", "korse", "corset", "jegging", "tayt", "legging", "cigarette", "sigaret",
+                    "dar paca", "toparlayici", "bodysuit"]
+        let relaxed = ["relaxed", "relax fit", "loose", "rahat kesim", "rahat kalip", "comfort fit", "genis paca", "wide leg",
+                       "wide-leg", "palazzo", "culotte", "boyfriend", "mom jean", "mom fit", " mom ", " a kesim", "a-line",
+                       " a line ", "klos", "pileli", "pleated", "evase", "kargo", "cargo", "balon", "balloon",
+                       "barrel", "paperbag", "slouchy", "genis kesim", "wide fit"]
+        let regular = ["regular", "standart kesim", "classic fit", "normal kesim", "klasik kesim", "standart kalip"]
+        if oversized.contains(where: t.contains) { return .oversized }
+        if slim.contains(where: t.contains) { return .slim }
+        if relaxed.contains(where: t.contains) { return .relaxed }
+        if regular.contains(where: t.contains) { return .regular }
         return nil
     }
 

@@ -89,6 +89,12 @@ LINES = [
     "Keep turning slowly to your right.",
     "Keep your arms out at shoulder height.",
     "That was a little fast. Once more, more slowly.",
+    # The side photo after the turn (FollowUpShot)
+    "One more photo, to measure your waist more precisely.",
+    "One more photo, to measure your chest more precisely.",
+    "One more photo, to measure your hips more precisely.",
+    "Turn a quarter to your right so your left side faces the phone, arms out, and hold still.",
+    "Turn a little further, until your side faces the phone.",
 ]
 RETAKE = "One more look at %lld position(s)."
 NUMBER_WORDS = {

@@ -28,6 +28,10 @@ public struct StationScan: Sendable {
     /// gave one: taken over the eight directions' for those levels, being about three
     /// times as accurate on ANSUR II (FilmedTurnValidationTests).
     public var everyFrame: [BodyLevel: MeasuredValue] = [:]
+    /// Widths from a still taken after the turn, the user holding one stop (`FollowUpShot`):
+    /// sharper than the turn's frames there, with no motion and the best segmentation.
+    /// They stand for that stop and the one opposite, which shows the same width.
+    public var stills: [Int: [BodyLevel: Double]] = [:]
 
     public init() {}
 
@@ -38,7 +42,7 @@ public struct StationScan: Sendable {
         if let profile { profiles[station] = profile } else { profiles[station] = nil }
     }
 
-    public func count(_ level: BodyLevel) -> Int { widths.filter { $0[level] != nil }.count }
+    public func count(_ level: BodyLevel) -> Int { (0..<Self.stationCount).filter { width(level, at: $0) != nil }.count }
     public func isMeasured(_ level: BodyLevel) -> Bool { count(level) >= minimumStations }
 
     /// Whether a still pose looks different enough from the last stop to be the next one.
@@ -57,7 +61,7 @@ public struct StationScan: Sendable {
     public func girths() -> [BodyLevel: MeasuredValue] {
         var result: [BodyLevel: MeasuredValue] = [:]
         for level in levels where isMeasured(level) {
-            var values = (0..<Self.stationCount).map { usableWidth(level, at: $0) }
+            var values = (0..<Self.stationCount).map { width(level, at: $0) }
             let n = Self.stationCount
             // A silhouette is the same width seen from opposite sides, so a missed stop
             // takes the width of the one across from it.
@@ -80,12 +84,20 @@ public struct StationScan: Sendable {
             guard filled.count == n, let lo = filled.min(), let hi = filled.max(),
                   lo < 0.92 * hi else { continue }  // equal widths all round: the user didn't turn
             let girth = Double.pi * filled.reduce(0, +) / Double(filled.count) * (calibration[level] ?? 1)
-            result[level] = MeasuredValue(cm: girth, uncertaintyCm: 0.03 * girth, source: .scan)
+            result[level] = MeasuredValue(cm: girth, uncertaintyCm: (hasStill(level) ? 0.022 : 0.03) * girth, source: .scan)
         }
         for (level, value) in everyFrame where levels.contains(level) {
             // A wildly different value means the frames' angles went wrong; keep the stops'.
             if let stops = result[level], abs(value.cm - stops.cm) > 0.06 * stops.cm { continue }
-            result[level] = value
+            // With a still at a stop, the stops are known better: both together, each by
+            // how sure it is.
+            if let stops = result[level], hasStill(level) {
+                let a = 1 / (value.uncertaintyCm * value.uncertaintyCm), b = 1 / (stops.uncertaintyCm * stops.uncertaintyCm)
+                result[level] = MeasuredValue(cm: (value.cm * a + stops.cm * b) / (a + b), uncertaintyCm: (1 / (a + b)).squareRoot(),
+                                              source: .scan)
+            } else {
+                result[level] = value
+            }
         }
         return result
     }
@@ -127,6 +139,14 @@ public struct StationScan: Sendable {
     }
 
     /// Width at a stop, without readings widened by the arms.
+    private func hasStill(_ level: BodyLevel) -> Bool { stills.values.contains { $0[level] != nil } }
+
+    /// A stop's width: the still's where one was taken there or opposite, else the turn's.
+    private func width(_ level: BodyLevel, at station: Int) -> Double? {
+        let n = Self.stationCount
+        return stills[station]?[level] ?? stills[(station + n / 2) % n]?[level] ?? usableWidth(level, at: station)
+    }
+
     private func usableWidth(_ level: BodyLevel, at station: Int) -> Double? {
         guard let width = widths[station][level] else { return nil }
         if level == .chest, Self.armsAgainstChest(widths[station], at: station) { return nil }

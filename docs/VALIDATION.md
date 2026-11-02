@@ -202,3 +202,30 @@ Simülasyon (`FilmedTurnValidationTests`): ANSUR II'deki her üç kişiden biri 
 Kötü kayıtta (%4 gürültü, her beş karede bir genişlemiş kare) ortalama hata 8 yönde %1,9, her karede %1,2 çıkıyor. Gürültü içinde kalan genişlemiş kareler ayırt edilemediği için %1,2'lik bir sapma kalıyor; bu yine de 8 yönün %1,9'undan az. İki yöntem %6'dan fazla ayrışırsa uygulama 8 yönün değerini kullanıyor.
 
 Sınır: bu, karelerin rastgele hatasını ölçer. Maskenin her karede aynı yönde yaptığı hatayı (kıyafet, saç, ölçek) ölçmez; onu ancak mezura eşli veri gösterir (§6).
+
+## 14. 100 kullanıcılık denetim, kesim mantığı ve yandan ek çekim (2026-11-02)
+
+**Popülasyon denetimi** (`PopulationAudit`): ANSUR II'den rastgele 50 erkek ve 50 kadın seçildi. Ölçümlerin yarısı mezuradan (±1 cm), yarısı taramadan (±2,5 cm, omuz kemikten kemiğe) geliyor. Her kullanıcının sevdiği bir üst kesimi (slim, regular, relaxed, oversize) ve paça kesimi (skinny, slim, boru, geniş, ispanyol, daralan) var. Her kullanıcı üç tür mağazadan 7–8 ürün alıyor: ölçü tablolu, vücut tablolu, tablosuz (yalnızca manken bedeni ve boyu bilinen). Toplam 750 ürün, her bedeni denetlendi.
+
+Her bedende şunlar kontrol edildi:
+- Büyük beden hiçbir bölgede daha dar ya da kısa değil.
+- Avatar, tablonun vermediği ölçüleri bedenle birlikte büyütüyor.
+- Avatarın kararı tablonunkiyle aynı.
+- Önerilen bedenin kritik bölgesi (göğüs ya da bel), daha büyük bir beden oraya uyarken dar çıkmıyor.
+- Kesim notu aynı bedeni öneriyor.
+
+Ayrıca 35 gerçek giydirmede renklerin, bölge raporunun ve kenar yerleşimlerinin tabloyla tutarlılığına bakıldı.
+
+İlk çalıştırmada bulunan ve düzeltilen hatalar:
+- **Tablosuz ürünlerde kol ve boy.** Mankenin boyundan bulunan kol ve boy her bedene aynı yazılıyordu; ±3,5 cm belirsizlik de toleransa ekleniyordu. Sonuç: M'den 2XL'e kadar her beden "kol ideal" çıkıyordu. Artık uzunluklar bedenle derecelendiriliyor (`Grading`: göğsün her cm'si için boy 0,3 cm, kol 0,2 cm). Belirsizlik de tolerans değil, güven olarak işleniyor.
+- **Avatarda tablonun vermediği bölgeler.** Pantolon uyluğu, üst bel ve basen sabit kalıyordu. 40 beden pantolon belde ve basende bol, uylukta ve dizde "tam" görünüyordu. Artık hepsi tablonun verdiği bölgeden derecelendiriliyor. Bol basen bacak boyunca, bol göğüs kollarda da gösteriliyor.
+- **Dar göğüslü beden önerisi.** Geniş omuz (dikişin kola düşmesi), dar göğüsten ağır cezalandırılıyordu. Basen ve uyluk bolluğu da kapanmayan belden ağır sayılıyordu. Bu yüzden 12 kullanıcıya dar beden öneriliyordu. Bolluk cezaları düşürüldü: omuzda 0,35, pantolon basen ve uyluğunda 0,4.
+- **Kesime göre "dar" kelimesi.** Relaxed bir tişörtün 8 cm bollukla normal bir tişört kadar rahat olduğu halde "dar" denmesi düzeltildi. Kesim aralığının dışında ama gündelik bir kesimin aralığında kalan bir beden artık "kesiminden daha yakın" ya da "kesiminden daha bol" olarak adlandırılıyor (`byCutOnly`).
+
+Düzeltmelerden sonra: 46.551 kontrolde 0 bulgu. Giydirme örnekleminde 201 kontrolde 0 bulgu.
+
+**Kesim algılama.** Ürün adından kesim bulma genişletildi. Kadın modelleri: mom, boyfriend, palazzo, kuloş, kalem, bodycon, A kesim, kloş, pileli, evase, balon, paperbag. Erkek modelleri: muscle, comfort, kargo, carrot. Etek ve elbisede kalem, A kesim ve kloş avatarda eteğin açılmasını belirliyor.
+
+**Maske temizleme** (`isolatingPerson`): kişi maskesine karışan sandalye, askı ya da kapı gibi nesneler ayıklanıyor. Yalnızca iskelete bağlı ve kemiklerin çevresindeki ölçeğe göre genişletilmiş kapsüllerin içinde kalan pikseller tutuluyor. Kapsüller boyun–kalça uzunluğuyla ölçeklendiği için mesafeden bağımsız; bol kıyafet ve etek için pay bırakılıyor.
+
+**Yandan ek çekim** (`FollowUpShot`): dönüşten sonra göğüs, bel ya da kalçadan biri belirsiz kalırsa tek bir fotoğraf daha isteniyor. Belirsizlik ölçütü: ±%2,5'ten geniş olması ya da 8 yön ile her kare yönteminin %3'ten fazla ayrışması. Kullanıcı sağına çeyrek dönüp hareketsiz durduğunda fotoğraf otomatik çekiliyor. Bu net kare yan yönü ve karşısını temsil ediyor, dönüşün sonucuyla güven ağırlıklı birleştiriliyor. Simülasyonda bel hatasını yarıdan fazla azaltıyor (`FollowUpShotTests`).

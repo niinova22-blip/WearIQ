@@ -130,7 +130,7 @@ extension BodyModel {
             }
             let eases = ids.map { Double(ease[$0]) }.sorted()
             let zoneEase = eases[eases.count / 2]
-            // Trouser knees and hems hang off the leg as they're cut: never "loose".
+            // Trouser knees and hems are loose by the thigh they are cut from (`looseEase`).
             // Nor sleeves: they hang off an arm held out, and the chart has no sleeve width.
             let sleeve = zone == .sleeve || zone == .elbow
             // A dropped shoulder is an oversized or relaxed cut's design, not looseness.

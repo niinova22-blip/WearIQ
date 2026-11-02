@@ -23,6 +23,8 @@ final class BodyScanViewModel {
         case countdown(Int)
         /// Recording the turn; 0–1.
         case turning(Double)
+        /// After the turn, one still from the side for a girth the turn left unsure.
+        case followUp(FollowUpShot)
         case analyzing
         case failed(String)
         /// Measured; "scan complete" is shown and spoken before moving on.
@@ -137,6 +139,9 @@ final class BodyScanViewModel {
     private var turnProgress = 0.0
     private var lastProgressAt = Date()
     private var frontResult: FrontAnalysis?
+    /// The side still after the turn: when it was asked for, and its own stillness.
+    private var followUpTask: Task<Void, Never>?
+    private var followUpStill = StillnessDetector()
 
     /// Pose problems are spoken once they have lasted this long, so flickering
     /// detections don't produce a stream of half-finished sentences.
@@ -175,6 +180,7 @@ final class BodyScanViewModel {
 
     func stop() {
         countdownTask?.cancel()
+        followUpTask?.cancel()
         camera.onFrame = nil
         camera.stop()
         audio.stop()
@@ -186,6 +192,7 @@ final class BodyScanViewModel {
         guard !suspended else { return }
         suspended = true
         countdownTask?.cancel()
+        followUpTask?.cancel()
         camera.onFrame = nil
         camera.stop()
         audio.stop()
@@ -208,6 +215,7 @@ final class BodyScanViewModel {
 
     func retry() {
         countdownTask?.cancel()
+        followUpTask?.cancel()
         front?.cancel()
         front = nil
         scan = StationScan()
@@ -558,11 +566,98 @@ final class BodyScanViewModel {
         camera.onFrame = nil
         countdownTask?.cancel()
         audio.play(.success)
+        // A girth the turn left unsure: one still from the side for it.
+        if let shot = FollowUpShot.plan(scan) { return startFollowUp(shot) }
         audio.say(String(localized: "Done. You can turn back to the phone."), priority: .high)
         analyze()
     }
 
+    // MARK: Side still
+
+    private func startFollowUp(_ shot: FollowUpShot) {
+        stage = .followUp(shot)
+        capturing = false
+        followUpStill = StillnessDetector()
+        followUpStill.window = 0.8
+        followUpStill.tolerance = 0.04
+        let why = switch shot.level {
+        case .chest: String(localized: "One more photo, to measure your chest more precisely.")
+        case .hip: String(localized: "One more photo, to measure your hips more precisely.")
+        default: String(localized: "One more photo, to measure your waist more precisely.")
+        }
+        say(why + " " + String(localized: "Turn a quarter to your right so your left side faces the phone, arms out, and hold still."),
+            priority: .high)
+        let vision = vision, heightCm = basics.heightCm, fractions = levelFractions
+        let analyzer = RotationScanAnalyzer()
+        let start = Date()
+        camera.onFrame = { [weak self] buffer in
+            let time = Date().timeIntervalSince(start)
+            let reading = vision.turnFrame(buffer, time: time)
+                .flatMap { analyzer.reading($0, heightCm: heightCm, levelFractions: fractions) }
+            Task { @MainActor in self?.handleFollowUp(reading, time: time, shot: shot) }
+        }
+        // Not managed in twenty seconds: the turn's measurements as they are.
+        followUpTask?.cancel()
+        followUpTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(20))
+            guard let self, !Task.isCancelled, case .followUp = self.stage, !self.capturing else { return }
+            self.endFollowUp(spoken: String(localized: "Done. You can turn back to the phone."))
+        }
+    }
+
+    /// Side-on (arms pointing at and away from the phone, so the span is narrow), whole
+    /// in the picture and still for a moment: the still is taken.
+    private func handleFollowUp(_ reading: FrameReading?, time: Double, shot: FollowUpShot) {
+        guard case .followUp = stage, !capturing else { return }
+        turn.reading = reading
+        turn.cutEdges = reading.map(StopGuide.cutEdges) ?? []
+        guard let reading, StopGuide.fullyVisible(reading) else {
+            followUpStill.reset()
+            turn.fit = shownFit.update(.stepBack)
+            if !audio.isSpeaking, Date().timeIntervalSince(lastHintAt) > 4 {
+                hint(String(localized: "Step back until you're fully visible, head to feet."))
+            }
+            return
+        }
+        let sideOn = reading.armSpan.map { $0 / spanReference <= StopGuide.sideOn + 0.05 } ?? false
+        guard sideOn else {
+            followUpStill.reset()
+            turn.fit = shownFit.update(.turnFurther)
+            if !audio.isSpeaking, Date().timeIntervalSince(lastHintAt) > 4 {
+                hint(String(localized: "Turn a little further, until your side faces the phone."))
+            }
+            return
+        }
+        turn.fit = shownFit.update(.ok)
+        followUpStill.add(reading, time: time)
+        guard followUpStill.stillWidths(at: time) != nil, let image = camera.captureStill() else { return }
+        capturing = true
+        camera.onFrame = nil
+        audio.play(.go)
+        let vision = vision, heightCm = basics.heightCm, fractions = levelFractions
+        Task {
+            let widths = await Task.detached(priority: .userInitiated) { () -> [BodyLevel: Double] in
+                guard let frame = vision.turnFrame(image, time: 0),
+                      let still = RotationScanAnalyzer().reading(frame, heightCm: heightCm, levelFractions: fractions) else { return [:] }
+                return still.levels.mapValues(\.widthCm)
+            }.value
+            guard case .followUp = self.stage else { return }
+            if !widths.isEmpty { self.scan.stills[shot.station] = widths }
+            self.capturing = false
+            self.endFollowUp(spoken: String(localized: "Photo taken.") + " " + String(localized: "Done. You can turn back to the phone."))
+        }
+    }
+
+    private func endFollowUp(spoken: String) {
+        followUpTask?.cancel()
+        camera.onFrame = nil
+        audio.play(.success)
+        audio.say(spoken, priority: .high)
+        analyze()
+    }
+
     private func analyze() {
+        followUpTask?.cancel()
         guard let front else { return retry() }
         let scan = scan
         let basics = basics
@@ -806,6 +901,15 @@ extension PoseIssue {
 }
 
 extension BodyLevel {
+    /// What the side photo after the turn is for.
+    var followUpTitle: String {
+        switch self {
+        case .chest: String(localized: "One more photo for your chest")
+        case .hip: String(localized: "One more photo for your hips")
+        default: String(localized: "One more photo for your waist")
+        }
+    }
+
     var title: String {
         switch self {
         case .chest: String(localized: "Chest")

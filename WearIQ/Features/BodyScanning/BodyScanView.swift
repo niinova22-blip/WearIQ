@@ -26,6 +26,8 @@ struct BodyScanView: View {
                 case .turning:
                     FrameGuide(cut: model.turn.cutEdges, seen: model.turn.reading != nil)
                     TurnGuideOverlay(state: model.turn)
+                case .followUp:
+                    FrameGuide(cut: model.turn.cutEdges, seen: model.turn.reading != nil)
                 case let .positioning(issue):
                     FrameGuide(cut: model.liveReading.map(StopGuide.cutEdges) ?? [], seen: model.liveReading != nil)
                     PositioningOverlay(reading: model.liveReading, good: issue == nil)
@@ -76,6 +78,35 @@ struct BodyScanView: View {
     }
 
     // Text on this screen is read from 2–3 m away, so it is much larger than usual.
+
+    /// After the turn: a big arrow saying which way to turn for the side photo, the part it
+    /// is for, and whether the pose is there yet.
+    private func followUpCard(_ shot: FollowUpShot) -> some View {
+        let ready = model.turn.fit == .ok
+        return VStack(spacing: Theme.Spacing.m) {
+            Image(systemName: ready ? "camera.fill" : "arrow.turn.up.right")
+                .font(.system(size: 96, weight: .heavy))
+                .foregroundStyle(ready ? Color.green : .white)
+                .symbolEffect(.pulse, isActive: !ready)
+                .contentTransition(.symbolEffect(.replace))
+            Text(ready ? String(localized: "Hold still…") : String(localized: "Quarter turn to your right"))
+                .font(.system(size: 36, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.6)
+            Text(shot.level.followUpTitle)
+                .font(.system(size: 22, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.8))
+            Label("Left side to the phone, arms out", systemImage: "figure.arms.open")
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.85))
+        }
+        .padding(Theme.Spacing.l)
+        .frame(maxWidth: .infinity)
+        .background(.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .animation(.easeInOut(duration: 0.25), value: ready)
+        .accessibilityElement(children: .combine)
+    }
 
     private var header: some View {
         HStack(spacing: Theme.Spacing.m) {
@@ -138,7 +169,7 @@ struct BodyScanView: View {
                     }
                 }
                 // The one posture that lets chest, waist and hips all be measured.
-                Label("Arms straight out · 45° clockwise each time", systemImage: "figure.arms.open")
+                Label("Arms straight out", systemImage: "figure.arms.open")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
             }
@@ -147,6 +178,8 @@ struct BodyScanView: View {
             .animation(.easeInOut(duration: 0.25), value: model.turn)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text("Step \(station + 1) of \(StationScan.stationCount): \(StationGuide.instruction(station))"))
+        case let .followUp(shot):
+            followUpCard(shot)
         case .analyzing:
             VStack(spacing: Theme.Spacing.m) {
                 ProgressView().tint(.white).controlSize(.large)

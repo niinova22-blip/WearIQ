@@ -4481,16 +4481,6 @@
         }
       }
     },
-    "A bit long; you may want to roll the sleeves or tuck it in.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Biraz uzun; kolları kıvırabilir ya da içine sokabilirsin."
-          }
-        }
-      }
-    },
     "Now turn slowly all the way around.": {
       "localizations": {
         "tr": {
@@ -5077,16 +5067,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saat yönünün tersine dön"
-          }
-        }
-      }
-    },
-    "%@ fits": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ tam oturur"
           }
         }
       }
@@ -7141,16 +7121,6 @@
         }
       }
     },
-    "Blue fits, yellow is loose, red is long, purple is tight, orange is short. Glowing lines are where the seams and hems fall; white dashes are where they belong on your body. The garment is cut to the size chart and settles on your body under its own weight, as far as its fibres stretch. Without the product's own pattern this is a model of the garment, not the real one.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mavi tam oturuyor, sarı bol, kırmızı uzun, mor dar, turuncu kısa. Parlayan çizgiler dikişlerin ve eteklerin düştüğü yer; beyaz kesikli çizgiler vücudunda olması gereken yer. Kıyafet beden tablosuna göre kesilir ve kendi ağırlığıyla, lifleri ne kadar esnerse o kadar esneyerek vücuduna oturur. Ürünün kendi kalıbı olmadan bu, kıyafetin bir modelidir; gerçeğinin aynısı değildir."
-          }
-        }
-      }
-    },
     "Take it off": {
       "localizations": {
         "tr": {
@@ -7357,16 +7327,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "İkinci bakış"
-          }
-        }
-      }
-    },
-    "Arms straight out · 45° clockwise each time": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kollar yanlara açık · her seferinde saat yönünde 45°"
           }
         }
       }
@@ -9171,26 +9131,6 @@
         }
       }
     },
-    "Chest, waist, hips and lengths, ready to check.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Göğüs, bel, kalça ve boylar; kontrolüne hazır."
-          }
-        }
-      }
-    },
-    "Phone upright at waist height, 3 m away": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Telefon dik, bel hizasında, 3 m uzakta"
-          }
-        }
-      }
-    },
     "Bright room, plain background": {
       "localizations": {
         "tr": {
@@ -9387,16 +9327,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "3, 2, 1'den sonra: kollar omuz hizasında açık, sağına doğru yavaşça bir tur dön. Yaklaşık 15 saniye."
-          }
-        }
-      }
-    },
-    "Voice guidance leads you; the turn is filmed and measured on this phone.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sesli yönlendirme eşlik eder; dönüş bu telefonda kaydedilip ölçülür."
           }
         }
       }
@@ -9911,16 +9841,6 @@
         }
       }
     },
-    "Prop the phone upright at waist height": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Telefonu bel hizasında dik koy"
-          }
-        }
-      }
-    },
     "Step back about three steps": {
       "localizations": {
         "tr": {
@@ -9947,16 +9867,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bitti: ölçülerin hazır"
-          }
-        }
-      }
-    },
-    "How the scan works: prop the phone at waist height, step back, hold the front pose, then turn once round slowly with your arms out.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tarama nasıl yapılır: telefonu bel hizasına koy, geri çekil, önden poz ver, sonra kolların açık yavaşça bir tur dön."
           }
         }
       }
@@ -10437,6 +10347,226 @@
           "stringUnit": {
             "state": "translated",
             "value": "Yapıştır'a dokun, beden kontrolü hemen başlasın."
+          }
+        }
+      }
+    },
+    "A model of the garment from its size chart, not its own pattern.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürünün kendi kalıbı değil, beden tablosundan kurulmuş bir modeli."
+          }
+        }
+      }
+    },
+    "Arms straight out": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar iki yana tam açık"
+          }
+        }
+      }
+    },
+    "Left side to the phone, arms out": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sol yanın telefona dönük, kollar açık"
+          }
+        }
+      }
+    },
+    "Quarter turn to your right": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına çeyrek dön"
+          }
+        }
+      }
+    },
+    "One more photo for your chest": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğsün için bir fotoğraf daha"
+          }
+        }
+      }
+    },
+    "One more photo for your hips": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalçan için bir fotoğraf daha"
+          }
+        }
+      }
+    },
+    "One more photo for your waist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belin için bir fotoğraf daha"
+          }
+        }
+      }
+    },
+    "One more photo, to measure your chest more precisely.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göğsünü daha net ölçmek için bir fotoğraf daha."
+          }
+        }
+      }
+    },
+    "One more photo, to measure your hips more precisely.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalçanı daha net ölçmek için bir fotoğraf daha."
+          }
+        }
+      }
+    },
+    "One more photo, to measure your waist more precisely.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belini daha net ölçmek için bir fotoğraf daha."
+          }
+        }
+      }
+    },
+    "Turn a little further, until your side faces the phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biraz daha dön, yanın telefona bakana kadar."
+          }
+        }
+      }
+    },
+    "Turn a quarter to your right so your left side faces the phone, arms out, and hold still.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sağına çeyrek dön, sol yanın telefona baksın, kolların açık kalsın ve kıpırdamadan dur."
+          }
+        }
+      }
+    },
+    "How the scan works: lean the phone upright against something at waist height, step back, hold the front pose, then turn once round slowly with your arms out.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarama nasıl yapılır: telefonu bel hizasında bir şeye dik yasla, geri çekil, önden pozu koru, sonra kolların açık şekilde yavaşça bir tur dön."
+          }
+        }
+      }
+    },
+    "Lean the phone upright against something at waist height": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonu bel hizasında bir şeye dik yasla"
+          }
+        }
+      }
+    },
+    "Phone leaning upright at waist height, 3 m away": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefon bel hizasında dik yaslı, 3 m uzakta"
+          }
+        }
+      }
+    },
+    "If a part needs a closer look, one side photo; then chest, waist, hips and lengths.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir bölge daha net bakış isterse yandan tek fotoğraf; ardından göğüs, bel, kalça ve boylar."
+          }
+        }
+      }
+    },
+    "Closer than its cut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kesiminden daha yakın"
+          }
+        }
+      }
+    },
+    "Roomier than its cut": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kesiminden daha bol"
+          }
+        }
+      }
+    },
+    "Less roomy than its cut: it sits like a regular fit.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kesiminden daha az bol: normal kesim gibi oturur."
+          }
+        }
+      }
+    },
+    "Longer than usual; tuck it in or wear it loose.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normalden uzun; içine sokabilir ya da salaş giyebilirsin."
+          }
+        }
+      }
+    },
+    "Sleeves and length will be long.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar ve boy uzun gelir."
+          }
+        }
+      }
+    },
+    "Sleeves will be long; roll them back.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kollar uzun gelir; kıvırabilirsin."
           }
         }
       }

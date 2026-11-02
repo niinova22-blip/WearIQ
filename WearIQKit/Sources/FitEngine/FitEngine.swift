@@ -55,17 +55,36 @@ public struct FitEngine: FitAnalyzing {
             range = adjustedEase(rule, body: b.cm, spec: spec, preference: preference)
             sigma = (b.uncertaintyCm * b.uncertaintyCm + g.uncertaintyCm * g.uncertaintyCm).squareRoot()
         case .body:
-            // The chart states which body a size fits; a range in the chart widens tolerance.
-            let tol = rule.bodyChartTolerance + g.uncertaintyCm
-            let shift = preferenceShift(preference, width: 2 * tol, kind: rule.kind)
-            range = (-tol + shift)...(tol + rule.bodyChartLooseAllowance + shift)
-            sigma = b.uncertaintyCm
+            // The chart states which body a size fits; a range in the chart widens a girth's
+            // tolerance. A length is one body length per size: how sure it is (a length
+            // read off the model's photo, ±3.5 cm) is uncertainty, not room, or every size
+            // from S to 2XL has "ideal" sleeves.
+            if rule.kind == .length {
+                let tol = rule.bodyChartTolerance
+                range = -tol...tol
+                sigma = (b.uncertaintyCm * b.uncertaintyCm + g.uncertaintyCm * g.uncertaintyCm).squareRoot()
+            } else {
+                let tol = rule.bodyChartTolerance + g.uncertaintyCm
+                let shift = preferenceShift(preference, width: 2 * tol, kind: rule.kind)
+                range = (-tol + shift)...(tol + rule.bodyChartLooseAllowance + shift)
+                sigma = b.uncertaintyCm
+            }
         }
 
         let ease = g.cm - b.cm
         let outside = Self.outside(ease, range)
-        let verdict = Self.verdict(outside: outside, rule: rule)
-        let severity: FitSeverity = outside == 0 ? .good : (abs(outside) > rule.majorThreshold ? .major : .minor)
+        var verdict = Self.verdict(outside: outside, rule: rule)
+        var severity: FitSeverity = outside == 0 ? .good : (abs(outside) > rule.majorThreshold ? .major : .minor)
+        // Outside the cut's range but with an everyday fit's room: slight, said as such.
+        var comfort: ClosedRange<Double>?
+        if spec.chartKind == .garment, let c = rule.comfort {
+            comfort = (c.lowerBound + range.lowerBound - rule.ease.lowerBound)...(c.upperBound + range.upperBound - rule.ease.upperBound)
+        }
+        let byCutOnly = outside != 0 && comfort?.contains(ease) == true
+        if byCutOnly {
+            verdict = outside < 0 ? .slightlyTight : .slightlyLoose
+            severity = .minor
+        }
 
         let pIdeal = Self.normalCDF((range.upperBound - ease) / max(sigma, 0.01))
             - Self.normalCDF((range.lowerBound - ease) / max(sigma, 0.01))
@@ -83,11 +102,12 @@ public struct FitEngine: FitAnalyzing {
         let decisive = outside == 0 ? pIdeal : 1 - pIdeal
         let confidence: ConfidenceLevel = decisive > 0.8 ? .high : (decisive > 0.6 ? .medium : .low)
 
-        let expected = Self.expectedPenalty(ease: ease, sigma: sigma, range: range, rule: rule)
+        let expected = Self.expectedPenalty(ease: ease, sigma: sigma, range: range, rule: rule, comfort: comfort)
         var fit = RegionFit(region: rule.region, verdict: verdict, severity: severity,
                             estimatedOffsetCm: offset, probabilityIdeal: pIdeal,
                             confidence: confidence, missing: nil)
         fit.easeCm = ease
+        if byCutOnly { fit.byCutOnly = true }
         return (fit, rule.weight * expected)
     }
 
@@ -175,12 +195,21 @@ public struct FitEngine: FitAnalyzing {
     }
 
     /// Penalty for a given true ease. Too small is worse than too big for girths/widths
-    /// because a tight garment can't be fixed; for lengths, too short is worse.
-    static func penalty(ease: Double, range: ClosedRange<Double>, rule: RegionRule) -> Double {
+    /// because a tight garment can't be fixed; for lengths, too short is worse. Less room
+    /// than the cut has but still an everyday fit's (`comfort`) is only a style miss.
+    /// Shoulders too wide only drop the seams down the arm, which is far less than a
+    /// tight chest: a broad chest on narrow shoulders needs the size its chest needs.
+    static func penalty(ease: Double, range: ClosedRange<Double>, rule: RegionRule,
+                        comfort: ClosedRange<Double>? = nil) -> Double {
         let o = outside(ease, range)
         guard o != 0 else { return 0 }
         let scaled = abs(o) / rule.majorThreshold
-        let asymmetry = o < 0 ? 1.6 : 1.0
+        let asymmetry: Double
+        if o < 0 {
+            asymmetry = comfort?.contains(ease) == true ? 1.0 : 1.6
+        } else {
+            asymmetry = rule.loosePenalty
+        }
         return asymmetry * scaled * scaled
     }
 
@@ -188,11 +217,12 @@ public struct FitEngine: FitAnalyzing {
     private static let ghNodes: [Double] = [-2.0201828705, -0.9585724646, 0, 0.9585724646, 2.0201828705]
     private static let ghWeights: [Double] = [0.0199532421, 0.3936193232, 0.9453087205, 0.3936193232, 0.0199532421]
 
-    static func expectedPenalty(ease: Double, sigma: Double, range: ClosedRange<Double>, rule: RegionRule) -> Double {
-        guard sigma > 0 else { return penalty(ease: ease, range: range, rule: rule) }
+    static func expectedPenalty(ease: Double, sigma: Double, range: ClosedRange<Double>, rule: RegionRule,
+                                comfort: ClosedRange<Double>? = nil) -> Double {
+        guard sigma > 0 else { return penalty(ease: ease, range: range, rule: rule, comfort: comfort) }
         var sum = 0.0
         for (x, w) in zip(ghNodes, ghWeights) {
-            sum += w * penalty(ease: ease + 2.0.squareRoot() * sigma * x, range: range, rule: rule)
+            sum += w * penalty(ease: ease + 2.0.squareRoot() * sigma * x, range: range, rule: rule, comfort: comfort)
         }
         return sum / Double.pi.squareRoot()
     }

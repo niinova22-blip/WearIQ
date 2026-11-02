@@ -24,261 +24,7 @@ extension Avatar.Landmark.Kind {
     }
 }
 
-/// Turns a garment's size chart into how it sits on the avatar: ease (garment minus
-/// body girth) and how much longer or shorter than the body each length is. Garment
-/// charts give the ease directly; body charts describe the body a size suits, so the
-/// garment is taken as that body plus the usual ease for the fit (see EaseTable).
-enum AvatarFitMapper {
-    /// Thigh ease of a leg cut's usual size, cm, for charts without a thigh.
-    static func typicalThigh(_ cut: LegCut?) -> Double? {
-        switch cut {
-        case .skinny?: 2
-        case .slim?, .flare?: 5
-        case .straight?: 9
-        case .tapered?: 12
-        case .wide?: 18
-        case nil: nil
-        }
-    }
-
-    /// With `regions` (the size-chart verdicts for this size), the avatar's colours,
-    /// lines and labels say what those verdicts say.
-    static func fit(spec: GarmentSpec, size: SizeEntry, body: BodyProfile, regions: [RegionFit] = [],
-                    name: String? = nil) -> Avatar.GarmentFit {
-        let isTrousers = spec.category == .pants
-        let bottom = spec.category.isBottom
-        var fit = Avatar.GarmentFit(kind: kind(spec, size))
-        fit.style = switch spec.category {
-        case .jacket: .jacket
-        case .coat: .coat
-        case .dress: .dress
-        default: .plain
-        }
-        fit.judged = judged(regions, trousers: bottom)
-        // The cut decides what counts as loose (an oversized tee is roomy by design) and,
-        // for trousers, how the legs hang from the knee down.
-        fit.cut = spec.fitStyle
-        fit.legCut = bottom ? spec.legCut : nil
-        let height = body[.height]?.cm ?? 170
-        func diff(_ g: GarmentDimension, _ b: BodyDimension) -> Double? {
-            guard let gv = size.values[g]?.cm, let bv = body[b]?.cm else { return nil }
-            return gv - bv
-        }
-        func ease(_ g: GarmentDimension, _ b: BodyDimension, typical: Double) -> Double {
-            guard let d = diff(g, b) else { return typical }
-            return spec.chartKind == .garment ? d : typical + d
-        }
-        let style = spec.fitStyle
-        // A length the chart gives per size; one that is the same for every size was
-        // filled in from the model's photo (or the chart doesn't grade it) and says
-        // nothing about this size.
-        func graded(_ g: GarmentDimension) -> Double? {
-            guard let v = size.values[g]?.cm else { return nil }
-            let all = spec.sizes.compactMap { $0.values[g]?.cm }
-            return spec.sizes.count > 1 && all.count == spec.sizes.count && Set(all.map { ($0 * 2).rounded() }).count == 1 ? nil : v
-        }
-        // Sizes this one is from a regular fit on this body (+ bigger): lengths grow
-        // with the size as its girths do, about 1.5 cm in length and 1 cm in sleeve for
-        // every 5 cm of chest (4 cm of waist), as patterns are graded.
-        var steps = 0.0
-        // The design length the name says, cm from the kind's usual one.
-        let words = SizeChartParser.foldForMatching(name ?? "")
-        func hint(_ table: [(String, Double)]) -> Double { table.first { words.contains($0.0) }?.1 ?? 0 }
-        if spec.category == .skirt {
-            fit.waistEase = ease(.waist, .waist, typical: 1.5)
-            fit.hipEase = ease(.hip, .hip, typical: [FitStyle.slim: 5, .regular: 8, .relaxed: 16, .oversized: 30][style] ?? 8)
-            steps = (fit.waistEase - 1.5) / 4
-            // Waistband to hem; a regular skirt ends just above the knee.
-            if let length = graded(.bodyLength) {
-                fit.hemOffset = length - 0.245 * height
-            } else {
-                fit.lengthFromChart = false
-                fit.hemOffset = hint([("mini", -0.065), ("midi", 0.15), ("maxi", 0.25), ("maksi", 0.25), ("uzun", 0.2)]) * height
-                    + steps * 1.0
-            }
-        } else if spec.category == .shorts {
-            fit.waistEase = ease(.waist, .waist, typical: 1.5)
-            fit.hipEase = ease(.hip, .hip, typical: [FitStyle.slim: 4, .regular: 8, .relaxed: 14, .oversized: 22][style] ?? 8)
-            fit.thighEase = ease(.thigh, .thigh, typical: [FitStyle.slim: 6, .regular: 12, .relaxed: 20, .oversized: 30][style] ?? 12)
-            // Legs end mid-thigh unless the chart gives the inseam ("bermuda" to the knee).
-            fit.lengthFromChart = size.values[.inseam] != nil
-            if let inseam = size.values[.inseam]?.cm, let body = body[.inseam]?.cm {
-                fit.hemOffset = inseam - body
-            } else {
-                fit.hemOffset = -(words.contains("bermuda") ? 0.25 : 0.335) * height
-            }
-        } else if isTrousers {
-            fit.waistEase = ease(.waist, .waist, typical: 1.5)
-            fit.hipEase = ease(.hip, .hip, typical: [FitStyle.slim: 4, .regular: 7, .relaxed: 12, .oversized: 20][style] ?? 7)
-            fit.thighEase = ease(.thigh, .thigh, typical: Self.typicalThigh(spec.legCut)
-                ?? [FitStyle.slim: 5, .regular: 9, .relaxed: 15, .oversized: 24][style] ?? 9)
-            fit.lengthDelta = diff(.inseam, .inseam) ?? diff(.outseam, .outseam) ?? 0
-        } else {
-            let over: Double = spec.category == .coat ? 6 : 0
-            let chestTypical: Double = ([FitStyle.slim: 7, .regular: 12, .relaxed: 19, .oversized: 30][style] ?? 12) + over
-            fit.chestEase = ease(.chest, .chest, typical: chestTypical)
-            fit.waistEase = ease(.waist, .waist, typical: spec.category == .dress ? chestTypical - 4 : chestTypical + 3)
-            fit.hipEase = spec.category == .dress ? ease(.hip, .hip, typical: chestTypical - 2) : fit.waistEase
-            steps = (fit.chestEase - chestTypical) / 5
-            switch spec.category {
-            case .coat, .dress:
-                // Measured from the shoulder; a regular coat ends above the knee, a dress at
-                // it. Its length is its style, so it moves the hem without being "too long".
-                let regular = (spec.category == .coat ? 0.49 : 0.54) * height
-                if let length = graded(.bodyLength), spec.chartKind == .garment {
-                    fit.hemOffset = length - regular
-                } else {
-                    fit.lengthFromChart = false
-                    let named = spec.category == .coat
-                        ? hint([("uzun", 0.17), ("long", 0.17), ("maxi", 0.25), ("kisa", -0.12), ("short", -0.12)])
-                        : hint([("mini", -0.095), ("midi", 0.12), ("maxi", 0.22), ("maksi", 0.22), ("uzun", 0.2)])
-                    fit.hemOffset = named * height + steps * 1.5
-                }
-            default:
-                // Cut short or long by design: a crop top ends about the navel, a longline
-                // or oversize one a hand lower than usual.
-                fit.hemOffset = hint([("crop", -0.075), ("longline", 0.06), ("uzun", 0.05), ("oversize", 0.03)]) * height
-                let lengthEase: Double = spec.category == .tshirt ? 18 : spec.category == .jacket ? 25 : 21
-                if graded(.bodyLength) != nil, let d = diff(.bodyLength, .torsoLength) {
-                    fit.lengthDelta = spec.chartKind == .garment ? d - lengthEase : d
-                } else {
-                    fit.lengthFromChart = false
-                    fit.lengthDelta = steps * 1.5
-                    fit.judged.length = nil
-                }
-            }
-            if graded(.sleeveLength) != nil, let d = diff(.sleeveLength, .armLength) {
-                fit.sleeveDelta = spec.chartKind == .garment ? d - 2.5 : d
-            } else {
-                fit.sleeveFromChart = false
-                fit.sleeveDelta = steps * 1.0
-                fit.judged.sleeve = nil
-            }
-            // The chart's shoulder runs over the back; a scanned one is bone to bone.
-            let shoulder = body[.shoulderWidth].map(FitEngine.acrossBack)
-            if let gv = size.values[.shoulderWidth]?.cm, let bv = shoulder?.cm {
-                let d = gv - bv
-                fit.shoulderDelta = spec.chartKind == .garment ? d : d + (style == .oversized ? 7 : 0)
-            } else {
-                // No shoulder on the chart: shoulders are graded with the chest, about 1.2 cm
-                // for every 4–5 cm (ISO 8559 grading). So a size cut roomier than a regular
-                // fit of this kind on this body has its seams that much further out, and a
-                // smaller one further in (every size used to say "seams on your shoulders").
-                let graded = (fit.chestEase - chestTypical) * 0.27
-                fit.shoulderDelta = graded + (style == .oversized ? 7 : 0)
-            }
-        }
-        return fit
-    }
-
-    /// The avatar's garment for a category: sleeves from the category, or for a dress from
-    /// the chart (a sleeve over 30 cm is a long one).
-    static func kind(_ spec: GarmentSpec, _ size: SizeEntry) -> Avatar.GarmentFit.Kind {
-        switch spec.category {
-        case .pants, .shorts: .trousers
-        case .skirt: .skirt
-        case .tshirt: .top(longSleeves: false)
-        case .dress: .top(longSleeves: (size.values[.sleeveLength]?.cm ?? 0) > 30)
-        case .shirt, .jacket, .coat, .sweater: .top(longSleeves: true)
-        }
-    }
-
-    /// The verdicts the avatar shows: how far each length is past the usual range, where
-    /// the shoulder seams sit, how the trouser waist sits. Nil where there's no verdict,
-    /// and the avatar judges by its own drape.
-    static func judged(_ regions: [RegionFit], trousers: Bool) -> Avatar.GarmentFit.Judged {
-        var j = Avatar.GarmentFit.Judged()
-        func by(_ r: FitRegion) -> RegionFit? { regions.first { $0.region == r && $0.verdict != .insufficientData } }
-        func length(_ r: RegionFit?) -> Double? {
-            guard let r else { return nil }
-            let amount = max(1, r.estimatedOffsetCm.map { ($0.lowerBound + $0.upperBound) / 2 } ?? 1)
-            switch r.verdict {
-            case .long: return amount
-            case .short: return -amount
-            default: return 0
-            }
-        }
-        // Each girth verdict for the zones it covers: loose, fits or tight there.
-        func tone(_ r: RegionFit) -> FitTone {
-            switch r.verdict {
-            case .tight, .slightlyTight: .tight
-            case .loose, .slightlyLoose: .loose
-            default: .fits
-            }
-        }
-        let covered: [(FitRegion, [FitZone])] = trousers
-            ? [(.waist, [.waist]), (.hip, [.hip]), (.thigh, [.thigh])]
-            : [(.chest, [.chest, .back]), (.waist, [.waist, .abdomen, .hip])]
-        func tension(_ r: RegionFit) -> ZoneTension {
-            switch r.verdict {
-            case .tight: .tight
-            case .slightlyTight: .slightlyTight
-            case .loose, .slightlyLoose: .loose
-            default: .comfortable
-            }
-        }
-        for (region, zones) in covered {
-            guard let r = by(region) else { continue }
-            for zone in zones {
-                j.zones[zone] = tone(r)
-                j.tensions[zone] = tension(r)
-            }
-        }
-        if trousers {
-            j.length = length(by(.inseam) ?? by(.outseam))
-            if let w = by(.waist) {
-                switch w.verdict {
-                case .tight, .slightlyTight: j.waist = .tight
-                case .loose, .slightlyLoose: j.waist = .loose
-                default: j.waist = .fits
-                }
-            }
-        } else {
-            j.length = length(by(.bodyLength))
-            j.sleeve = length(by(.sleeve))
-            if let s = by(.shoulder) {
-                // Half the width difference falls on each side, as the verdict's own
-                // wording ("shoulder seams sit about 4 cm low") says.
-                switch s.verdict {
-                case .ideal: j.shoulderPerSide = 0
-                case .slightlyLoose, .loose: if let e = s.easeCm, e > 0 { j.shoulderPerSide = e / 2 }
-                case .slightlyTight, .tight: if let e = s.easeCm, e < 0 { j.shoulderPerSide = e / 2 }
-                default: break
-                }
-            }
-        }
-        return j
-    }
-
-    /// How the fabric stretches and drapes, from its composition when the product page
-    /// gave one, otherwise from the category and the chart's stretch setting.
-    static func fabric(spec: GarmentSpec, material: String?) -> Fabric {
-        let knit = spec.category == .tshirt || spec.category == .sweater
-        let fibres = FabricAdvice.fibres(in: material ?? "")
-        guard !fibres.isEmpty else {
-            var fabric: Fabric = spec.category.isOuterwear ? .outerwear : knit ? .knit : .woven
-            fabric.stretchLimit += Float(spec.stretch.comfortableStretch)
-            return fabric
-        }
-        let mix = Dictionary(uniqueKeysWithValues: fibres.map { ($0.key.rawValue, $0.value) })
-        // A jacket or coat is a heavy cloth whatever it's made of.
-        return spec.category.isOuterwear ? Fabric(fibres: mix, knit: false, weight: 300) : Fabric(fibres: mix, knit: knit)
-    }
-
-    /// The body at the low and high ends of its measured ranges, where those are wider
-    /// than a few centimetres (clothes hid it); nil ends where the scan is sure.
-    static func bodyRange(_ body: BodyProfile, around m: Avatar.Measurements) -> (Avatar.Measurements?, Avatar.Measurements?) {
-        func ends(_ d: BodyDimension) -> (Double, Double)? {
-            guard let a = body.assessment(d), a.high - a.low > 4 else { return nil }
-            return (a.low, a.high)
-        }
-        let dims: [BodyDimension] = [.chest, .waist, .hip, .thigh]
-        guard dims.contains(where: { ends($0) != nil }) else { return (nil, nil) }
-        let low = m.with(chest: ends(.chest)?.0, waist: ends(.waist)?.0, hip: ends(.hip)?.0, thigh: ends(.thigh)?.0)
-        let high = m.with(chest: ends(.chest)?.1, waist: ends(.waist)?.1, hip: ends(.hip)?.1, thigh: ends(.thigh)?.1)
-        return (low, high)
-    }
-
+extension AvatarFitMapper {
     /// Where each fit region's dot goes.
     static func anchor(for region: FitRegion, trousers: Bool) -> Avatar.Anchor {
         switch region {
@@ -654,7 +400,7 @@ struct AvatarFitView: View {
                 if let body = profiles.first?.profile { reliability(body) }
                 companionSection
                 details
-                Text("Blue fits, yellow is loose, red is long, purple is tight, orange is short. Glowing lines are where the seams and hems fall; white dashes are where they belong on your body. The garment is cut to the size chart and settles on your body under its own weight, as far as its fibres stretch. Without the product's own pattern this is a model of the garment, not the real one.")
+                Text("A model of the garment from its size chart, not its own pattern.")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -684,7 +430,15 @@ struct AvatarFitView: View {
     @ViewBuilder
     private func placementRows(layer: Int) -> some View {
         if frame == nil, !draping, let avatar, avatar.layers.indices.contains(layer) {
-            let placements = avatar.layers[layer].placements
+            // An edge the size-chart rows above already judge isn't said twice.
+            let judged = Set((layer == 0 ? regions : []).filter { $0.verdict != .insufficientData }.map(\.region))
+            let placements = avatar.layers[layer].placements.filter { p in
+                switch p.edge {
+                case .sleeve: !judged.contains(.sleeve)
+                case .hem: !judged.contains(.bodyLength)
+                case .legs: !judged.contains(.inseam) && !judged.contains(.outseam)
+                }
+            }
             if !placements.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(placements.indices, id: \.self) { i in
@@ -958,7 +712,8 @@ struct AvatarFitView: View {
         comparing = true
         let fabric = AvatarFitMapper.fabric(spec: spec, material: material)
         let sizes: [(label: String, fit: Avatar.GarmentFit)] = spec.sizes.map { size in
-            var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body, name: productName)
+            let regions = analysis.sizes.first { $0.label == size.label }?.regions ?? []
+            var fit = AvatarFitMapper.fit(spec: spec, size: size, body: body, regions: regions, name: productName)
             fit.fabric = fabric
             return (size.label, fit)
         }

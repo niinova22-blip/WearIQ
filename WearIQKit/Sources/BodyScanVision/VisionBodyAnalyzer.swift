@@ -80,7 +80,9 @@ public struct VisionBodyAnalyzer: Sendable {
             }
             center = joints[.root].map { $0.x * Double(mask.width) }
         }
-        return RotationFrame(mask: mask, centerX: center, time: time, joints: joints)
+        // Only the person: not the chair or the coat rack the segmentation took in.
+        let pixels = joints.mapValues { Point2D($0.x * Double(mask.width), $0.y * Double(mask.height)) }
+        return RotationFrame(mask: mask.isolatingPerson(joints: pixels), centerX: center, time: time, joints: joints)
     }
 
     /// Full analysis of a captured still: segmentation mask plus joints in mask pixels.
@@ -96,15 +98,15 @@ public struct VisionBodyAnalyzer: Sendable {
         guard let observation = pose.results?.first else { throw VisionAnalysisError.noPersonFound }
         guard let maskBuffer = segmentation.results?.first?.pixelBuffer else { throw VisionAnalysisError.maskUnavailable }
 
-        let mask = try Self.binaryMask(from: maskBuffer, imageAspect: Double(image.width) / Double(image.height))
+        let raw = try Self.binaryMask(from: maskBuffer, imageAspect: Double(image.width) / Double(image.height))
         let points = try observation.recognizedPoints(.all)
         var joints: [BodyJoint: Point2D] = [:]
         for (name, joint) in Self.jointMap {
             guard let p = points[name], p.confidence >= 0.3 else { continue }
-            joints[joint] = Point2D(Double(p.location.x) * Double(mask.width),
-                                    (1 - Double(p.location.y)) * Double(mask.height))
+            joints[joint] = Point2D(Double(p.location.x) * Double(raw.width),
+                                    (1 - Double(p.location.y)) * Double(raw.height))
         }
-        return (mask, joints)
+        return (raw.isolatingPerson(joints: joints), joints)
     }
 
     /// The mask is resampled to the image's aspect ratio: Vision may return it at a

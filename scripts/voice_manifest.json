@@ -27,6 +27,12 @@
   "lang": "en",
   "text": "Come a little closer to the phone."
  },
+ "voice_0bbbd2d6d1112c02": {
+  "cer": 0.0,
+  "heard": "Sağına çeyrek dön, sol yanın telefona baksın, kolların açık kalsın ve kıpırdamadan dur.",
+  "lang": "tr",
+  "text": "Sağına çeyrek dön, sol yanın telefona baksın, kolların açık kalsın ve kıpırdamadan dur."
+ },
  "voice_0dc5ab5568174230": {
   "lang": "tr",
   "text": "Hiçbir yere gönderilmez."
@@ -96,8 +102,6 @@
   "text": "Good."
  },
  "voice_2d1decf60f4d0776": {
-  "cer": 0.012,
-  "heard": "Şimdi içinden yavaşça ona kadar sayarak kolların iki yana tam açık, kendi etrafında bir tam turdan.",
   "lang": "tr",
   "text": "Şimdi içinden yavaşça ona kadar sayarak, kolların iki yana tam açık, kendi etrafında bir tam tur dön."
  },
@@ -165,9 +169,13 @@
   "lang": "tr",
   "text": "Doğru beden için dar kıyafetle ya da iç çamaşırıyla tekrar tara."
  },
+ "voice_4549fae6792a0b6d": {
+  "cer": 0.0,
+  "heard": "Göğsünü daha net ölçmek için bir fotoğraf daha.",
+  "lang": "tr",
+  "text": "Göğsünü daha net ölçmek için bir fotoğraf daha."
+ },
  "voice_45c2fffe2716612d": {
-  "cer": 0.032,
-  "heard": "Now, counting slowly to 10 in your head, turn once all the way round in place with your arms straight out to the sides.",
   "lang": "en",
   "text": "Now, counting slowly to ten in your head, turn once all the way round in place, with your arms straight out to the sides."
  },
@@ -259,6 +267,12 @@
   "lang": "en",
   "text": "Move to the middle of the picture."
  },
+ "voice_746dfb0647820c25": {
+  "cer": 0.0,
+  "heard": "Turn a little further until your side faces the phone.",
+  "lang": "en",
+  "text": "Turn a little further, until your side faces the phone."
+ },
  "voice_7697842d381c37ca": {
   "lang": "tr",
   "text": "Sağına doğru yavaşça dönmeye devam et."
@@ -299,6 +313,12 @@
   "lang": "tr",
   "text": "Güzel, şimdi kıpırdamadan bekle."
  },
+ "voice_925dd878eb77990a": {
+  "cer": 0.0,
+  "heard": "One more photo to measure your hips more precisely.",
+  "lang": "en",
+  "text": "One more photo, to measure your hips more precisely."
+ },
  "voice_9999a67740f8bedb": {
   "lang": "en",
   "text": "Your measurements are ready."
@@ -322,6 +342,12 @@
  "voice_a5de1ec8fcee5e5a": {
   "lang": "tr",
   "text": "Biraz hızlı oldu."
+ },
+ "voice_a87e6793831a6719": {
+  "cer": 0.0,
+  "heard": "Biraz daha dön, yanın telefona bakana kadar.",
+  "lang": "tr",
+  "text": "Biraz daha dön, yanın telefona bakana kadar."
  },
  "voice_a9de692fc4755296": {
   "lang": "en",
@@ -366,6 +392,12 @@
  "voice_b8f8d4a2bd2b891e": {
   "lang": "en",
   "text": "Take them off or put on something fitted."
+ },
+ "voice_b98d9aa62a989507": {
+  "cer": 0.0,
+  "heard": "Turn a quarter to your right so your left side faces the phone, arms out, and hold still.",
+  "lang": "en",
+  "text": "Turn a quarter to your right so your left side faces the phone, arms out, and hold still."
  },
  "voice_ba5ba1fe30b3879d": {
   "lang": "en",
@@ -419,6 +451,12 @@
   "lang": "en",
   "text": "Turn fully to your side."
  },
+ "voice_ced5b3ad1229c5ad": {
+  "cer": 0.0,
+  "heard": "One more photo to measure your waist more precisely.",
+  "lang": "en",
+  "text": "One more photo, to measure your waist more precisely."
+ },
  "voice_d1ff054d0f3256ad": {
   "lang": "tr",
   "text": "Sağ yanın telefona baksın."
@@ -443,6 +481,12 @@
   "lang": "tr",
   "text": "Sağına doğru 45 derece daha dön ve dur."
  },
+ "voice_e0371e99b3de824a": {
+  "cer": 0.0,
+  "heard": "One more photo to measure your chest more precisely.",
+  "lang": "en",
+  "text": "One more photo, to measure your chest more precisely."
+ },
  "voice_e51849745fee9ccb": {
   "lang": "tr",
   "text": "Telefona tam karşıdan bak."
@@ -462,6 +506,18 @@
  "voice_f7ed9cfac61a582e": {
   "lang": "tr",
   "text": "Biraz fazla döndün."
+ },
+ "voice_fb00fdd83f674ad6": {
+  "cer": 0.0,
+  "heard": "Belini daha net ölçmek için bir fotoğraf daha.",
+  "lang": "tr",
+  "text": "Belini daha net ölçmek için bir fotoğraf daha."
+ },
+ "voice_fd62c7cb9a9aadf2": {
+  "cer": 0.0,
+  "heard": "Kalçanı daha net ölçmek için bir fotoğraf daha.",
+  "lang": "tr",
+  "text": "Kalçanı daha net ölçmek için bir fotoğraf daha."
  },
  "voice_ffdcf16f72b9314d": {
   "lang": "tr",
