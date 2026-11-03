@@ -14,13 +14,17 @@ jobs:
   engines:
     name: Engine tests (WearIQKit)
     runs-on: macos-15
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
       - name: Swift version
         run: swift --version
       - name: Test engines
         working-directory: WearIQKit
-        run: swift test
+        # Optimised: the population audit, the 400-body avatar check and the simulated
+        # turns run in minutes this way and take over an hour unoptimised. (A debug
+        # build with -O keeps @testable imports working; -c release doesn't.)
+        run: swift test -Xswiftc -O
 
   ios:
     name: iOS build & app tests
