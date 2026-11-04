@@ -25,15 +25,20 @@ public struct TurnRecording: Sendable {
         /// picture), for engine C.
         public var top: Double?
         public var floor: Double?
+        /// The frame's width profile down the torso and legs (`StopProfile`), for the
+        /// body's shape (`stationProfiles`).
+        public var stop: StopProfile?
 
         public init(time: Double, spanRatio: Double, widths: [BodyLevel: Double],
-                    profile: [BodyLevel: [Double?]] = [:], top: Double? = nil, floor: Double? = nil) {
+                    profile: [BodyLevel: [Double?]] = [:], top: Double? = nil, floor: Double? = nil,
+                    stop: StopProfile? = nil) {
             self.time = time
             self.spanRatio = spanRatio
             self.widths = widths
             self.profile = profile
             self.top = top
             self.floor = floor
+            self.stop = stop
         }
     }
 
@@ -154,19 +159,10 @@ public struct TurnRecording: Sendable {
     /// The widths at the eight directions, 45° apart from the front, clockwise as the
     /// user turned; nil where no frame was close enough.
     public func stations() -> [[BodyLevel: Double]?] {
-        let points = turningPoints
-        guard points.count == 4, let start = samples.first?.time else { return Array(repeating: nil, count: 8) }
-        let marks = [start] + points  // 0°, 90°, 180°, 270°, 360°
+        let groups = stationSamples()
+        guard groups.count == 8 else { return Array(repeating: nil, count: 8) }
         var out: [[BodyLevel: Double]?] = []
-        for k in 0..<8 {
-            let q = k / 2
-            let a = marks[q], b = marks[q + 1]
-            // A diagonal is where the span passes cos 45° on its way between the two;
-            // halfway in time only if the user turned evenly.
-            let target = k % 2 == 0 ? a : crossing(0.707, from: a, to: b) ?? (a + b) / 2
-            // Frames within a fifth of the quarter either side (about ±18°).
-            let reach = max(0.15, (b - a) * 0.2)
-            let near = samples.filter { abs($0.time - target) <= reach }
+        for near in groups {
             var widths: [BodyLevel: Double] = [:]
             for level in BodyLevel.allCases {
                 let values = near.compactMap { $0.widths[level] }.sorted()
@@ -175,6 +171,33 @@ public struct TurnRecording: Sendable {
             out.append(widths.isEmpty ? nil : widths)
         }
         return out
+    }
+
+    /// The frames around each of the eight directions; empty without four turning points.
+    private func stationSamples() -> [[Sample]] {
+        let points = turningPoints
+        guard points.count == 4, let start = samples.first?.time else { return [] }
+        let marks = [start] + points  // 0°, 90°, 180°, 270°, 360°
+        return (0..<8).map { k in
+            let q = k / 2
+            let a = marks[q], b = marks[q + 1]
+            // A diagonal is where the span passes cos 45° on its way between the two;
+            // halfway in time only if the user turned evenly.
+            let target = k % 2 == 0 ? a : crossing(0.707, from: a, to: b) ?? (a + b) / 2
+            // Frames within a fifth of the quarter either side (about ±18°).
+            let reach = max(0.15, (b - a) * 0.2)
+            return samples.filter { abs($0.time - target) <= reach }
+        }
+    }
+
+    /// Each direction's width profile, the median of its frames', for the silhouette fit
+    /// that shapes the avatar like the person (`SilhouetteBodyFit`).
+    public func stationProfiles() -> [StopProfile] {
+        stationSamples().enumerated().compactMap { k, near in
+            guard var p = StopProfile.median(near.compactMap(\.stop)) else { return nil }
+            p.station = k
+            return p
+        }
     }
 
     // MARK: Every frame

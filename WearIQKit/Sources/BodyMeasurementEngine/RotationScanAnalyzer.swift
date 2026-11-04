@@ -52,6 +52,9 @@ public struct FrameReading: Sendable, Equatable {
     public var profile: [BodyLevel: [Double?]] = [:]
     /// The person's outer outline, top to bottom, for drawing it live.
     public var outline: [OutlineRow] = []
+    /// The frame's width profile (`StopProfile`, station 0 until the turn places it), so
+    /// the filmed turn's eight directions carry the body's shape as well as its girths.
+    public var stop: StopProfile? = nil
 }
 
 /// One row of the outer outline: leftmost and rightmost person pixel, normalised, and
@@ -159,6 +162,7 @@ public struct RotationScanAnalyzer: Sendable {
                                    armThickness: (span ?? 0) >= 0.7 ? armThickness(frame.mask, top: top, height: floor - top, center: Int(center)) : nil,
                                    outline: outline(frame.mask, top: top, floor: floor))
         reading.profile = profile
+        reading.stop = self.profile(frame, heightCm: heightCm, station: 0)
         return reading
     }
 

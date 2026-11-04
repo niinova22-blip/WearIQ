@@ -11560,6 +11560,46 @@
           }
         }
       }
+    },
+    "Bra size, e.g. 75B or 34C": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sütyen bedeni, ör. 75B ya da 34C"
+          }
+        }
+      }
+    },
+    "Couldn't read that size; write the band and the cup, like 75B.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu beden okunamadı; bant ve kupayı 75B gibi yaz."
+          }
+        }
+      }
+    },
+    "Bra size (optional)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sütyen bedeni (isteğe bağlı)"
+          }
+        }
+      }
+    },
+    "Shapes the bust on your avatar. Size advice still uses your chest measurement.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avatarındaki göğüs şeklini belirler. Beden önerisi yine göğüs ölçünü kullanır."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

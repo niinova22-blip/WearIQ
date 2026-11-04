@@ -1,3 +1,4 @@
+import AvatarEngine
 import AVFoundation
 import BodyMeasurementEngine
 import BodyScanVision
@@ -482,7 +483,7 @@ final class BodyScanViewModel {
         guard fit == .ok else { return nudge(fit) }
         recording.add(.init(time: now.timeIntervalSince(started), spanRatio: span / spanReference,
                             widths: reading.levels.mapValues(\.widthCm), profile: reading.profile,
-                            top: reading.top, floor: reading.floor))
+                            top: reading.top, floor: reading.floor, stop: reading.stop))
         // The ring fills as the user goes round.
         let progress = recording.progress
         if progress > turnProgress + 0.01 { lastProgressAt = now }
@@ -557,8 +558,10 @@ final class BodyScanViewModel {
         if recording.tooFast { return restartTurn(tooFast: true) }
         // The eight directions found in the turn, as the stops the measurement uses.
         scan = StationScan()
+        // Each direction's width profile too: the silhouette fit shapes the avatar with them.
+        let profiles = recording.stationProfiles()
         for (k, widths) in recording.stations().enumerated() {
-            if let widths { scan.record(widths, at: k) }
+            if let widths { scan.record(widths, at: k, profile: profiles.first { $0.station == k }) }
         }
         // Every frame of the turn, fitted against its angle: the girths it gives replace
         // the eight directions' wherever it has enough of the turn.
@@ -660,6 +663,21 @@ final class BodyScanViewModel {
         analyze()
     }
 
+    /// Shape model coefficients fitted to the turn's silhouettes (a second or two of work).
+    nonisolated private static func shape(scan: StationScan, basics: BodyBasics, profile: BodyProfile) async -> [Double]? {
+        let profiles = Array(scan.profiles.values)
+        guard profiles.count >= 4 else { return nil }
+        return await Task.detached(priority: .userInitiated) {
+            var input = SilhouetteBodyFit.Input(profiles: profiles, heightCm: basics.heightCm)
+            input.clothingCm = SilhouetteBodyFit.clothing(fitted: true, underwear: false)
+            input.start = Avatar.Measurements(profile)
+            for d in [BodyDimension.shoulderWidth, .armLength, .inseam] where profile[d]?.source == .scan {
+                input.lengths[d] = profile[d]
+            }
+            return SilhouetteBodyFit.fit(input)?.coefficients
+        }.value
+    }
+
     private func analyze() {
         followUpTask?.cancel()
         guard let front else { return retry() }
@@ -711,6 +729,11 @@ final class BodyScanViewModel {
             switch outcome {
             case var .success(profile):
                 TapeCalibration.apply(to: &profile)
+                // The body's shape from the silhouettes, for an avatar that looks like the
+                // person (not from everyday clothes: their outline isn't the body's shape).
+                if basics.attire != .everyday {
+                    profile.shapeCoefficients = await Self.shape(scan: scan, basics: basics, profile: profile)
+                }
                 let girths = scan.girths()
                 let missing = [BodyLevel.chest, .waist].filter { girths[$0] == nil }
                 guard missing.isEmpty else {

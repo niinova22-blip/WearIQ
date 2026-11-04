@@ -82,6 +82,20 @@ final class MeasurementReviewModel {
 
     var canSave: Bool { profile[.height] != nil }
 
+    /// A bra size as typed ("75B", "34C"), for the bust's shape on the avatar; empty
+    /// clears it. False when it can't be read.
+    @discardableResult
+    func setBraSize(_ text: String) -> Bool {
+        let t = text.trimmingCharacters(in: .whitespaces)
+        if t.isEmpty {
+            profile.underbustCm = nil
+            return true
+        }
+        guard let size = BraSize(t) else { return false }
+        profile.underbustCm = size.underbustCm
+        return true
+    }
+
     func finalizedProfile(now: Date = Date()) -> BodyProfile {
         var p = profile
         p.createdAt = now

@@ -8,6 +8,8 @@ struct MeasurementReviewView: View {
     @State private var model: MeasurementReviewModel
     @State private var editing: BodyDimension?
     @State private var saveError: String?
+    @State private var braSize = ""
+    @State private var braSizeInvalid = false
     let onSaved: () -> Void
 
     init(profile: BodyProfile, onSaved: @escaping () -> Void) {
@@ -69,6 +71,26 @@ struct MeasurementReviewView: View {
                 }
             } footer: {
                 Text("Photo-based values are estimates. Tap any value to replace it with your own measurement.")
+            }
+            if model.profile.sex == .female {
+                Section {
+                    TextField("Bra size, e.g. 75B or 34C", text: $braSize)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .onChange(of: braSize) { _, text in braSizeInvalid = !model.setBraSize(text) }
+                        .onAppear {
+                            if braSize.isEmpty, let band = model.profile.underbustCm { braSize = String(Int(band.rounded())) }
+                        }
+                    if braSizeInvalid {
+                        Text("Couldn't read that size; write the band and the cup, like 75B.")
+                            .font(.footnote)
+                            .foregroundStyle(.orange)
+                    }
+                } header: {
+                    Text("Bra size (optional)")
+                } footer: {
+                    Text("Shapes the bust on your avatar. Size advice still uses your chest measurement.")
+                }
             }
             Section {
                 ForEach(MeasurementReviewModel.detailOrder, id: \.self) { d in

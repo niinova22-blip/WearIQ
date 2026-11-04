@@ -130,7 +130,8 @@ struct ScanSimulator {
         case unseen
     }
 
-    func record(heightCm: Double, rng: inout RNG, off: Set<String> = [], domain: Domain = .normal) -> Recording {
+    func record(heightCm: Double, rng: inout RNG, off: Set<String> = [], domain: Domain = .normal,
+                stops: Bool = false) -> Recording {
         let shifted: Bool = switch domain {
         case .normal: false
         case .shifted: true
@@ -226,8 +227,20 @@ struct ScanSimulator {
                 }
             }
             let span = max(0.27, abs(cos(degrees * .pi / 180))) + (off.contains("mask") ? 0 : 0.03 * rng.gaussian())
+            // The frame's width profile down the torso, as the app reads it (no legs: the
+            // silhouette fit then shapes the torso only).
+            var stop: StopProfile?
+            if stops {
+                let torso = SilhouetteRows.torso.map { f -> Double? in
+                    guard var px = run(at: top + Float(f) * Float(personPx), centre: Float(centre), proj) else { return nil }
+                    if !off.contains("mask") { px = (px + 2 * dilation + edgeNoise * rng.gaussian()).rounded() }
+                    return px * heightCm / personPx
+                }
+                stop = StopProfile(station: 0, torso: torso, legs: SilhouetteRows.thigh.map { _ in [] },
+                                   legsOuter: SilhouetteRows.thigh.map { _ in nil })
+            }
             turn.add(.init(time: t, spanRatio: span, widths: levelWidths, profile: profile,
-                           top: Double(top / maskHeight), floor: Double(floor / maskHeight)))
+                           top: Double(top / maskHeight), floor: Double(floor / maskHeight), stop: stop))
             t += 0.1
         }
         var rec = Recording(turn: turn, widths: widths, hairCm: Double(hair) * heightCm, distance: Double(distance),

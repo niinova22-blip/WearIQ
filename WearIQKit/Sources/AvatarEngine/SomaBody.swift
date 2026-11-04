@@ -134,7 +134,15 @@ struct SomaModel: Sendable {
     /// well the model predicts it, with every component pulled towards the average body,
     /// then corrected twice against the body it gives. Components stay within ±3.5 SD,
     /// so impossible combinations come back as the nearest plausible body.
-    func coefficients(for target: [Double], bust: Double? = nil) -> [Double] {
+    /// With `prior` (coefficients of a body seen, e.g. fitted to the scan's silhouettes)
+    /// the components are pulled towards that body instead of the average one: the
+    /// measurements are met as before, and the rest of the shape (where the belly or the
+    /// seat sits, how deep the chest is) is the person's.
+    /// Held three times as hard as the average body would be: within 1–10 the result
+    /// barely changes (ShapeFromScanTests), beyond it the fit's own noise shows.
+    static let priorWeight = 3.0
+
+    func coefficients(for target: [Double], bust: Double? = nil, prior: [Double]? = nil) -> [Double] {
         let k = components, m = Self.measurementCount
         let w = residualSD.map { 1 / pow(max($0, 0.4), 2) }
         // The bust, when asked for, as one more row: linear about the average body.
@@ -149,8 +157,10 @@ struct SomaModel: Sendable {
         let wb = 1 / (1.5 * 1.5)
         // Normal equations (Bᵀ W B + I) c = Bᵀ W (t − m0).
         var a = [Double](repeating: 0, count: k * k)
+        // How hard the shape is held to the body seen, over the average body's pull.
+        let hold = prior == nil ? 1 : Self.priorWeight
         for i in 0..<k {
-            a[i * k + i] = 1
+            a[i * k + i] = hold
             for j in 0..<k {
                 var s = 0.0
                 for r in 0..<m { s += b[r * k + i] * w[r] * b[r * k + j] }
@@ -163,6 +173,9 @@ struct SomaModel: Sendable {
             for i in 0..<k { for r in 0..<m { rhs[i] += b[r * k + i] * w[r] * (goal[r] - m0[r]) } }
             if let row = bustRow, let bustGoal {
                 for i in 0..<k { rhs[i] += row.g[i] * wb * (bustGoal - row.b0) }
+            }
+            if let prior, prior.count >= k {
+                for i in 0..<k { rhs[i] += hold * max(-3.5, min(3.5, prior[i])) }
             }
             return Self.choleskySolve(a, rhs, k).map { max(-3.5, min(3.5, $0)) }
         }
@@ -191,8 +204,8 @@ struct SomaModel: Sendable {
     /// thigh's ratio, half of it left at the knee and none at the ankle; the arms move
     /// out with the chest's side so they don't sink into it. A convex outline scaled about
     /// any point scales its perimeter by the same factor, so three passes settle it.
-    func body(for target: [Double], bust: Double? = nil) -> [Vec3] {
-        var v = vertices(coefficients(for: target, bust: bust))
+    func body(for target: [Double], bust: Double? = nil, prior: [Double]? = nil) -> [Vec3] {
+        var v = vertices(coefficients(for: target, bust: bust, prior: prior))
         for _ in 0..<3 {
             let got = measure(v)
             let ratios = (1...4).map { max(0.75, min(1.35, target[$0] / max(got[$0], 1))) }

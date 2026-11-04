@@ -80,6 +80,11 @@ public struct Avatar: Sendable {
         public var inseam: Double
         /// Shapes the bust; nil is a body between the two.
         public var sex: BodySex?
+        /// Under the breasts (from a bra size): the bust is then the chest minus this,
+        /// instead of the usual one for the sex.
+        public var underbust: Double?
+        /// The shape fitted to the scan's silhouettes, when there is one.
+        public var shape: [Double]?
 
         public init(height: Double, chest: Double, waist: Double, hip: Double, thigh: Double,
                     shoulderWidth: Double, armLength: Double, inseam: Double, sex: BodySex? = nil) {
@@ -95,6 +100,16 @@ public struct Avatar: Sendable {
                       hip: p[.hip]?.cm ?? 0.55 * h, thigh: p[.thigh]?.cm ?? 0.32 * h,
                       shoulderWidth: p[.shoulderWidth]?.cm ?? 0.23 * h, armLength: p[.armLength]?.cm ?? 0.34 * h,
                       inseam: p[.inseam]?.cm ?? 0.47 * h, sex: p.sex)
+            underbust = p.underbustCm
+            shape = p.shapeCoefficients
+        }
+
+        /// How far the bust stands out (chest minus underbust, on the shape model's own
+        /// measure): from the bra size when given (an A cup is about 12 cm, each cup 2–2.5 cm
+        /// more), otherwise the usual one for the sex; nil without either.
+        public var bust: Double? {
+            if let underbust, underbust > 0 { return min(26, max(6, chest - underbust)) }
+            return sex.map { SomaModel.typicalBust(female: $0 == .female, chest: chest) }
         }
     }
 

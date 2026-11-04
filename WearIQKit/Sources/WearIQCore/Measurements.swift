@@ -152,6 +152,12 @@ public struct BodyProfile: Codable, Hashable, Sendable {
     public var assessments: [BodyDimension: MeasurementAssessment]?
     /// Clothing judged per body region during the scan.
     public var clothing: [ClothingRegion: ClothingCover]?
+    /// The girth just under the breasts, from a bra size the user gave (its band). With
+    /// the chest it says how far the bust stands out, which a chest girth alone can't.
+    public var underbustCm: Double?
+    /// The body's shape fitted to the scan's silhouettes (shape model coefficients),
+    /// so the avatar looks like the person beyond the measured girths.
+    public var shapeCoefficients: [Double]?
 
     public init(values: [BodyDimension: MeasuredValue] = [:], createdAt: Date = Date(),
                 weightKg: Double? = nil, sex: BodySex? = nil) {
