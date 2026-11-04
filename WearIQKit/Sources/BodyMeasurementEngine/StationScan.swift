@@ -32,6 +32,10 @@ public struct StationScan: Sendable {
     /// sharper than the turn's frames there, with no motion and the best segmentation.
     /// They stand for that stop and the one opposite, which shows the same width.
     public var stills: [Int: [BodyLevel: Double]] = [:]
+    /// Per level, a factor for the camera's perspective (`LearnedGirthModel.correct`):
+    /// what engine C makes of the filmed turn over what the plain widths give. Applied
+    /// to the stops and the stills too, so every part of the scan reads the same way.
+    public var perspective: [BodyLevel: Double] = [:]
 
     public init() {}
 
@@ -84,6 +88,7 @@ public struct StationScan: Sendable {
             guard filled.count == n, let lo = filled.min(), let hi = filled.max(),
                   lo < 0.92 * hi else { continue }  // equal widths all round: the user didn't turn
             let girth = Double.pi * filled.reduce(0, +) / Double(filled.count) * (calibration[level] ?? 1)
+                * (perspective[level] ?? 1)
             result[level] = MeasuredValue(cm: girth, uncertaintyCm: (hasStill(level) ? 0.022 : 0.03) * girth, source: .scan)
         }
         for (level, value) in everyFrame where levels.contains(level) {

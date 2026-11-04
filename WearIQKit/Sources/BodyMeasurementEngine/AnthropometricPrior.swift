@@ -46,7 +46,7 @@ public struct AnthropometricPrior: Sendable {
             // Detail girths (scripts/fit_detail_prior.py).
             .neck: Model(a: 16.2776, b: 0.0825, c: 0.0215, d: 0.3923, sd: 1.63),
             .upperArm: Model(a: 12.4477, b: 0.0118, c: 0.0868, d: 0.4320, sd: 1.88),
-            .forearm: Model(a: 10.3329, b: 0.0532, c: 0.0443, d: 0.2726, sd: 1.29),
+            .forearm: Model(a: 8.5829, b: 0.0532, c: 0.0443, d: 0.2726, sd: 1.29),
             .wrist: Model(a: 2.6473, b: 0.0655, c: -0.0017, d: 0.1296, sd: 0.60),
             .knee: Model(a: 7.7729, b: 0.0852, c: 0.0553, d: 0.4861, sd: 1.48),
             .calf: Model(a: 13.5967, b: 0.0534, c: 0.0631, d: 0.3922, sd: 1.60),
@@ -65,7 +65,7 @@ public struct AnthropometricPrior: Sendable {
             // Detail girths (scripts/fit_detail_prior.py).
             .neck: Model(a: 11.6683, b: 0.1027, c: 0.0155, d: 0.3008, sd: 1.34),
             .upperArm: Model(a: 3.8049, b: 0.0403, c: 0.0673, d: 0.5776, sd: 1.39),
-            .forearm: Model(a: 4.6316, b: 0.0720, c: 0.0232, d: 0.3328, sd: 1.05),
+            .forearm: Model(a: 3.0716, b: 0.0720, c: 0.0232, d: 0.3328, sd: 1.05),
             .wrist: Model(a: 2.8047, b: 0.0603, c: 0.0032, d: 0.1036, sd: 0.53),
             .knee: Model(a: 16.0920, b: 0.0247, c: 0.1547, d: 0.3714, sd: 1.91),
             .calf: Model(a: 9.9601, b: 0.0749, c: 0.0717, d: 0.4048, sd: 1.70),
@@ -85,7 +85,7 @@ public struct AnthropometricPrior: Sendable {
             // Detail girths (scripts/fit_detail_prior.py).
             .neck: Model(a: -24.9885, b: 0.3092, c: -0.0748, d: 0.7163, sd: 2.08),
             .upperArm: Model(a: -21.7590, b: 0.2001, c: -0.0608, d: 0.9200, sd: 1.80),
-            .forearm: Model(a: -23.4099, b: 0.2382, c: -0.0664, d: 0.6437, sd: 1.49),
+            .forearm: Model(a: -25.0599, b: 0.2382, c: -0.0664, d: 0.6437, sd: 1.49),
             .wrist: Model(a: -8.7334, b: 0.1277, c: -0.0327, d: 0.2351, sd: 0.68),
             .knee: Model(a: 17.8541, b: 0.0307, c: 0.0331, d: 0.5519, sd: 1.86),
             .calf: Model(a: 15.6018, b: 0.0438, c: 0.0503, d: 0.4255, sd: 1.66),

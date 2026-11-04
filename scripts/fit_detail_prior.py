@@ -7,10 +7,13 @@ prior models are. ANSUR II measures the upper arm and forearm flexed; a sleeve f
 relaxed arm. The ANSUR flexed-biceps model, applied to NHANES 2017–March 2020 adults
 (18–65), predicts on average 1.9 cm (men) and 0.9 cm (women) more than NHANES' relaxed
 mid-upper-arm circumference, so the upper arm is shifted by that much. (Part of that gap
-is the populations differing, so it's a correction, not a measurement.)
+is the populations differing, so it's a correction, not a measurement.) The forearm is
+shifted the same way, by what the flexed model predicts over the relaxed forearm girth
+taped in Heinz et al. (2003, "Exploring Relationships in Body Dimensions", 247 men and
+260 women): 1.75 cm (men), 1.56 cm (women), 1.65 cm pooled.
 
 Mapping: neck = neckcircumferencebase (where a collar sits), upperArm = bicepscircumference
-flexed − 1.9 (men) / 0.9 (women), forearm = forearmcircumferenceflexed, wrist = wristcircumference,
+flexed − 1.9 (men) / 0.9 (women), forearm = forearmcircumferenceflexed − 1.75 / 1.56, wrist = wristcircumference,
 knee = lowerthighcircumference (just above the kneecap, where a trouser leg is measured),
 calf = calfcircumference, ankle = anklecircumference. ANSUR has no abdomen girth (its
 waist is already at the navel), so the abdomen isn't fitted.
@@ -38,6 +41,7 @@ COLUMNS = {
 
 
 RELAXED_ARM_SHIFT = {"male": -1.9, "female": -0.9}
+RELAXED_FOREARM_SHIFT = {"male": -1.75, "female": -1.56}
 
 
 def load(file, sex):
@@ -51,6 +55,7 @@ def load(file, sex):
     for key, (name, shift) in COLUMNS.items():
         data[key] = col(name) / 10 + shift
     data["upperArm"] = data["upperArm"] + RELAXED_ARM_SHIFT[sex]
+    data["forearm"] = data["forearm"] + RELAXED_FOREARM_SHIFT[sex]
     return data
 
 

@@ -18,9 +18,10 @@ import WearIQCore
 /// where the person stands in the picture (the mask's top and floor rows: distance and
 /// camera height); height, weight and sex; the other two levels' widths relative to it.
 ///
-/// It doesn't replace the current engine: it runs beside it in validation mode, and
-/// `EngineSelection` promotes it per measurement only once real tape comparisons (20
-/// participants or more) show it better.
+/// Since 2026-11-05 it corrects the production scan for the camera's perspective
+/// (`correct`), after simulated turns of an independent tape-measured population showed
+/// the plain widths reading men's chests 4.6 cm small and it close to exact; the
+/// owner's own taped scan in validation mode is the check on a real phone.
 public enum LearnedGirthModel {
     /// Rows measured around each level, as fractions of stature above (+) or below (−)
     /// it. Index 3 is the level row.
@@ -100,6 +101,28 @@ public enum LearnedGirthModel {
     /// and floor in the samples (`TurnRecording.Sample.profile`, `top`, `floor`).
     public static func girths(_ rec: TurnRecording, heightCm: Double, weightKg: Double, sex: BodySex?) -> [BodyLevel: MeasuredValue] {
         girths(rec, heightCm: heightCm, weightKg: weightKg, sex: sex, weights: trained)
+    }
+
+    /// The scan's girths with engine C's reading of the turn (in production since
+    /// 2026-11-05). The plain widths of a filmed turn read men's chests about 4.6 cm and
+    /// hips about 3 cm small, mostly from the camera's perspective (simulated on the
+    /// 507 tape-measured adults of Heinz et al. 2003, a population C never saw; C's mean
+    /// error there is 1.2–2.0 cm against 2.6–5.5 cm). Per level, C's value over the plain
+    /// fit becomes a factor (`StationScan.perspective`) for the stops and stills as well,
+    /// and the every-frame value is C's own. A factor beyond ±15% means C is outside
+    /// what it learned: that level keeps the plain reading.
+    public static func correct(_ scan: inout StationScan, turn: TurnRecording, plain: [BodyLevel: MeasuredValue],
+                               heightCm: Double, weightKg: Double, sex: BodySex?) {
+        let learned = girths(turn, heightCm: heightCm, weightKg: weightKg, sex: sex)
+        scan.everyFrame = plain
+        for level in [BodyLevel.chest, .waist, .hip] {
+            guard let a = plain[level], let c = learned[level], a.cm > 0 else { continue }
+            let factor = c.cm / a.cm
+            guard (0.85...1.15).contains(factor) else { continue }
+            scan.perspective[level] = factor
+            scan.everyFrame[level] = MeasuredValue(cm: c.cm, uncertaintyCm: max(c.uncertaintyCm, a.uncertaintyCm * factor),
+                                                   source: .scan)
+        }
     }
 
     /// Whether trained weights are bundled for every level.

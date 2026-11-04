@@ -562,7 +562,10 @@ final class BodyScanViewModel {
         }
         // Every frame of the turn, fitted against its angle: the girths it gives replace
         // the eight directions' wherever it has enough of the turn.
-        scan.everyFrame = recording.girths()
+        // Engine C reads the camera's perspective out of the same frames: its factor
+        // per level goes over the stops, the stills and the every-frame fit alike.
+        LearnedGirthModel.correct(&scan, turn: recording, plain: recording.girths(), heightCm: basics.heightCm,
+                                  weightKg: basics.weightKg, sex: basics.sex)
         guard scan.captured.count >= scan.minimumStations else { return restartTurn() }
         camera.onFrame = nil
         countdownTask?.cancel()

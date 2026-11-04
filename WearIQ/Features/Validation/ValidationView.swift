@@ -86,10 +86,8 @@ private struct ValidationResultsSection: View {
                 if report.syntheticLeftOut > 0 {
                     Text("\(report.syntheticLeftOut) synthetic record(s) left out.").foregroundStyle(.orange)
                 }
-                if report.participants < EngineSelection.minimumParticipants {
-                    Text("No engine is chosen before \(EngineSelection.minimumParticipants) people; until then the current engine stays.")
-                        .foregroundStyle(.secondary)
-                }
+                Text("A is the app's scan, with engine C's correction for the camera's perspective; C alone is shown beside it.")
+                    .foregroundStyle(.secondary)
             }
             .font(.footnote)
             Grid(alignment: .trailing, horizontalSpacing: 10, verticalSpacing: 6) {

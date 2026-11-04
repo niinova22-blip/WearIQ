@@ -324,3 +324,58 @@ Kaynaklar:
 - [Virtusize](https://virtusize.com/articles/why-size-charts-alone-dont-solve-fit)
 - [Kleep](https://kleep.ai/blog/size-charts-are-lying-to-your-customers)
 - [SizeUSA vücut şekilleri](https://www.degruyterbrill.com/document/doi/10.1515/aut-2024-0021/html)
+
+## 16. Ölçüleri yayımlanmış gerçek kişilerle karşılaştırma (2026-11-05)
+
+Kaynak: Heinz, Peterson, Johnson & Kerk (2003), "Exploring Relationships in Body Dimensions", *Journal of Statistics Education* 11(2).
+- 507 kişi: 247 erkek, 260 kadın.
+- Fiziksel olarak aktif yetişkinler, yaş ortalaması 30.
+- Mezurayla ölçülmüş 21 ölçü, boy ve kilo.
+- ANSUR'dan bağımsız bir nüfus. Hiçbir modelimiz bu veriyle eğitilmedi.
+- Lisansı net olmadığı için veri depoda yok. `PublicBodiesTests`, `BDIMS_CSV` ile yerel bir kopyayı okur (openintro.org/data/csv/bdims.csv).
+
+Tanım farkları:
+- Kadınların "göğüs" ölçüsü bu veride göğsün üstünden alınmış, o yüzden kadın göğsü karşılaştırılmadı.
+- Uygulamanın beli göbek hizasında; karşılaştırmada verinin göbek çevresi (`nav_gi`) kullanıldı.
+
+### Avatar gövdesi
+
+Mezura ölçüleriyle kurulan avatar geri ölçüldüğünde her ölçüde ortalama hata 0,12 cm'nin altında kaldı. SOMA-X tabanlı gövde, gerçek kişilerin ölçü bileşimlerine ulaşabiliyor.
+
+### Video dönüşü (simülasyon): bulunan hata ve düzeltme
+
+Her kişinin gövdesi telefonun önünde dönerken filme alındı (`ScanSimulator`). Uygulamanın tarama yolu aynen çalıştırıldı: 8 yön, her kare, birleştirme.
+
+| | Önce: ortalama hata (sapma) | Şimdi: ortalama hata (sapma) |
+|---|---|---|
+| Erkek göğüs | 5,45 cm (−4,60) | 1,53 cm (+0,25) |
+| Erkek bel | 2,78 cm (−0,18) | 1,31 cm (+0,01) |
+| Erkek basen | 3,39 cm (−3,02) | 1,22 cm (+0,31) |
+| Kadın göğüs (gövde) | 2,97 cm (−0,07) | 1,25 cm (−0,01) |
+| Kadın bel | 4,23 cm (−1,96) | 2,16 cm (−1,04) |
+| Kadın basen | 2,59 cm (−1,65) | 1,17 cm (+0,13) |
+
+Sebep (etkiler tek tek kapatılarak bulundu, `SCAN_OFF`): asıl kaynak kameranın perspektifi. Telefon 2–3 m uzakta ve kişinin ortasına eğik bakıyor. Bu etki kapatılınca erkek göğsündeki sapma −4,6 cm'den −1,0 cm'ye iniyor. Saç ve maske genişlemesi kısmen ters yönde çalışıyor.
+
+Düzeltme (`LearnedGirthModel.correct`):
+- Motor C, aynı karelerden her seviye için bir perspektif katsayısı çıkarıyor (C ÷ düz okuma).
+- Bu katsayı 8 yönün, yandan ek çekimin ve her kare ölçümünün hepsine uygulanıyor; tarama kendi içinde tutarlı kalıyor.
+- Katsayı ±%15'in dışındaysa C öğrendiği alanın dışında demektir; o seviye düz okumayla kalıyor.
+- ANSUR'un ayrılmış test kişilerinde de sapma her seviyede 1 cm'nin altında (`LearnedGirthModelTests/productionScanWithPerspectiveCorrection`).
+
+Karar: önceden 20 kişilik mezura doğrulaması bekleniyordu. Uygulama sahibi yalnızca kendini ölçebildiği için kural değiştirildi. Bağımsız nüfustaki bu kanıtla düzeltme üretime alındı. Gerçek telefondaki kontrol, sahibinin doğrulama modunda yaptığı kendi mezuralı taraması.
+
+### Yalnızca boy ve kilo (tahmin)
+
+| | Erkek: sapma / ortalama hata | Kadın: sapma / ortalama hata |
+|---|---|---|
+| Göğüs | −0,26 / 3,17 | (karşılaştırılamaz) |
+| Bel (göbek) | +0,45 / 3,73 | −3,85 / 5,47 |
+| Basen | +0,02 / 2,10 | +0,88 / 2,31 |
+| Uyluk | +2,61 / 3,03 | +0,44 / 1,66 |
+| Omuz (biakromiyal) | +0,10 / 1,41 | +0,06 / 1,18 |
+| Önkol | +1,75 / 1,88 (düzeltildi) | +1,56 / 1,58 (düzeltildi) |
+
+- **Önkol:** ANSUR önkolu kasılı ölçer, giysi ise gevşek kola göre dikilir. Üst kol bu yüzden düzeltilmişti, önkol unutulmuştu. Bu verideki farkla düzeltildi: erkekte −1,75, kadında −1,56 cm.
+- **Kadın göbek çevresi:** bu veride yaşla birlikte büyüyor (18–25 yaşta −2,5, 35–50 yaşta −6,0). Göbek ile en ince bel arasındaki fark kadınlarda 12–17 cm, erkeklerde 2–4 cm. Bu, ölçümün göbekten aşağıda, leğen kemiği hizasında alındığını düşündürüyor. ANSUR ve NHANES'in toplam 10 binden fazla kişisiyle uyumlu modeli tek bir küçük veriyle kaydırmak yerine model değiştirilmedi. Tahminin belirsizlik aralığı (σ ≈ 7 cm) bu farkı zaten kapsıyor.
+- **Erkek uyluğu:** büyük olasılıkla tanım farkı. ANSUR uyluğu kalça kıvrımının en alt noktasında ölçüyor, bu veri ise kıvrımın altında. Model değiştirilmedi.
