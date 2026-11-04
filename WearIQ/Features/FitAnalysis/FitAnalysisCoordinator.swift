@@ -23,6 +23,8 @@ struct FitAnalysisCoordinator {
     let quota: DailyScanQuotaManager
     let engine: any FitAnalyzing
     let isPremium: Bool
+    /// Whose body to use: nil for the user, otherwise a Person.
+    var personID: UUID? = nil
 
     func run(_ draft: GarmentDraft, preference: FitPreference) throws -> Outcome {
         guard let spec = draft.spec else { return .invalidDraft(draft.issues) }
@@ -51,15 +53,14 @@ struct FitAnalysisCoordinator {
         try context.fetch(existing).forEach(context.delete)
         let saved = try SavedAnalysis(productKey: key, productName: draft.info.name, brand: draft.info.brand,
                                       imageURL: draft.info.imageURL, pageURL: draft.info.pageURL,
-                                      spec: spec, analysis: analysis, material: draft.info.material)
+                                      spec: spec, analysis: analysis, material: draft.info.material, personID: personID)
         context.insert(saved)
         try context.save()
         return saved
     }
 
     private func latestBodyProfile() throws -> BodyProfile? {
-        var descriptor = FetchDescriptor<StoredBodyProfile>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first?.profile
+        let descriptor = FetchDescriptor<StoredBodyProfile>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        return try context.fetch(descriptor).of(personID).first?.profile
     }
 }

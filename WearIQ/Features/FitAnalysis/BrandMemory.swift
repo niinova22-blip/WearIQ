@@ -13,7 +13,8 @@ struct BrandMemory {
     /// Records for this brand, the same category first if there are any.
     func relevant(brand: String?, category: GarmentCategory?) -> [PurchaseRecord] {
         guard let brand = brand.map(Self.normalized), !brand.isEmpty else { return [] }
-        let same = records.filter { Self.normalized($0.brand) == brand }
+        // Orders still waiting for an answer say nothing about the fit yet.
+        let same = records.filter { !$0.isPending && Self.normalized($0.brand) == brand }
         let sameCategory = same.filter { $0.category == category }
         return sameCategory.isEmpty ? same : sameCategory
     }

@@ -21,6 +21,10 @@ struct FitResultView: View {
     var spec: GarmentSpec?
     /// Fabric composition, for the fabric notes.
     var material: String?
+    /// The saved analysis's key, for purchases made from it.
+    var productKey: String?
+    /// Whom it was checked for, when not the user.
+    var personID: UUID?
     @State private var revealed = false
     @State private var showingAvatar = false
 
@@ -35,6 +39,8 @@ struct FitResultView: View {
                   pageURL: saved.pageURL, analysis: saved.analysis ?? FitAnalysis(recommendation: .insufficientData(missing: []), sizes: []),
                   isSaved: true, category: saved.spec?.category, fitStyle: saved.spec?.fitStyle, spec: saved.spec,
                   material: saved.material)
+        productKey = saved.productKey
+        personID = saved.personID
     }
 
     init(productName: String?, brand: String?, imageURL: URL?, pageURL: URL?, analysis: FitAnalysis, isSaved: Bool,
@@ -63,17 +69,21 @@ struct FitResultView: View {
         ScrollView {
             VStack(spacing: Theme.Spacing.m) {
                 header
+                if let personID { PersonBadge(personID: personID) }
                 recommendationCard
+                ReturnRiskCard(analysis: analysis, size: selectedLabel, category: category, productName: productName)
                 BrandNoteView(brand: brand, category: category, recommended: analysis.recommendedSize?.label)
                 if analysis.sizes.count > 1 { sizePicker }
                 if let selected { regionsCard(selected) }
                 CutCard(spec: spec, analysis: analysis)
                 FabricCard(material: material, category: category, productName: productName, selected: selected)
+                ReferenceFitCard(category: category, spec: spec)
                 WardrobeComparisonCard(category: category, spec: spec, sizeLabel: selectedLabel)
                 actions
                 if isSaved, let label = selectedLabel {
                     PurchaseFeedbackCard(brand: brand, productName: productName, category: category,
-                                         sizes: analysis.sizes.map(\.label), size: label)
+                                         sizes: analysis.sizes.map(\.label), size: label,
+                                         recommended: analysis.recommendedSize?.label, productKey: productKey)
                         .id(label)
                 }
             }
@@ -98,7 +108,10 @@ struct FitResultView: View {
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
         .fullScreenCover(isPresented: $showingAvatar) {
-            if let spec, let label = selectedLabel { AvatarFitView(analysis: analysis, spec: spec, sizeLabel: label, material: material, productName: productName) }
+            if let spec, let label = selectedLabel {
+                AvatarFitView(analysis: analysis, spec: spec, sizeLabel: label, material: material, productName: productName,
+                              imageURL: imageURL)
+            }
         }
     }
 

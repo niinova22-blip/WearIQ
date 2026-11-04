@@ -17,17 +17,30 @@ struct ProfileSetupFlow: View {
     }
 
     let onFinished: () -> Void
+    /// Whose body: nil for the user, otherwise a Person. Their height, weight, gender
+    /// and age are kept apart from the user's.
+    let personID: UUID?
 
-    @AppStorage("heightCm") private var heightCm: Double = 175
-    @AppStorage("weightKg") private var weightKg: Double = 75
-    @AppStorage("bodySex") private var sexRaw: String = ""
+    @AppStorage private var heightCm: Double
+    @AppStorage private var weightKg: Double
+    @AppStorage private var sexRaw: String
     /// 0 until the user picks an age.
-    @AppStorage("ageYears") private var ageYears: Double = 0
+    @AppStorage private var ageYears: Double
     @AppStorage("fitPreference") private var fitPreference: FitPreference = .asDesigned
     @State private var path: [Step] = []
     /// What the user said they wear for this scan; nil until they pick.
     @State private var attire: ScanAttire?
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
+
+    init(personID: UUID? = nil, onFinished: @escaping () -> Void) {
+        self.personID = personID
+        self.onFinished = onFinished
+        let suffix = personID.map { "." + $0.uuidString } ?? ""
+        _heightCm = AppStorage(wrappedValue: 175, "heightCm" + suffix)
+        _weightKg = AppStorage(wrappedValue: 75, "weightKg" + suffix)
+        _sexRaw = AppStorage(wrappedValue: "", "bodySex" + suffix)
+        _ageYears = AppStorage(wrappedValue: 0, "ageYears" + suffix)
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -54,7 +67,7 @@ struct ProfileSetupFlow: View {
 
     private var bodyBasics: BodyBasics {
         BodyBasics(heightCm: heightCm, weightKg: weightKg, sex: BodySex(rawValue: sexRaw),
-                   ageYears: ageYears > 0 ? ageYears : nil, attire: attire, previous: profiles.first?.profile)
+                   ageYears: ageYears > 0 ? ageYears : nil, attire: attire, previous: profiles.of(personID).first?.profile)
     }
 
     /// Starts from height/weight estimates so the user corrects values instead of typing all of them.

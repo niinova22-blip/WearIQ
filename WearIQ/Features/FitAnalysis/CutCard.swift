@@ -10,9 +10,10 @@ struct CutCard: View {
     let spec: GarmentSpec?
     let analysis: FitAnalysis
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
+    @Environment(AppContainer.self) private var container
 
     var body: some View {
-        if let spec, let profile = profiles.first?.profile,
+        if let spec, let profile = profiles.of(container.activePersonID).first?.profile,
            let note = CutGuide.note(for: spec, body: profile, analysis: analysis) {
             Card {
                 Label(note.title, systemImage: note.symbol)

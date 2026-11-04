@@ -16,10 +16,14 @@ final class SavedAnalysis {
     var analysisData: Data
     /// Fabric composition from the product page, e.g. "%98 Pamuk %2 Elastan".
     var material: String?
+    /// Who it was checked for: nil for the app's own user, otherwise a `Person`.
+    var personID: UUID?
 
     init(productKey: String, productName: String?, brand: String?, imageURL: URL?, pageURL: URL?,
-         spec: GarmentSpec, analysis: FitAnalysis, material: String? = nil, createdAt: Date = Date()) throws {
+         spec: GarmentSpec, analysis: FitAnalysis, material: String? = nil, createdAt: Date = Date(),
+         personID: UUID? = nil) throws {
         self.material = material
+        self.personID = personID
         self.productKey = productKey
         self.createdAt = createdAt
         self.productName = productName

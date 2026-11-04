@@ -3,6 +3,7 @@ import SwiftUI
 /// Benefits + privacy pages, then the profile setup flow (height, camera, scan, review).
 struct OnboardingView: View {
     @Environment(AppContainer.self) private var container
+    @Environment(\.modelContext) private var modelContext
     @State private var page = 0
     @State private var showSetup = false
 
@@ -70,6 +71,16 @@ struct OnboardingView: View {
             .buttonStyle(.primary)
             .padding(.horizontal, Theme.Spacing.l)
             .padding(.bottom, Theme.Spacing.m)
+            // A new phone: the measurements and checks backed up from the old one.
+            if CloudBackup.lastBackup != nil {
+                Button("Restore from iCloud") {
+                    if CloudBackup.restore(into: modelContext) {
+                        UserDefaults.standard.set(true, forKey: CloudBackup.enabledKey)
+                        container.onboardingCompleted = true
+                    }
+                }
+                .padding(.bottom, Theme.Spacing.m)
+            }
         }
         .fullScreenCover(isPresented: $showSetup) {
             ProfileSetupFlow {

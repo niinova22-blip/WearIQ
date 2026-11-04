@@ -25,6 +25,9 @@ struct WardrobeItemEditor: View {
     /// Typed measurements of the garment, keyed by dimension.
     @State private var measurementText: [GarmentDimension: String]
     private let fitScore: Double?
+    /// New garments are compared with this one ("like my favourite tee").
+    @State private var isReference: Bool
+    @State private var measuringFromPhoto = false
 
     init(existing: WardrobeEntry? = nil, prefill: Prefill? = nil) {
         self.existing = existing
@@ -41,6 +44,12 @@ struct WardrobeItemEditor: View {
         prefillImageURL = existing == nil ? prefill?.imageURL : nil
         let known = existing?.measurements ?? prefill?.measurements ?? [:]
         _measurementText = State(initialValue: known.mapValues { String(format: "%.0f", $0) })
+        _isReference = State(initialValue: existing?.isReference ?? false)
+    }
+
+    /// The garment kind the flat-lay measuring reads the outline as.
+    private var flatLayCategory: GarmentCategory {
+        category == .bottom ? .pants : category == .outerwear ? .jacket : .tshirt
     }
 
     /// Values carried over from a fit analysis ("Add to wardrobe").
@@ -60,7 +69,7 @@ struct WardrobeItemEditor: View {
     /// The measurements that matter for comparing garments of this kind.
     private var measurable: [GarmentDimension] {
         switch category {
-        case .bottom: [.waist, .hip, .inseam, .outseam]
+        case .bottom: [.waist, .hip, .thigh, .inseam, .outseam]
         default: [.chest, .shoulderWidth, .bodyLength, .sleeveLength]
         }
     }
@@ -106,6 +115,12 @@ struct WardrobeItemEditor: View {
                                 .frame(width: 80)
                         }
                     }
+                    Button {
+                        measuringFromPhoto = true
+                    } label: {
+                        Label("Measure from a photo", systemImage: "camera.viewfinder")
+                    }
+                    Toggle("My favourite fit", isOn: $isReference)
                 } header: {
                     Text("Its measurements (optional)")
                 } footer: {
@@ -129,6 +144,11 @@ struct WardrobeItemEditor: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || seasons.isEmpty || styles.isEmpty)
+                }
+            }
+            .sheet(isPresented: $measuringFromPhoto) {
+                FlatLayMeasureView(category: flatLayCategory) { values in
+                    for (d, cm) in values { measurementText[d] = String(format: "%.0f", cm) }
                 }
             }
             .onChange(of: photoItem) { _, item in
@@ -161,6 +181,12 @@ struct WardrobeItemEditor: View {
         entry.photo = photo
         entry.measurements = measurementText.compactMapValues { text in
             Double(text.replacingOccurrences(of: ",", with: ".")).flatMap { $0 > 0 ? $0 : nil }
+        }
+        entry.isReference = isReference
+        if isReference {
+            // One favourite per kind of garment.
+            let others = (try? modelContext.fetch(FetchDescriptor<WardrobeEntry>())) ?? []
+            for other in others where other.id != entry.id && other.category == entry.category { other.isReference = false }
         }
         if existing == nil { modelContext.insert(entry) }
         try? modelContext.save()

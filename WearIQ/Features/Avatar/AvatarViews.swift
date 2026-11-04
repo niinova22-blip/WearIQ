@@ -54,6 +54,13 @@ struct AvatarFitView: View {
     /// The product's name: "mini", "midi", "long" in it set a skirt's or coat's length
     /// when the chart has none.
     var productName: String?
+    /// The product photo, for the garment's own colour.
+    var imageURL: URL?
+    /// Fit colours (blue fits, yellow loose…) or the garment's own colour.
+    @State private var showsFitColors = true
+    @State private var productColor: UIColor?
+    @State private var shareImage: ShareableImage?
+    private let snapshotter = AvatarSnapshotter()
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
     @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var saved: [SavedAnalysis]
     /// The gender chosen at setup, for profiles saved before they carried it.
@@ -107,15 +114,16 @@ struct AvatarFitView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if let body = profiles.first?.profile, Avatar.Measurements(body) != nil {
+                if let body = profiles.of(container.activePersonID).first?.profile, Avatar.Measurements(body) != nil {
                     VStack(spacing: 0) {
                         ZStack {
                             if let avatar {
-                                AvatarSceneView(avatar: avatar, revision: revision, frame: frame,
-                                                labels: frame == nil && !draping ? labels(avatar) : [], labelModel: labelModel,
+                                AvatarSceneView(avatar: avatar, revision: revision, fitColors: showsFitColors, frame: frame,
+                                                labels: frame == nil && !draping && showsFitColors ? labels(avatar) : [], labelModel: labelModel,
                                                 facing: facing, facingTurn: facingTurn,
                                                 viewHeight: sceneHeight, coveredTop: legendBottom, coveredBottom: controlsHeight,
-                                                hidden: hiddenLayers)
+                                                hidden: hiddenLayers, layerColors: productColor.map { [0: $0] } ?? [:],
+                                                snapshotter: snapshotter)
                                 LandmarkOverlay(model: labelModel)
                             }
                             VStack(spacing: 0) {
@@ -161,10 +169,45 @@ struct AvatarFitView: View {
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showPaywall) { PaywallView() }
             .sheet(isPresented: $choosingCompanion) { companionPicker }
+            .sheet(item: $shareImage) { ShareSheet(items: [$0.image]) }
+            .task(id: imageURL) {
+                guard let imageURL, let (data, _) = try? await URLSession.shared.data(from: imageURL),
+                      let image = UIImage(data: data) else { return }
+                let bottom = spec.category.isBottom
+                productColor = await Task.detached(priority: .utility) { GarmentColorReader.color(of: image, bottom: bottom) }.value
+            }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        withAnimation { showsFitColors.toggle() }
+                    } label: {
+                        Label(showsFitColors ? String(localized: "Garment colour") : String(localized: "Fit colours"),
+                              systemImage: showsFitColors ? "paintpalette" : "circle.lefthalf.filled")
+                    }
+                    .disabled(productColor == nil && showsFitColors)
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        shareImage = snapshotter.image().map {
+                            ShareableImage(image: AvatarShareCard.render(avatar: $0, productName: productName, size: sizeLabel,
+                                                                          headline: shareHeadline))
+                        }
+                    } label: {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(draping || avatar == nil)
+                }
             }
         }
+    }
+
+    /// The card's one line: the size and how it sits, without any body measurement.
+    private var shareHeadline: String {
+        let regions = self.regions
+        if regions.isEmpty { return String(localized: "Size \(sizeLabel)") }
+        let off = regions.filter { $0.severity == .major || $0.severity == .minor }
+        return off.isEmpty ? String(localized: "Size \(sizeLabel) fits") : String(localized: "Size \(sizeLabel): close, a little off in places")
     }
 
     private var drapeKey: String { sizeLabel + "|" + (companion.map { $0.key + "|" + $0.size } ?? "") }
@@ -397,7 +440,7 @@ struct AvatarFitView: View {
                 }
                 regionRows(regions)
                 placementRows(layer: 0)
-                if let body = profiles.first?.profile { reliability(body) }
+                if let body = profiles.of(container.activePersonID).first?.profile { reliability(body) }
                 companionSection
                 details
                 Text("A model of the garment from its size chart, not its own pattern.")
@@ -597,7 +640,7 @@ struct AvatarFitView: View {
         guard let spec = item.spec, let saved = item.analysis else { return }
         // Judged again on the body as it is now: a saved verdict may predate a rescan or
         // a fix in the fit engine, and the avatar is built from the current body.
-        let analysis = profiles.first?.profile.map { FitEngine().analyze(body: $0, garment: spec) } ?? saved
+        let analysis = profiles.of(container.activePersonID).first?.profile.map { FitEngine().analyze(body: $0, garment: spec) } ?? saved
         let size = analysis.recommendedSize?.label ?? analysis.ranked.first?.label ?? spec.sizes.first?.label
         guard let size else { return }
         companion = Companion(key: item.productKey, name: item.productName ?? String(localized: "Garment"), spec: spec,
@@ -706,7 +749,7 @@ struct AvatarFitView: View {
     }
 
     private func compareSizes() async {
-        guard let body = profiles.first?.profile, var measured = Avatar.Measurements(body) else { return }
+        guard let body = profiles.of(container.activePersonID).first?.profile, var measured = Avatar.Measurements(body) else { return }
         measured.sex = measured.sex ?? BodySex(rawValue: sexRaw)
         let m = measured
         comparing = true
@@ -730,6 +773,7 @@ struct AvatarFitView: View {
 /// "My avatar": the body from the measurements, fine-tuned with sliders and saved back.
 struct AvatarEditorView: View {
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
+    @Environment(AppContainer.self) private var container
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var values: [BodyDimension: Double] = [:]
@@ -742,7 +786,7 @@ struct AvatarEditorView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if let base = profiles.first?.profile, let m = Avatar.Measurements(adjusted(base)) {
+            if let base = profiles.of(container.activePersonID).first?.profile, let m = Avatar.Measurements(adjusted(base)) {
                 ZStack {
                     if let avatar {
                         AvatarSceneView(avatar: avatar, revision: revision, fitColors: false,
@@ -797,7 +841,7 @@ struct AvatarEditorView: View {
         .navigationTitle("My avatar")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            guard original.isEmpty, let base = profiles.first?.profile else { return }
+            guard original.isEmpty, let base = profiles.of(container.activePersonID).first?.profile else { return }
             for d in Self.editable { if let v = base[d]?.cm { original[d] = v } }
             values = original
         }
@@ -842,7 +886,7 @@ struct AvatarEditorView: View {
     private func save(_ base: BodyProfile) {
         var p = adjusted(base)
         p.createdAt = Date()
-        if let stored = try? StoredBodyProfile(profile: p) {
+        if let stored = try? StoredBodyProfile(profile: p, personID: container.activePersonID) {
             modelContext.insert(stored)
             try? modelContext.save()
             AppSounds.shared.play(.saved)

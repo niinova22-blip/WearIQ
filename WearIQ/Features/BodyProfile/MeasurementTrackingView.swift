@@ -7,7 +7,8 @@ import WearIQCore
 /// fit differently. Not a health feature: no scores, targets or medical interpretation.
 struct MeasurementTrackingView: View {
     @Environment(AppContainer.self) private var container
-    @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
+    @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var allProfiles: [StoredBodyProfile]
+    private var profiles: [StoredBodyProfile] { allProfiles.of(container.activePersonID) }
     @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
     @AppStorage("fitPreference") private var preference: FitPreference = .asDesigned
 

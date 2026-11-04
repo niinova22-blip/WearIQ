@@ -16,7 +16,7 @@ struct StyleProfileCard: View {
     }
 
     private var shape: BodyShape? {
-        guard let body = profiles.first?.profile, let chest = body[.chest]?.cm, let waist = body[.waist]?.cm,
+        guard let body = profiles.of(nil).first?.profile, let chest = body[.chest]?.cm, let waist = body[.waist]?.cm,
               let hip = body[.hip]?.cm else { return nil }
         return BodyShape.classify(chest: chest, waist: waist, hip: hip, shoulder: body[.shoulderWidth]?.cm,
                                   female: BodySex(rawValue: sexRaw) == .female)

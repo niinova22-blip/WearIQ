@@ -20,6 +20,8 @@ enum AppTab: Hashable {
 struct MainTabView: View {
     @State private var selection: AppTab = .home
     @Environment(AppContainer.self) private var container
+    @Query private var purchases: [PurchaseRecord]
+    @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
 
     var body: some View {
         TabView(selection: $selection) {
@@ -48,6 +50,16 @@ struct MainTabView: View {
         // A link shared from a store app opens on the scan tab.
         .onChange(of: container.pendingProductLink) { _, link in
             if link != nil { selection = .scan }
+        }
+        // A purchase reminder tapped: ask how it fit.
+        .sheet(item: Binding(get: { purchases.first { $0.token != nil && $0.token == container.pendingPurchaseToken } },
+                             set: { if $0 == nil { container.pendingPurchaseToken = nil } })) { record in
+            PurchaseOutcomeSheet(record: record)
+        }
+        // A checked garment opened from Siri, Spotlight or visual intelligence.
+        .sheet(item: Binding(get: { analyses.first { $0.productKey == container.pendingAnalysisKey } },
+                             set: { if $0 == nil { container.pendingAnalysisKey = nil } })) { saved in
+            NavigationStack { FitResultView(saved: saved) }
         }
         #if DEBUG
         .onAppear { if DemoMode.isActive { selection = DemoMode.initialTab } }

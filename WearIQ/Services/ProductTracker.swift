@@ -59,13 +59,17 @@ enum ProductTracker {
             guard let url = product.pageURL, let info = try? await service.structuredInfo(at: url) else { continue }
             let found = changes(for: product, now: info)
             all += found
-            if let price = info.price { product.lastPrice = price }
+            if let price = info.price {
+                product.lastPrice = price
+                if product.firstPrice == nil { product.firstPrice = price }
+            }
             if let currency = info.currency { product.currency = currency }
             if let size = product.size, let inStock = info.sizeStock[size] { product.sizeInStock = inStock }
             product.lastCheckedAt = Date()
             for change in found { await notify(change) }
         }
         try? context.save()
+        WidgetPublisher.publish(context)
         return all
     }
 

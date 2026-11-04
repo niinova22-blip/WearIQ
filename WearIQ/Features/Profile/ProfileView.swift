@@ -25,13 +25,14 @@ struct ProfileView: View {
     /// The latest purchase per brand.
     private var brandSizes: [PurchaseRecord] {
         var seen = Set<String>()
-        return purchases.filter { seen.insert($0.brand.lowercased()).inserted }
+        return purchases.filter { !$0.isPending && $0.personID == container.activePersonID && seen.insert($0.brand.lowercased()).inserted }
     }
 
     var body: some View {
         List {
+            PeopleSection()
             Section {
-                if let profile = profiles.first?.profile {
+                if let profile = profiles.of(container.activePersonID).first?.profile {
                     ForEach(MeasurementReviewModel.order, id: \.self) { d in
                         if let v = profile[d] {
                             LabeledContent(d.title, value: v.formatted)
@@ -49,10 +50,11 @@ struct ProfileView: View {
             } header: {
                 Text("Measurements")
             } footer: {
-                if let date = profiles.first?.createdAt {
+                if let date = profiles.of(container.activePersonID).first?.createdAt {
                     Text("Last updated \(date.formatted(date: .abbreviated, time: .omitted))")
                 }
             }
+            FitRecordSection()
             if !brandSizes.isEmpty {
                 Section {
                     ForEach(brandSizes) { record in
@@ -64,6 +66,8 @@ struct ProfileView: View {
                     Text("From the purchases you told WearIQ about; advice for these brands is adjusted.")
                 }
             }
+            HealthWeightSection()
+            CloudBackupSection()
             Section("Sounds and reminders") {
                 Toggle("Interface sounds", isOn: $soundsEnabled)
                 Toggle("Morning outfit reminder", isOn: $outfitReminder)
@@ -92,6 +96,7 @@ struct ProfileView: View {
             }
             Section("Privacy") {
                 Label("Photos are processed on this device and are not uploaded.", systemImage: "lock.shield")
+                Link("Privacy policy", destination: URL(string: "https://niinova22-blip.github.io/WearIQ/privacy.html")!)
                 Label("Your measurements are never shared with advertisers.", systemImage: "hand.raised")
             }
             Section {
@@ -109,7 +114,7 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
         .fullScreenCover(isPresented: $showRescan) {
-            ProfileSetupFlow { showRescan = false }
+            ProfileSetupFlow(personID: container.activePersonID) { showRescan = false }
         }
         .confirmationDialog("Delete all your data?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {

@@ -4,6 +4,7 @@ import WearIQCore
 
 struct MeasurementReviewView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppContainer.self) private var container
     @State private var model: MeasurementReviewModel
     @State private var editing: BodyDimension?
     @State private var saveError: String?
@@ -161,7 +162,7 @@ struct MeasurementReviewView: View {
 
     private func save() {
         do {
-            modelContext.insert(try StoredBodyProfile(profile: model.finalizedProfile()))
+            modelContext.insert(try StoredBodyProfile(profile: model.finalizedProfile(), personID: container.activePersonID))
             try modelContext.save()
             onSaved()
         } catch {

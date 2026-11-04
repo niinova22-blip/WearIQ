@@ -10610,6 +10610,956 @@
           }
         }
       }
+    },
+    "Checked on my 3D avatar": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D avatarımda denendi"
+          }
+        }
+      }
+    },
+    "For size %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beden için"
+          }
+        }
+      }
+    },
+    "Swimwear and underwear usually can't be returned once opened. This size looks right; check the store's return rules all the same.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mayo ve iç çamaşırı açıldıktan sonra genelde iade edilemez. Bu beden doğru görünüyor; yine de mağazanın iade kurallarına bak."
+          }
+        }
+      }
+    },
+    "Swimwear and underwear usually can't be returned once opened, and this size isn't a sure fit. Measure yourself with a tape or ask the store before ordering.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mayo ve iç çamaşırı açıldıktan sonra genelde iade edilemez ve bu beden kesin uymuyor. Sipariş vermeden önce mezurayla ölç ya da mağazaya sor."
+          }
+        }
+      }
+    },
+    "Return risk: low": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İade riski: düşük"
+          }
+        }
+      }
+    },
+    "Return risk: medium": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İade riski: orta"
+          }
+        }
+      }
+    },
+    "Return risk: high": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İade riski: yüksek"
+          }
+        }
+      }
+    },
+    "The size chart is missing what decides the size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden tablosunda bedeni belirleyen ölçü yok."
+          }
+        }
+      }
+    },
+    "No size on the chart fits you where it matters most.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tablodaki hiçbir beden en önemli yerde sana uymuyor."
+          }
+        }
+      }
+    },
+    "You're between two sizes; either could feel off.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İki beden arasındasın; ikisi de tam oturmayabilir."
+          }
+        }
+      }
+    },
+    "Your key measurement is an estimate from height and weight. A scan makes this surer.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belirleyici ölçün boy ve kilodan tahmin. Bir tarama bunu kesinleştirir."
+          }
+        }
+      }
+    },
+    "This size is off where it matters most (chest for tops, waist and hips for bottoms).": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu beden en önemli yerde uymuyor (üstlerde göğüs, altlarda bel ve kalça)."
+          }
+        }
+      }
+    },
+    "This size is clearly off somewhere (length or sleeves).": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu beden bir yerde belirgin şekilde uymuyor (boy ya da kollar)."
+          }
+        }
+      }
+    },
+    "The measurements leave a lot of room either way.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçüler iki yöne de epey pay bırakıyor."
+          }
+        }
+      }
+    },
+    "A small difference in your measurements could change the size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülerindeki küçük bir fark bedeni değiştirebilir."
+          }
+        }
+      }
+    },
+    "Back to me": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bana dön"
+          }
+        }
+      }
+    },
+    "Did your order arrive?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siparişin geldi mi?"
+          }
+        }
+      }
+    },
+    "You've gained %lld kg since your scan": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taramandan bu yana %lld kg aldın"
+          }
+        }
+      }
+    },
+    "You've lost %lld kg since your scan": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taramandan bu yana %lld kg verdin"
+          }
+        }
+      }
+    },
+    "Your waist may be about %lld cm %@. Sizes could change.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Belin yaklaşık %lld cm %@ olabilir. Bedenlerin değişebilir."
+          }
+        }
+      }
+    },
+    "bigger": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "daha geniş"
+          }
+        }
+      }
+    },
+    "smaller": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "daha dar"
+          }
+        }
+      }
+    },
+    "Use an estimate for now": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdilik tahmini kullan"
+          }
+        }
+      }
+    },
+    "Not now": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Şimdi değil"
+          }
+        }
+      }
+    },
+    "Checked garment": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrol edilen kıyafet"
+          }
+        }
+      }
+    },
+    "Your size: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedenin: %@"
+          }
+        }
+      }
+    },
+    "No size found": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden bulunamadı"
+          }
+        }
+      }
+    },
+    "Open checked garment": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrol edilen kıyafeti aç"
+          }
+        }
+      }
+    },
+    "Check my size": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedenimi kontrol et"
+          }
+        }
+      }
+    },
+    "Checks which size of a garment fits you, from its product page link.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir kıyafetin hangi bedeninin sana uyduğunu ürün sayfası bağlantısından kontrol eder."
+          }
+        }
+      }
+    },
+    "Product link": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ürün bağlantısı"
+          }
+        }
+      }
+    },
+    "My size in a brand": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir markadaki bedenim"
+          }
+        }
+      }
+    },
+    "Tells the size you last took in a brand and how it fit.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir markada en son aldığın bedeni ve nasıl oturduğunu söyler."
+          }
+        }
+      }
+    },
+    "Open WearIQ once first.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce WearIQ'yu bir kez aç."
+          }
+        }
+      }
+    },
+    "No purchases from %@ yet. Check a garment from %@ in WearIQ and tell it how it fit.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz %1$@ alışverişin yok. WearIQ'da bir %2$@ kıyafetini kontrol et ve nasıl oturduğunu söyle."
+          }
+        }
+      }
+    },
+    "You took %@ in %@ and it was %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$@ markasından %1$@ aldın ve %3$@ oldu."
+          }
+        }
+      }
+    },
+    "Partner": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eş"
+          }
+        }
+      }
+    },
+    "Child": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çocuk"
+          }
+        }
+      }
+    },
+    "Parent": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ebeveyn"
+          }
+        }
+      }
+    },
+    "Friend": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arkadaş"
+          }
+        }
+      }
+    },
+    "Someone else": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başka biri"
+          }
+        }
+      }
+    },
+    "For %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ için"
+          }
+        }
+      }
+    },
+    "Me": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ben"
+          }
+        }
+      }
+    },
+    "Add someone you shop for": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alışveriş yaptığın birini ekle"
+          }
+        }
+      }
+    },
+    "Shopping for": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kimin için"
+          }
+        }
+      }
+    },
+    "A partner, a child or a gift: each person has their own measurements, checks and brand sizes.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşin, çocuğun ya da bir hediye: her kişinin kendi ölçüleri, kontrolleri ve marka bedenleri olur."
+          }
+        }
+      }
+    },
+    "Who": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kim"
+          }
+        }
+      }
+    },
+    "Next: their height, weight and gender, then a scan (they turn in front of the phone) or measurements typed in from a tape.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonra: boyu, kilosu ve cinsiyeti; ardından bir tarama (telefonun önünde döner) ya da mezurayla ölçülüp girilen ölçüler."
+          }
+        }
+      }
+    },
+    "Add someone": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birini ekle"
+          }
+        }
+      }
+    },
+    "Fit first time in WearIQ's size": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ'nun bedeni ilk seferde oldu"
+          }
+        }
+      }
+    },
+    "Returns likely avoided": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muhtemelen önlenen iadeler"
+          }
+        }
+      }
+    },
+    "How does %@ fit?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ nasıl oldu?"
+          }
+        }
+      }
+    },
+    "Your fit record": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyum karnen"
+          }
+        }
+      }
+    },
+    "Counts only what you told WearIQ. \"Likely avoided\": WearIQ's size differed from the size you usually took in that brand, and it fit.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalnızca WearIQ'ya söylediklerini sayar. \"Muhtemelen önlenen\": WearIQ'nun bedeni o markada genelde aldığın bedenden farklıydı ve oldu."
+          }
+        }
+      }
+    },
+    "Watch my weight in Apple Health": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kilomu Apple Sağlık'tan izle"
+          }
+        }
+      }
+    },
+    "When your weight has changed by 3 kg or more since your scan, WearIQ suggests scanning again. Only read, never written; it stays on this phone.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kilon taramandan bu yana 3 kg ya da daha fazla değiştiğinde WearIQ yeniden taramayı önerir. Yalnızca okunur, asla yazılmaz; bu telefonda kalır."
+          }
+        }
+      }
+    },
+    "Back up to iCloud": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud'a yedekle"
+          }
+        }
+      }
+    },
+    "Last backup": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son yedek"
+          }
+        }
+      }
+    },
+    "Restored": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geri yüklendi"
+          }
+        }
+      }
+    },
+    "Restore from iCloud": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud'dan geri yükle"
+          }
+        }
+      }
+    },
+    "Backup": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yedekleme"
+          }
+        }
+      }
+    },
+    "Your measurements, checks, brand sizes and wardrobe list are kept in your own iCloud for a new phone. Photos and scans are never uploaded.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülerin, kontrollerin, marka bedenlerin ve gardırop listen yeni bir telefon için kendi iCloud'unda tutulur. Fotoğraflar ve taramalar asla yüklenmez."
+          }
+        }
+      }
+    },
+    "Lay it flat, smoothed out, collar or waistband towards the top of the photo.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düzgünce yere ya da masaya ser; yaka ya da bel kısmı fotoğrafın üstüne doğru olsun."
+          }
+        }
+      }
+    },
+    "Put a sheet of A4 paper next to it, not touching.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yanına, değmeyecek şekilde bir A4 kağıt koy."
+          }
+        }
+      }
+    },
+    "Take the photo from above, the whole garment and the paper in it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafı yukarıdan çek; kıyafetin tamamı ve kağıt kadrajda olsun."
+          }
+        }
+      }
+    },
+    "How to": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nasıl yapılır"
+          }
+        }
+      }
+    },
+    "Take a photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf çek"
+          }
+        }
+      }
+    },
+    "Use these measurements": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu ölçüleri kullan"
+          }
+        }
+      }
+    },
+    "Girths are double the flat width, like size charts. Check them; you can still edit each one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çevre ölçüleri, beden tablolarındaki gibi düz genişliğin iki katıdır. Kontrol et; her birini yine de düzenleyebilirsin."
+          }
+        }
+      }
+    },
+    "Measure from a photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraftan ölç"
+          }
+        }
+      }
+    },
+    "Couldn't find the A4 sheet. Put it flat beside the garment, all four corners in the photo.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A4 kağıt bulunamadı. Kıyafetin yanına düz koy, dört köşesi de fotoğrafta olsun."
+          }
+        }
+      }
+    },
+    "Couldn't make out the garment. A plain floor or table that differs in colour helps.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet seçilemedi. Renkçe farklı, düz bir zemin ya da masa yardımcı olur."
+          }
+        }
+      }
+    },
+    "The outline doesn't look like this kind of garment laid flat. Smooth it out, collar or waistband at the top.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dış hat bu tür bir kıyafetin serilmiş hali gibi görünmüyor. Düzelt; yaka ya da bel üstte olsun."
+          }
+        }
+      }
+    },
+    "Did it arrive?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geldi mi?"
+          }
+        }
+      }
+    },
+    "How does %@ in %@ fit? One tap helps your next size.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@ beden nasıl oldu? Tek dokunuş bir sonraki bedenine yardım eder."
+          }
+        }
+      }
+    },
+    "Garment colour": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafet rengi"
+          }
+        }
+      }
+    },
+    "Fit colours": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uyum renkleri"
+          }
+        }
+      }
+    },
+    "Share": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paylaş"
+          }
+        }
+      }
+    },
+    "Size %@ fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beden oturuyor"
+          }
+        }
+      }
+    },
+    "Size %@: close, a little off in places": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ beden: yakın, yer yer biraz farklı"
+          }
+        }
+      }
+    },
+    "We'll ask in a few days how %@ fits.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birkaç gün sonra %@ bedenin nasıl olduğunu soracağız."
+          }
+        }
+      }
+    },
+    "Ordered it: remind me to say how it fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sipariş verdim: nasıl olduğunu söylemem için hatırlat"
+          }
+        }
+      }
+    },
+    "Already have it?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaten elinde mi?"
+          }
+        }
+      }
+    },
+    "WearIQ recommended %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ %@ önermişti."
+          }
+        }
+      }
+    },
+    "How does it fit?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nasıl oturuyor?"
+          }
+        }
+      }
+    },
+    "Sent it back: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İade ettim: %@"
+          }
+        }
+      }
+    },
+    "Returned it?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İade ettin mi?"
+          }
+        }
+      }
+    },
+    "Didn't buy it after all": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonunda almadım"
+          }
+        }
+      }
+    },
+    "How did it fit?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nasıl oldu?"
+          }
+        }
+      }
+    },
+    "Later": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonra"
+          }
+        }
+      }
+    },
+    "Size %@ is the closest to your favourite %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ beden, favorin olan %2$@ ürününe en yakın beden."
+          }
+        }
+      }
+    },
+    "No size here is close to your favourite %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buradaki bedenlerin hiçbiri favorin olan %@ ürününe yakın değil."
+          }
+        }
+      }
+    },
+    "Privacy policy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gizlilik politikası"
+          }
+        }
+      }
+    },
+    "A is the app's scan, with engine C's correction for the camera's perspective; C alone is shown beside it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A, uygulamanın taramasıdır ve kameranın perspektifi için motor C düzeltmesini içerir; C tek başına yanında gösterilir."
+          }
+        }
+      }
+    },
+    "My favourite fit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favori kalıbım"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

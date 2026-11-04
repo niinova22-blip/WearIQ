@@ -131,7 +131,7 @@ jobs:
           /usr/bin/openssl genrsa -out "$SIGN_DIR/dist.key" 2048
           /usr/bin/openssl req -new -key "$SIGN_DIR/dist.key" -out "$SIGN_DIR/dist.csr" -subj "/CN=WearIQ CI/C=TR"
           ASC_KEY_PATH="$SIGN_DIR/AuthKey.p8" "$RUNNER_TEMP/venv/bin/python" scripts/asc_signing.py \
-            create "$SIGN_DIR/dist.csr" "$SIGN_DIR" "$BUNDLE_ID,$BUNDLE_ID.share" "WearIQ CI ${{ github.run_id }}"
+            create "$SIGN_DIR/dist.csr" "$SIGN_DIR" "$BUNDLE_ID,$BUNDLE_ID.share,$BUNDLE_ID.widget" "WearIQ CI ${{ github.run_id }}"
 
           /usr/bin/openssl x509 -inform DER -in "$SIGN_DIR/dist.cer" -out "$SIGN_DIR/dist.pem"
           P12_PASS="$(openssl rand -hex 12)"
@@ -162,6 +162,8 @@ jobs:
           APP="$RUNNER_TEMP/WearIQ.xcarchive/Products/Applications/WearIQ.app"
           cp "$SIGN_DIR/app.mobileprovision" "$APP/embedded.mobileprovision"
 
+          # Extensions: the basics. The keychain group shared by the app and the widget
+          # (WidgetSnapshot) needs no registration: profiles allow the team's groups.
           cat > "$SIGN_DIR/entitlements.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -172,6 +174,20 @@ jobs:
             <key>beta-reports-active</key><true/>
           </dict></plist>
           EOF
+          SHARED_GROUP="$TEAM.com.niinova.weariq.shared"
+          # The app: plus the shared keychain group, and HealthKit / iCloud key-value
+          # storage when its bundle ID has them (capabilities.txt from asc_signing.py).
+          CAPS="$(cat "$SIGN_DIR/capabilities.txt" 2>/dev/null || true)"
+          EXTRA="<key>keychain-access-groups</key><array><string>$TEAM.$BUNDLE_ID</string><string>$SHARED_GROUP</string></array>"
+          case " $CAPS " in *" HEALTHKIT "*)
+            EXTRA="$EXTRA<key>com.apple.developer.healthkit</key><true/><key>com.apple.developer.healthkit.access</key><array/>" ;;
+          esac
+          case " $CAPS " in *" ICLOUD "*)
+            EXTRA="$EXTRA<key>com.apple.developer.ubiquity-kvstore-identifier</key><string>$TEAM.$BUNDLE_ID</string>" ;;
+          esac
+          echo "App capabilities: ${CAPS:-none}"
+          sed "s#<key>beta-reports-active</key><true/>#<key>beta-reports-active</key><true/>$EXTRA#" \
+            "$SIGN_DIR/entitlements.plist" > "$SIGN_DIR/app-entitlements.plist"
 
           requirement() {
             echo "=designated => anchor apple generic and identifier \"$1\" and certificate leaf[subject.OU] = \"$TEAM\" and certificate 1[field.1.2.840.113635.100.6.2.1] /* exists */"
@@ -198,9 +214,21 @@ jobs:
               --entitlements "$SIGN_DIR/share-entitlements.plist" \
               --requirements "$(requirement "$BUNDLE_ID.share")" "$APPEX"
           fi
+          # The widget: its own profile and identifier, and the shared keychain group.
+          WIDGET="$APP/PlugIns/WearIQWidget.appex"
+          if [ -d "$WIDGET" ]; then
+            cp "$SIGN_DIR/widget.mobileprovision" "$WIDGET/embedded.mobileprovision"
+            sed -e "s/$TEAM.$BUNDLE_ID</$TEAM.$BUNDLE_ID.widget</" \
+                -e "s#<key>beta-reports-active</key><true/>#<key>beta-reports-active</key><true/><key>keychain-access-groups</key><array><string>$TEAM.$BUNDLE_ID.widget</string><string>$SHARED_GROUP</string></array>#" \
+                "$SIGN_DIR/entitlements.plist" > "$SIGN_DIR/widget-entitlements.plist"
+            codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" \
+              --entitlements "$SIGN_DIR/widget-entitlements.plist" \
+              --requirements "$(requirement "$BUNDLE_ID.widget")" "$WIDGET"
+          fi
           codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" \
-            --entitlements "$SIGN_DIR/entitlements.plist" \
+            --entitlements "$SIGN_DIR/app-entitlements.plist" \
             --requirements "$(requirement "$BUNDLE_ID")" "$APP"
+          codesign -d --entitlements :- "$APP" | grep -o "<key>[^<]*</key>" | tr '\n' ' '; echo
 
           codesign --verify --deep --strict --verbose=2 "$APP"
           codesign -d -r- "$APP" 2>&1 | grep designated

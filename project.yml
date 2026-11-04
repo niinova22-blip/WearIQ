@@ -56,9 +56,14 @@ targets:
       - package: GoogleUserMessagingPlatform
       - target: WearIQShare
         embed: true
+      - target: WearIQWidget
+        embed: true
+      - sdk: HealthKit.framework
     info:
       path: WearIQ/Info.plist
       properties:
+        # Keychain group shared with the widget (no app group needed); see WidgetSnapshot.
+        WQKeychainGroup: $(DEVELOPMENT_TEAM).com.niinova.weariq.shared
         # AdMob: Google's public TEST app id until the real one is provided.
         GADApplicationIdentifier: ca-app-pub-3940256099942544~1458002511
         WQBannerAdUnitID: ca-app-pub-3940256099942544/2435281174
@@ -90,6 +95,7 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_NSCameraUsageDescription: "WearIQ uses the camera to scan your body measurements and read barcodes or size labels. Photos are processed on your device and are not uploaded."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "WearIQ reads size chart screenshots and garment photos you choose. They are processed on your device."
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "If you turn it on, WearIQ reads your latest weight to tell you when your measurements may have changed. Nothing is written to Health and nothing leaves your phone."
         INFOPLIST_KEY_NSUserTrackingUsageDescription: "Allowing tracking lets us show more relevant ads. Your body measurements are never shared with advertisers."
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         CODE_SIGN_STYLE: Automatic
@@ -118,6 +124,30 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: WearIQ
+        CODE_SIGN_STYLE: Automatic
+
+  # Home screen widget: followed products and the latest checks.
+  WearIQWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: WearIQWidget
+      - path: WearIQ/Shared
+    info:
+      path: WearIQWidget/Info.plist
+      properties:
+        CFBundleDisplayName: WearIQ
+        WQKeychainGroup: $(DEVELOPMENT_TEAM).com.niinova.weariq.shared
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.niinova.weariq.widget
+        PRODUCT_NAME: WearIQWidget
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: WearIQ
+        SWIFT_EMIT_LOC_STRINGS: YES
         CODE_SIGN_STYLE: Automatic
 
   WearIQTests:

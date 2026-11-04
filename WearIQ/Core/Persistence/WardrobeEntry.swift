@@ -24,6 +24,8 @@ final class WardrobeEntry {
     /// How often and when it was last worn ("Wore it today").
     var wornCount: Int?
     var lastWornAt: Date?
+    /// A favourite whose fit new garments are compared with ("like my best tee").
+    var isReference: Bool?
 
     init(name: String, category: WardrobeCategory, color: ColorFamily, brand: String? = nil, size: String? = nil,
          fitStyle: FitStyle? = nil, seasons: Set<Season> = Set(Season.allCases), styles: Set<StyleTag> = [.casual],

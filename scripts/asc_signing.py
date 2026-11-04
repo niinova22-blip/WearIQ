@@ -58,6 +58,56 @@ def call(method: str, path: str, body: dict | None = None) -> dict:
         sys.exit(f"::error::App Store Connect API {method} {path} failed ({e.code}): {detail}")
 
 
+def try_call(method: str, path: str, body: dict | None = None) -> dict | None:
+    """Like call, but returns None on an HTTP error instead of failing the run."""
+    req = urllib.request.Request(
+        API + path,
+        method=method,
+        data=json.dumps(body).encode() if body is not None else None,
+        headers={"Authorization": f"Bearer {token()}", "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            raw = resp.read()
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        print(f"::warning::App Store Connect API {method} {path} failed ({e.code}): {e.read().decode(errors='replace')[:400]}")
+        return None
+
+
+# Capabilities the app's entitlements use, enabled on its bundle ID before its profile is
+# made (the profile carries what the ID has). HealthKit: reading the weight; iCloud:
+# key-value storage for the optional backup.
+APP_CAPABILITIES = {
+    "HEALTHKIT": None,
+    "ICLOUD": [{"key": "ICLOUD_VERSION", "options": [{"key": "XCODE_6"}]}],
+}
+
+
+def ensure_capabilities(bundle_resource_id: str, out_dir: str) -> None:
+    """Enables APP_CAPABILITIES on the bundle ID; writes the ones it has to capabilities.txt
+    so the signing step only claims entitlements the profile allows."""
+    present = set()
+    listed = try_call("GET", f"/bundleIds/{bundle_resource_id}/bundleIdCapabilities?limit=200")
+    for c in (listed or {}).get("data", []):
+        present.add(c["attributes"].get("capabilityType"))
+    for kind, settings in APP_CAPABILITIES.items():
+        if kind in present:
+            continue
+        attributes = {"capabilityType": kind}
+        if settings:
+            attributes["settings"] = settings
+        made = try_call("POST", "/bundleIdCapabilities", {"data": {
+            "type": "bundleIdCapabilities", "attributes": attributes,
+            "relationships": {"bundleId": {"data": {"type": "bundleIds", "id": bundle_resource_id}}},
+        }})
+        if made is not None:
+            present.add(kind)
+            print(f"Enabled {kind} on the app's bundle ID")
+    with open(os.path.join(out_dir, "capabilities.txt"), "w") as f:
+        f.write(" ".join(sorted(k for k in present if k in APP_CAPABILITIES)))
+
+
 def create(csr_path: str, out_dir: str, bundle_id: str, profile_name: str) -> None:
     os.makedirs(out_dir, exist_ok=True)
     with open(csr_path) as f:
@@ -85,6 +135,8 @@ def create(csr_path: str, out_dir: str, bundle_id: str, profile_name: str) -> No
             print(f"Registered bundle ID {identifier}")
         if not bundles:
             sys.exit(f"::error::Bundle ID {identifier} is not registered in the developer account")
+        if index == 0:
+            ensure_capabilities(bundles[0]["id"], out_dir)
 
         profile = call("POST", "/profiles", {"data": {
             "type": "profiles",

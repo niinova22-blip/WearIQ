@@ -11,9 +11,10 @@ struct BrandNoteView: View {
     let category: GarmentCategory?
     let recommended: String?
     @Query private var records: [PurchaseRecord]
+    @Environment(AppContainer.self) private var container
 
     var body: some View {
-        if let note = BrandMemory(records: records).note(brand: brand, category: category, recommended: recommended) {
+        if let note = BrandMemory(records: records.filter { $0.personID == container.activePersonID }).note(brand: brand, category: category, recommended: recommended) {
             Label(note, systemImage: "bookmark.fill")
                 .font(.subheadline)
                 .padding(Theme.Spacing.m)
@@ -23,16 +24,21 @@ struct BrandNoteView: View {
     }
 }
 
-/// Asks, once the user has the garment, which size they took and how it fit; that is
-/// what the brand memory learns from.
+/// After a check: "Ordered it" sets a reminder for when the parcel has usually arrived;
+/// "I have it" asks how it fit straight away. The answer is what the brand memory and
+/// the fit record learn from.
 struct PurchaseFeedbackCard: View {
     let brand: String?
     let productName: String?
     let category: GarmentCategory?
     let sizes: [String]
     @State var size: String
+    var recommended: String?
+    var productKey: String?
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppContainer.self) private var container
     @State private var saved: PurchaseRecord.Feel?
+    @State private var ordered = false
 
     var body: some View {
         if let brand, !brand.isEmpty {
@@ -48,7 +54,17 @@ struct PurchaseFeedbackCard: View {
                 if let saved {
                     Label("Saved: \(size), \(saved.title)", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
+                } else if ordered {
+                    Label("We'll ask in a few days how \(size) fits.", systemImage: "bell.badge.fill")
+                        .foregroundStyle(.tint)
                 } else {
+                    Button {
+                        order(brand: brand)
+                    } label: {
+                        Label("Ordered it: remind me to say how it fits", systemImage: "shippingbox")
+                    }
+                    .buttonStyle(.bordered)
+                    Text("Already have it?").font(.footnote).foregroundStyle(.secondary)
                     HStack {
                         ForEach(PurchaseRecord.Feel.allCases, id: \.self) { feel in
                             Button(feel.title) { save(feel, brand: brand) }
@@ -61,10 +77,104 @@ struct PurchaseFeedbackCard: View {
         }
     }
 
+    private func record(brand: String, feel: PurchaseRecord.Feel?) -> PurchaseRecord {
+        PurchaseRecord(brand: brand, productName: productName, category: category, size: size, feel: feel,
+                       recommendedSize: recommended, productKey: productKey, personID: container.activePersonID)
+    }
+
     private func save(_ feel: PurchaseRecord.Feel, brand: String) {
-        modelContext.insert(PurchaseRecord(brand: brand, productName: productName, category: category, size: size, feel: feel))
+        modelContext.insert(record(brand: brand, feel: feel))
         try? modelContext.save()
         saved = feel
+    }
+
+    private func order(brand: String) {
+        let r = record(brand: brand, feel: nil)
+        modelContext.insert(r)
+        try? modelContext.save()
+        ordered = true
+        Task { await PurchaseFollowUp.schedule(r) }
+    }
+}
+
+/// A purchase on its way or arrived: how did it fit? From the home screen or the
+/// follow-up notification.
+struct PurchaseOutcomeSheet: View {
+    let record: PurchaseRecord
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    LabeledContent(record.productName ?? record.brand, value: record.size)
+                    if let recommended = record.recommendedSize, recommended != record.size {
+                        Text("WearIQ recommended \(recommended).").font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                Section("How does it fit?") {
+                    ForEach(PurchaseRecord.Feel.allCases, id: \.self) { feel in
+                        Button(feel.title) { settle(feel, returned: false) }
+                    }
+                }
+                Section {
+                    ForEach(PurchaseRecord.Feel.allCases, id: \.self) { feel in
+                        Button(String(localized: "Sent it back: \(feel.title.lowercased())")) { settle(feel, returned: true) }
+                    }
+                } header: {
+                    Text("Returned it?")
+                }
+                Section {
+                    Button("Didn't buy it after all", role: .destructive) {
+                        PurchaseFollowUp.cancel(record)
+                        modelContext.delete(record)
+                        try? modelContext.save()
+                        dismiss()
+                    }
+                }
+            }
+            .navigationTitle("How did it fit?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Later") { dismiss() } } }
+        }
+    }
+
+    private func settle(_ feel: PurchaseRecord.Feel, returned: Bool) {
+        record.settle(feel, returned: returned)
+        PurchaseFollowUp.cancel(record)
+        try? modelContext.save()
+        AppSounds.shared.play(.saved)
+        dismiss()
+    }
+}
+
+/// "Like your favourite …": the size closest to a garment the user marked as a
+/// favourite fit in the wardrobe (measured flat or typed in). Garment charts only.
+struct ReferenceFitCard: View {
+    let category: GarmentCategory?
+    let spec: GarmentSpec?
+    @Query(sort: \WardrobeEntry.createdAt, order: .reverse) private var wardrobe: [WardrobeEntry]
+
+    var body: some View {
+        if let category, let spec, spec.chartKind == .garment,
+           let favourite = wardrobe.first(where: { $0.isReference == true && $0.category == WardrobeCategory(category) && !$0.measurements.isEmpty }) {
+            if let match = ReferenceGarment.closest(spec: spec, reference: favourite.measurements) {
+                Label(String(localized: "Size \(match.size) is the closest to your favourite \(favourite.name)."),
+                      systemImage: "heart.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(Theme.Spacing.m)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+            } else {
+                Label(String(localized: "No size here is close to your favourite \(favourite.name)."), systemImage: "heart")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(Theme.Spacing.m)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+            }
+        }
     }
 }
 

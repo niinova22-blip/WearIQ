@@ -68,6 +68,17 @@
           }
         }
       }
+    },
+    "NSHealthShareUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açarsan WearIQ, ölçülerinin değişmiş olabileceğini söylemek için son kilonu okur. Sağlık uygulamasına hiçbir şey yazılmaz ve hiçbir şey telefonundan çıkmaz."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

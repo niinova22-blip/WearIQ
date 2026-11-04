@@ -11,7 +11,10 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Theme.Spacing.m) {
+                ActivePersonBanner()
                 heroCard
+                PendingPurchasesCard()
+                WeightChangeCard()
                 HStack(spacing: Theme.Spacing.m) {
                     quotaTile
                     profileTile
@@ -77,7 +80,7 @@ struct HomeView: View {
         Button { selectTab(.profile) } label: {
             Card {
                 Image(systemName: "figure.stand").font(.title2).foregroundStyle(.tint)
-                if let profile = profiles.first?.profile {
+                if let profile = profiles.of(container.activePersonID).first?.profile {
                     Text("Body profile").font(.headline)
                     Text("\(profile.values.count) measurements").font(.footnote).foregroundStyle(.secondary)
                 } else {

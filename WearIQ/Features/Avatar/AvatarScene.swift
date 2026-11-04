@@ -47,6 +47,10 @@ struct AvatarSceneView: UIViewRepresentable {
     var coveredBottom: CGFloat = 0
     /// Garments taken off the view (by index in `avatar.layers`), to see what is under them.
     var hidden: Set<Int> = []
+    /// Without fit colours: each garment's own colour (from its product photo), by layer.
+    var layerColors: [Int: UIColor] = [:]
+    /// Lets the screen take a picture of the scene for sharing.
+    var snapshotter: AvatarSnapshotter?
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -60,16 +64,18 @@ struct AvatarSceneView: UIViewRepresentable {
         view.delegate = context.coordinator
         view.addGestureRecognizer(UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pan(_:))))
         view.addGestureRecognizer(UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pinch(_:))))
+        snapshotter?.view = view
         context.coordinator.update(avatar, revision: revision, fitColors: fitColors, frame: frame, labels: labels,
-                                   hidden: hidden, model: labelModel, in: view)
+                                   hidden: hidden, layerColors: layerColors, model: labelModel, in: view)
         context.coordinator.turn(to: facing, turn: facingTurn)
         context.coordinator.frameBody(height: avatar.body.maxY, viewHeight: viewHeight, top: coveredTop, bottom: coveredBottom)
         return view
     }
 
     func updateUIView(_ view: SCNView, context: Context) {
+        snapshotter?.view = view
         context.coordinator.update(avatar, revision: revision, fitColors: fitColors, frame: frame, labels: labels,
-                                   hidden: hidden, model: labelModel, in: view)
+                                   hidden: hidden, layerColors: layerColors, model: labelModel, in: view)
         context.coordinator.turn(to: facing, turn: facingTurn)
         context.coordinator.frameBody(height: avatar.body.maxY, viewHeight: viewHeight, top: coveredTop, bottom: coveredBottom)
     }
@@ -183,9 +189,14 @@ struct AvatarSceneView: UIViewRepresentable {
 
         @MainActor
         func update(_ avatar: Avatar, revision: Int, fitColors: Bool, frame: Int?, labels: [SceneLabel],
-                    hidden: Set<Int> = [], model: LandmarkLabels, in view: SCNView) {
+                    hidden: Set<Int> = [], layerColors: [Int: UIColor] = [:], model: LandmarkLabels, in view: SCNView) {
             self.model = model
-            let key = "\(revision)-\(fitColors)-\(frame ?? -1)-\(hidden.sorted())"
+            let colorKey = layerColors.keys.sorted().map { k -> String in
+                var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+                layerColors[k]!.getRed(&r, green: &g, blue: &b, alpha: &a)
+                return String(format: "%d:%.2f,%.2f,%.2f", k, r, g, b)
+            }.joined(separator: ";")
+            let key = "\(revision)-\(fitColors)-\(frame ?? -1)-\(hidden.sorted())-\(colorKey)"
             if key != shownKey {
                 let bodyChanged = shownKey?.split(separator: "-").first != key.split(separator: "-").first
                 shownKey = key
@@ -200,7 +211,7 @@ struct AvatarSceneView: UIViewRepresentable {
                 var materials: [SCNMaterial] = []
                 for (index, layer) in avatar.layers.enumerated() where !hidden.contains(index) {
                     let mesh = frame.map { avatar.layerMesh(layer, frame: $0) } ?? layer.mesh
-                    let garment = Self.geometry(mesh, color: fitColors ? .white : UIColor(red: 0.24, green: 0.3, blue: 0.44, alpha: 1),
+                    let garment = Self.geometry(mesh, color: fitColors ? .white : layerColors[index] ?? UIColor(red: 0.24, green: 0.3, blue: 0.44, alpha: 1),
                                                 roughness: 0.86, doubleSided: true,
                                                 colors: fitColors ? Self.colors(mesh) : nil, sway: mesh.sway)
                     layersNode.addChildNode(SCNNode(geometry: garment))

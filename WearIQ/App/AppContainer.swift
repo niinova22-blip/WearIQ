@@ -19,11 +19,32 @@ final class AppContainer {
     private(set) var isPremium = false
     /// A product link handed over by the share extension, for the scan tab to check.
     var pendingProductLink: URL?
+    /// A purchase whose fit the user is asked about (from its follow-up notification).
+    var pendingPurchaseToken: String?
+    /// A checked garment to open (from Siri, Spotlight or visual intelligence).
+    var pendingAnalysisKey: String?
 
-    /// weariq://check?url=https://… → the product link.
+    /// Whose measurements the app is using: nil for the user, otherwise a Person
+    /// (shopping for a partner, a child, a gift).
+    var activePersonID: UUID? = UserDefaults.standard.string(forKey: "activePersonID").flatMap(UUID.init(uuidString:)) {
+        didSet { UserDefaults.standard.set(activePersonID?.uuidString, forKey: "activePersonID") }
+    }
+
+    /// The active person's latest profile among `profiles` (sorted newest first).
+    func activeProfile(_ profiles: [StoredBodyProfile]) -> StoredBodyProfile? {
+        profiles.first { $0.personID == activePersonID }
+    }
+
+    /// weariq://check?url=https://… → the product link; weariq://feedback?token=… → a
+    /// purchase to rate.
     func handle(_ url: URL) {
-        guard url.scheme == "weariq", url.host == "check",
-              let value = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "url" })?.value,
+        guard url.scheme == "weariq" else { return }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        if url.host == "feedback", let token = items.first(where: { $0.name == "token" })?.value {
+            pendingPurchaseToken = token
+            return
+        }
+        guard url.host == "check", let value = items.first(where: { $0.name == "url" })?.value,
               let link = URL(string: value), link.scheme?.hasPrefix("http") == true else { return }
         pendingProductLink = link
     }
@@ -41,7 +62,8 @@ final class AppContainer {
     }
 
     func analysisCoordinator() -> FitAnalysisCoordinator {
-        FitAnalysisCoordinator(context: modelContainer.mainContext, quota: quota, engine: fitEngine, isPremium: isPremium)
+        FitAnalysisCoordinator(context: modelContainer.mainContext, quota: quota, engine: fitEngine, isPremium: isPremium,
+                               personID: activePersonID)
     }
 
     static func live() -> AppContainer {
@@ -79,7 +101,14 @@ final class AppContainer {
         try context.delete(model: StoredBodyProfile.self)
         try context.delete(model: SavedAnalysis.self)
         try context.delete(model: WardrobeEntry.self)
+        try context.delete(model: Person.self)
+        try context.delete(model: PurchaseRecord.self)
+        try context.delete(model: TrackedProduct.self)
         try context.save()
+        activePersonID = nil
+        WidgetSnapshot.clear()
+        CloudBackup.erase()
+        UserDefaults.standard.set(false, forKey: CloudBackup.enabledKey)
         onboardingCompleted = false
     }
 }

@@ -8,10 +8,13 @@ import WearIQCore
 final class StoredBodyProfile {
     var createdAt: Date
     var profileData: Data
+    /// Whose body this is: nil for the app's own user, otherwise a `Person`.
+    var personID: UUID?
 
-    init(profile: BodyProfile) throws {
+    init(profile: BodyProfile, personID: UUID? = nil) throws {
         createdAt = profile.createdAt
         profileData = try JSONEncoder().encode(profile)
+        self.personID = personID
     }
 
     var profile: BodyProfile? {
@@ -19,10 +22,15 @@ final class StoredBodyProfile {
     }
 }
 
+extension Array where Element == StoredBodyProfile {
+    /// The profiles of one person (nil: the app's own user), newest first as queried.
+    func of(_ person: UUID?) -> [StoredBodyProfile] { filter { $0.personID == person } }
+}
+
 enum PersistenceController {
     static func makeContainer(inMemory: Bool) -> ModelContainer {
         let schema = Schema([StoredBodyProfile.self, SavedAnalysis.self, WardrobeEntry.self,
-                             PurchaseRecord.self, TrackedProduct.self])
+                             PurchaseRecord.self, TrackedProduct.self, Person.self])
         let config: ModelConfiguration
         if inMemory {
             config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)

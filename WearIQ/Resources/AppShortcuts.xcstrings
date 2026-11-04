@@ -1,0 +1,54 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "Check my size in ${applicationName}": {
+      "localizations": {
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} ile bedenimi kontrol et"
+            ]
+          }
+        }
+      }
+    },
+    "Will it fit with ${applicationName}": {
+      "localizations": {
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} ile olur mu bak"
+            ]
+          }
+        }
+      }
+    },
+    "My brand size in ${applicationName}": {
+      "localizations": {
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} marka bedenim"
+            ]
+          }
+        }
+      }
+    },
+    "What size am I in ${applicationName}": {
+      "localizations": {
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} hangi bedenim"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

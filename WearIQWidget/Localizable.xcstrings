@@ -1,0 +1,69 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Price drops and sizes back in stock for what you follow, and your latest checks.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takip ettiğin ürünlerde fiyat düşüşleri, yeniden stoğa giren bedenler ve son kontrollerin."
+          }
+        }
+      }
+    },
+    "Check a garment or follow a product to see it here.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Burada görmek için bir kıyafeti kontrol et ya da bir ürünü takip et."
+          }
+        }
+      }
+    },
+    "%@ in stock": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ stokta"
+          }
+        }
+      }
+    },
+    "%@ sold out": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ tükendi"
+          }
+        }
+      }
+    },
+    "Linen shirt": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keten gömlek"
+          }
+        }
+      }
+    },
+    "Slim jeans": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dar kot"
+          }
+        }
+      }
+    },
+    "WearIQ": {
+      "shouldTranslate": false
+    }
+  },
+  "version": "1.0"
+}
