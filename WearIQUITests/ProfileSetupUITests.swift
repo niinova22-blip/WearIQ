@@ -5,6 +5,9 @@ import XCTest
 final class ProfileSetupUITests: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
+        // A cold simulator's first launch walks the whole setup flow: the CI's per-test
+        // allowance is a minute, which this one alone sometimes needs more than.
+        executionTimeAllowance = 120
     }
 
     func testManualEntryOpensWithHeightAndEstimates() {

@@ -379,3 +379,18 @@ Karar: önceden 20 kişilik mezura doğrulaması bekleniyordu. Uygulama sahibi y
 - **Önkol:** ANSUR önkolu kasılı ölçer, giysi ise gevşek kola göre dikilir. Üst kol bu yüzden düzeltilmişti, önkol unutulmuştu. Bu verideki farkla düzeltildi: erkekte −1,75, kadında −1,56 cm.
 - **Kadın göbek çevresi:** bu veride yaşla birlikte büyüyor (18–25 yaşta −2,5, 35–50 yaşta −6,0). Göbek ile en ince bel arasındaki fark kadınlarda 12–17 cm, erkeklerde 2–4 cm. Bu, ölçümün göbekten aşağıda, leğen kemiği hizasında alındığını düşündürüyor. ANSUR ve NHANES'in toplam 10 binden fazla kişisiyle uyumlu modeli tek bir küçük veriyle kaydırmak yerine model değiştirilmedi. Tahminin belirsizlik aralığı (σ ≈ 7 cm) bu farkı zaten kapsıyor.
 - **Erkek uyluğu:** büyük olasılıkla tanım farkı. ANSUR uyluğu kalça kıvrımının en alt noktasında ölçüyor, bu veri ise kıvrımın altında. Model değiştirilmedi.
+
+### Ölçüleri yayımlanmış tanınmış kişiler (güvenilirliği düşük)
+
+Kaynak ve kapsam:
+- Bir ünlü ölçü sitesinden boy, kilo ve göğüs–bel–kalça değerleri yayımlanmış 70 kadın ve 4 erkek (`PUBLIC_FIGURES_JSON`, depoda değil).
+- Değerler yuvarlanmış ve çoğu doğrulanmamış. Bel, en ince noktadan verilmiş.
+
+Sonuçlar:
+- **Avatar:** yayımlanan göğüs ve kalçayı 0,01 cm içinde kuruyor. Bunlara 61 cm bel / 89 cm kalça gibi kum saati vücutlar da dahil.
+- **Yalnızca boy ve kilo:** kadınlarda kalçayı 4,9 cm büyük, göğsü 2,3 cm küçük tahmin ediyor. Tahmin ortalama insan içindir; manken ve oyuncu vücutları ortalamadan uzak. Taramanın gerekli olduğunu gösteren beklenen bir sonuç; model değiştirilmedi.
+- **Bel:** göbek hizası tahmini, yayımlanan en ince belden 12,5 cm büyük.
+  - Mezuralı veride de göbek ile en ince bel arasındaki fark kadınlarda 12–17 cm.
+  - Kadın beden tablolarının "bel" sütunu çoğu zaman en ince yerden ölçülür. Uygulama ise bedeni göbek hizasında ölçüyor.
+  - ANSUR'da en ince bel olmadığı için kanıtsız değişiklik yapılmadı.
+  - Açık iş: taramada en ince beli ayrıca ölçmek ve kadın tablolarında onu kullanmak.
