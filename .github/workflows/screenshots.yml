@@ -42,7 +42,7 @@ jobs:
         run: |
           xcodebuild build -project WearIQ.xcodeproj -scheme WearIQ -configuration Debug \
             -destination "id=$UDID" -derivedDataPath "$RUNNER_TEMP/dd" \
-            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= -quiet
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= SWIFT_OPTIMIZATION_LEVEL=-O -quiet
           xcrun simctl install "$UDID" "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/WearIQ.app"
 
       - name: Capture
@@ -55,7 +55,7 @@ jobs:
               xcrun simctl launch "$UDID" com.niinova.weariq \
                 -WQDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$locale" > /dev/null
               # The avatar is cut and draped first (several seconds on the simulator).
-              if [ "$screen" = avatar ]; then sleep 150; else sleep 6; fi
+              if [ "$screen" = avatar ]; then sleep 60; else sleep 6; fi
               xcrun simctl io "$UDID" screenshot "shots/$lang/0${n}_${screen}.png"
               xcrun simctl terminate "$UDID" com.niinova.weariq || true
               n=$((n + 1))
