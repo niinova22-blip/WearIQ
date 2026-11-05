@@ -60,11 +60,11 @@ enum DemoMode {
 
         func v(_ cm: Double) -> MeasuredValue { MeasuredValue(cm: cm, uncertaintyCm: 1, source: .manual) }
         let dress = GarmentSpec(category: .dress, fitStyle: .regular, stretch: .low, chartKind: .garment, sizes: [
-            SizeEntry(label: "XS", values: [.chest: v(86), .waist: v(70), .hip: v(96), .bodyLength: v(118)]),
-            SizeEntry(label: "S", values: [.chest: v(91), .waist: v(75), .hip: v(101), .bodyLength: v(119)]),
-            SizeEntry(label: "M", values: [.chest: v(96), .waist: v(80), .hip: v(106), .bodyLength: v(120)]),
-            SizeEntry(label: "L", values: [.chest: v(102), .waist: v(86), .hip: v(112), .bodyLength: v(121)]),
-            SizeEntry(label: "XL", values: [.chest: v(108), .waist: v(92), .hip: v(118), .bodyLength: v(122)]),
+            SizeEntry(label: "XS", values: [.chest: v(92), .waist: v(74), .hip: v(100), .bodyLength: v(118)]),
+            SizeEntry(label: "S", values: [.chest: v(96), .waist: v(78), .hip: v(104), .bodyLength: v(119)]),
+            SizeEntry(label: "M", values: [.chest: v(100), .waist: v(82), .hip: v(108), .bodyLength: v(120)]),
+            SizeEntry(label: "L", values: [.chest: v(106), .waist: v(88), .hip: v(114), .bodyLength: v(121)]),
+            SizeEntry(label: "XL", values: [.chest: v(112), .waist: v(94), .hip: v(120), .bodyLength: v(122)]),
         ])
         let jeans = GarmentSpec(category: .pants, fitStyle: .regular, stretch: .low, chartKind: .garment, sizes: [
             SizeEntry(label: "34", values: [.waist: v(66), .hip: v(94), .inseam: v(78)]),

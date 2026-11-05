@@ -32,7 +32,7 @@ SLOTS = [
     ("avatar", "3D TRY-ON", "See it on your\nown 3D body",
      "Your avatar wears the exact size you pick,\nwith real fabric drape.", ["Tight · Ideal · Loose"], True),
     ("profile", "BODY SCAN", "Measured in one\nturn, no tape",
-     "Turn once in front of your phone.\nPhotos never leave your device.", ["12 measurements", "On-device"], False),
+     "Turn once in front of your phone.\nPhotos never leave your device.", ["One turn, 30 seconds", "Processed on-device"], False),
     ("scan", "ANY STORE", "Any link, any\nsize chart",
      "Paste a product link, scan a barcode\nor snap a size chart.", ["Works with 100+ stores"], True),
     ("memory", "SAFARI", "Your size, right\nwhere you shop",
@@ -42,7 +42,7 @@ SLOTS = [
     ("passport", "SIZE PASSPORT", "Every brand,\none passport",
      "Your size in each brand you buy,\nready to share.", ["Brand by brand"], False),
     ("home", "FEWER RETURNS", "Shop with\nconfidence",
-     "Know how it fits before it ships.\nKeep what you order.", ["5 free checks a day"], True),
+     "Know how it fits before it ships.\nKeep what you order.", ["Fewer returns"], True),
 ]
 
 
@@ -140,7 +140,7 @@ def compose(raw, slot, fonts):
         chip_font.set_variation_by_name(b"SemiBold")
     except Exception:
         pass
-    positions = [(40, top + 520), (W - 40, top + 1020)]
+    positions = [(40, top + 300), (W - 40, top + 1450)]
     for i, text in enumerate(chips[:2]):
         c = chip(text, chip_font, dark)
         cx, cy = positions[i]
