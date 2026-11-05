@@ -103,6 +103,13 @@ struct ProfileView: View {
                 Label("Photos are processed on this device and are not uploaded.", systemImage: "lock.shield")
                 Link("Privacy policy", destination: URL(string: "https://niinova22-blip.github.io/WearIQ/privacy.html")!)
                 Label("Your measurements are never shared with advertisers.", systemImage: "hand.raised")
+                if container.ads.privacyOptionsRequired && !container.isPremium {
+                    Button {
+                        Task { await container.ads.presentPrivacyOptions() }
+                    } label: {
+                        Label("Ad privacy choices", systemImage: "slider.horizontal.3")
+                    }
+                }
             }
             Section {
                 NavigationLink("Acknowledgements") { AcknowledgementsView() }

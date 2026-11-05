@@ -12750,6 +12750,16 @@
           }
         }
       }
+    },
+    "Ad privacy choices": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reklam gizlilik seçenekleri"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

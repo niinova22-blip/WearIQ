@@ -32,6 +32,9 @@ enum AdUnits {
 @Observable
 final class AdvertisingService {
     private(set) var canRequestAds = false
+    /// Whether the consent rules where the user is (the EU, the UK) require a way back
+    /// to their ad choices; Profile shows "Ad privacy choices" then.
+    private(set) var privacyOptionsRequired = false
     private var policy = AdPolicy()
     private var interstitial: InterstitialAd?
     private var relay: InterstitialRelay?
@@ -48,6 +51,7 @@ final class AdvertisingService {
             _ = await ATTrackingManager.requestTrackingAuthorization()
         }
         canRequestAds = ConsentInformation.shared.canRequestAds
+        privacyOptionsRequired = ConsentInformation.shared.privacyOptionsRequirementStatus == .required
         guard canRequestAds else { return }
         await MobileAds.shared.start()
         await loadInterstitial()
@@ -76,6 +80,13 @@ final class AdvertisingService {
         policy.interstitialShown(at: Date())
         interstitial = nil
         Task { await loadInterstitial() }
+    }
+
+    /// The consent form again, to change the ad choices made.
+    func presentPrivacyOptions() async {
+        guard let root = Self.topViewController() else { return }
+        try? await ConsentForm.presentPrivacyOptionsForm(from: root)
+        canRequestAds = ConsentInformation.shared.canRequestAds
     }
 
     func showsBanner(isPremium: Bool) -> Bool {
