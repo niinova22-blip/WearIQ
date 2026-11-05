@@ -140,7 +140,9 @@ def compose(raw, slot, fonts):
         chip_font.set_variation_by_name(b"SemiBold")
     except Exception:
         pass
-    positions = [(40, top + 560), (W - 40, top + 1450)]
+    # On the phone's edges, clear of what the screen says: one over its top corner,
+    # one over the tab bar.
+    positions = [(40, top - 40), (W - 40, top + frame.height - 330)]
     for i, text in enumerate(chips[:2]):
         c = chip(text, chip_font, dark)
         cx, cy = positions[i]
