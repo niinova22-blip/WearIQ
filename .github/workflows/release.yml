@@ -28,6 +28,10 @@ on:
         description: Unlock Premium for testers (turn OFF for App Store submission builds)
         type: boolean
         default: true
+      real_ads:
+        description: Real AdMob ads (OFF = Google's test ads, so testers can't click real ones)
+        type: boolean
+        default: false
   push:
     tags: ["v*"]
 
@@ -76,9 +80,16 @@ jobs:
 
       - name: Inject production ad IDs
         run: |
-          /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier ${{ vars.ADMOB_APP_ID }}" WearIQ/Info.plist
-          /usr/libexec/PlistBuddy -c "Set :WQBannerAdUnitID ${{ vars.ADMOB_BANNER_ID }}" WearIQ/Info.plist
-          /usr/libexec/PlistBuddy -c "Set :WQInterstitialAdUnitID ${{ vars.ADMOB_INTERSTITIAL_ID }}" WearIQ/Info.plist
+          # Store builds (tags) and real_ads runs serve the account's ads; other TestFlight
+          # builds keep Google's test units, since clicks on one's own ads break AdMob policy.
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.real_ads }}" = "true" ]; then
+            /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier ${{ vars.ADMOB_APP_ID }}" WearIQ/Info.plist
+            /usr/libexec/PlistBuddy -c "Set :WQBannerAdUnitID ${{ vars.ADMOB_BANNER_ID }}" WearIQ/Info.plist
+            /usr/libexec/PlistBuddy -c "Set :WQInterstitialAdUnitID ${{ vars.ADMOB_INTERSTITIAL_ID }}" WearIQ/Info.plist
+            echo "::notice::Real AdMob ad units"
+          else
+            echo "::notice::Google test ad units"
+          fi
           # Tag pushes (store submissions) never unlock Premium.
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.unlock_premium }}" = "true" ]; then
             /usr/libexec/PlistBuddy -c "Add :WQUnlockPremium bool true" WearIQ/Info.plist

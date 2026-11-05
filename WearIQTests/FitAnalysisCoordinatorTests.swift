@@ -52,7 +52,7 @@ import WearIQCore
             Issue.record("expected analyzed"); return
         }
         #expect(saved.analysis?.recommendedSize?.label == "M")
-        #expect(quota.remaining() == 3)
+        #expect(quota.remaining() == 4)
         #expect(try context.fetch(FetchDescriptor<SavedAnalysis>()).count == 1)
     }
 
@@ -60,7 +60,7 @@ import WearIQCore
         let (coordinator, context, quota) = try makeCoordinator()
         _ = try coordinator.run(makeDraft(), preference: .asDesigned)
         _ = try coordinator.run(makeDraft(), preference: .asDesigned)
-        #expect(quota.remaining() == 3)
+        #expect(quota.remaining() == 4)
         #expect(try context.fetch(FetchDescriptor<SavedAnalysis>()).count == 1)
     }
 
@@ -73,7 +73,7 @@ import WearIQCore
         guard case .insufficientData = try coordinator.run(draft, preference: .asDesigned) else {
             Issue.record("expected insufficientData"); return
         }
-        #expect(quota.remaining() == 4)
+        #expect(quota.remaining() == 5)
         #expect(try context.fetch(FetchDescriptor<SavedAnalysis>()).count == 1)
     }
 
@@ -82,12 +82,12 @@ import WearIQCore
         guard case .needsBodyProfile = try coordinator.run(makeDraft(), preference: .asDesigned) else {
             Issue.record("expected needsBodyProfile"); return
         }
-        #expect(quota.remaining() == 4)
+        #expect(quota.remaining() == 5)
     }
 
-    @Test func quotaExhaustedAfterFourProducts() throws {
+    @Test func quotaExhaustedAfterFiveProducts() throws {
         let (coordinator, _, _) = try makeCoordinator()
-        for i in 0..<4 {
+        for i in 0..<5 {
             _ = try coordinator.run(makeDraft(url: "https://shop.example.com/p/\(i)"), preference: .asDesigned)
         }
         guard case .quotaExhausted = try coordinator.run(makeDraft(url: "https://shop.example.com/p/9"), preference: .asDesigned) else {

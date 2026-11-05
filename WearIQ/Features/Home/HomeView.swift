@@ -29,7 +29,11 @@ struct HomeView: View {
         .background(Theme.screenBackground)
         .safeAreaInset(edge: .bottom) { BannerAdSlot() }
         .navigationTitle("WearIQ")
-        .task { await container.ads.prepare(isPremium: container.isPremium) }
+        .task {
+            // Entitlements first, so a subscriber is never asked for ad consent.
+            await container.subscriptions.refreshEntitlements()
+            await container.ads.prepare(isPremium: container.isPremium)
+        }
         // The quota store isn't observable; refresh whenever the screen shows or a new analysis lands.
         .onAppear { remaining = container.quota.remaining() }
         .onChange(of: analyses.count) { remaining = container.quota.remaining() }
