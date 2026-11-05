@@ -86,12 +86,6 @@ def main(app_id, metadata_path, shots_dir=None):
         meta = json.load(f)
     locs = meta["localizations"]
 
-    # English is the app's primary language; devices in Turkish get the Turkish listing.
-    if meta.get("primaryLocale"):
-        call("PATCH", f"/apps/{app_id}", {"data": {"type": "apps", "id": app_id,
-                                                   "attributes": {"primaryLocale": meta["primaryLocale"]}}})
-        print(f"primary locale: {meta['primaryLocale']}")
-
     infos = call("GET", f"/apps/{app_id}/appInfos")["data"]
     info = first(infos, lambda i: i["attributes"].get("state") not in ("READY_FOR_DISTRIBUTION", "REPLACED_WITH_NEW_INFO")) or infos[0]
     call("PATCH", f"/appInfos/{info['id']}", {"data": {"type": "appInfos", "id": info["id"], "relationships": {
@@ -131,6 +125,13 @@ def main(app_id, metadata_path, shots_dir=None):
             if os.path.isdir(path):
                 print(f"screenshots {locale}:")
                 upload_screenshots(loc_ids[locale], path)
+
+    # English is the app's primary language; devices in Turkish get the Turkish listing.
+    # App Store Connect takes this only once the English screenshots are in.
+    if meta.get("primaryLocale"):
+        call("PATCH", f"/apps/{app_id}", {"data": {"type": "apps", "id": app_id,
+                                                   "attributes": {"primaryLocale": meta["primaryLocale"]}}})
+        print(f"primary locale: {meta['primaryLocale']}")
 
 
 if __name__ == "__main__":
