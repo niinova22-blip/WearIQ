@@ -136,16 +136,16 @@ struct AvatarRealityView: UIViewRepresentable {
             // A soft key light from the front left with a shadow, a rim light from behind
             // so the outline reads, and a weak fill from the other side.
             let key = DirectionalLight()
-            key.light.intensity = 2600
+            key.light.intensity = 1400
             key.shadow = DirectionalLightComponent.Shadow(maximumDistance: 4, depthBias: 2)
             key.look(at: .zero, from: [-0.9, 2.6, 2.2], relativeTo: nil)
             anchor.addChild(key)
             let rim = DirectionalLight()
-            rim.light.intensity = 1300
+            rim.light.intensity = 700
             rim.look(at: .zero, from: [0.8, 1.6, -2.4], relativeTo: nil)
             anchor.addChild(rim)
             let fill = DirectionalLight()
-            fill.light.intensity = 900
+            fill.light.intensity = 500
             fill.light.color = UIColor(red: 0.93, green: 0.95, blue: 1, alpha: 1)
             fill.look(at: .zero, from: [1.8, 0.8, 1.6], relativeTo: nil)
             anchor.addChild(fill)

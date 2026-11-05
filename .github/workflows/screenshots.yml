@@ -55,7 +55,7 @@ jobs:
               xcrun simctl launch "$UDID" com.niinova.weariq \
                 -WQDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$locale" > /dev/null
               # The avatar is cut and draped first (several seconds on the simulator).
-              if [ "$screen" = avatar ]; then sleep 40; else sleep 6; fi
+              if [ "$screen" = avatar ]; then sleep 150; else sleep 6; fi
               xcrun simctl io "$UDID" screenshot "shots/$lang/0${n}_${screen}.png"
               xcrun simctl terminate "$UDID" com.niinova.weariq || true
               n=$((n + 1))
