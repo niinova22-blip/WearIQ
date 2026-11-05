@@ -51,10 +51,11 @@ jobs:
             locale=$([ "$lang" = tr ] && echo tr_TR || echo en_US)
             mkdir -p "shots/$lang"
             n=1
-            for screen in home result profile wardrobe style; do
+            for screen in home result profile wardrobe style avatar; do
               xcrun simctl launch "$UDID" com.niinova.weariq \
                 -WQDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$locale" > /dev/null
-              sleep 6
+              # The avatar is cut and draped first (several seconds on the simulator).
+              if [ "$screen" = avatar ]; then sleep 40; else sleep 6; fi
               xcrun simctl io "$UDID" screenshot "shots/$lang/0${n}_${screen}.png"
               xcrun simctl terminate "$UDID" com.niinova.weariq || true
               n=$((n + 1))

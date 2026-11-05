@@ -1,14 +1,21 @@
 import AvatarEngine
+import RealityKit
 import SceneKit
 import SwiftUI
 import UIKit
 import Vision
 
-/// Holds the scene's view so the screen can take a picture of it.
+/// Holds the scene's view so the screen can take a picture of it (SceneKit or RealityKit).
 final class AvatarSnapshotter {
     weak var view: SCNView?
+    weak var arView: ARView?
 
-    @MainActor func image() -> UIImage? { view?.snapshot() }
+    @MainActor func image() async -> UIImage? {
+        if let arView {
+            return await withCheckedContinuation { done in arView.snapshot(saveToHDR: false) { done.resume(returning: $0) } }
+        }
+        return view?.snapshot()
+    }
 }
 
 struct ShareableImage: Identifiable {

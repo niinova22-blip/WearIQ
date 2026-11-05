@@ -118,7 +118,7 @@ struct AvatarFitView: View {
                     VStack(spacing: 0) {
                         ZStack {
                             if let avatar {
-                                AvatarSceneView(avatar: avatar, revision: revision, fitColors: showsFitColors, frame: frame,
+                                AvatarCanvas(avatar: avatar, revision: revision, fitColors: showsFitColors, frame: frame,
                                                 labels: frame == nil && !draping && showsFitColors ? labels(avatar) : [], labelModel: labelModel,
                                                 facing: facing, facingTurn: facingTurn,
                                                 viewHeight: sceneHeight, coveredTop: legendBottom, coveredBottom: controlsHeight,
@@ -189,9 +189,10 @@ struct AvatarFitView: View {
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        shareImage = snapshotter.image().map {
-                            ShareableImage(image: AvatarShareCard.render(avatar: $0, productName: productName, size: sizeLabel,
-                                                                          headline: shareHeadline))
+                        Task {
+                            guard let picture = await snapshotter.image() else { return }
+                            shareImage = ShareableImage(image: AvatarShareCard.render(avatar: picture, productName: productName,
+                                                                                     size: sizeLabel, headline: shareHeadline))
                         }
                     } label: {
                         Label("Share", systemImage: "square.and.arrow.up")
@@ -789,7 +790,7 @@ struct AvatarEditorView: View {
             if let base = profiles.of(container.activePersonID).first?.profile, let m = Avatar.Measurements(adjusted(base)) {
                 ZStack {
                     if let avatar {
-                        AvatarSceneView(avatar: avatar, revision: revision, fitColors: false,
+                        AvatarCanvas(avatar: avatar, revision: revision, fitColors: false,
                                         labels: Self.sceneLabels(avatar, labels(m)), labelModel: labelModel)
                         LandmarkOverlay(model: labelModel)
                     } else {

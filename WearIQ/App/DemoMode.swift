@@ -24,6 +24,8 @@ enum DemoMode {
     }
 
     static var opensResult: Bool { screen == "result" }
+    /// The newest check on the avatar, for checking the renderer on CI.
+    static var opensAvatar: Bool { screen == "avatar" }
 
     private static var turkish: Bool { Locale.current.language.languageCode?.identifier == "tr" }
     private static func text(_ tr: String, _ en: String) -> String { turkish ? tr : en }

@@ -29,6 +29,7 @@ struct MainTabView: View {
                 HomeView(selectTab: { selection = $0 })
                 #if DEBUG
                     .navigationDestination(isPresented: .constant(DemoMode.opensResult)) { DemoResultView() }
+                    .fullScreenCover(isPresented: .constant(DemoMode.opensAvatar)) { DemoAvatarView() }
                 #endif
             }
                 .tabItem { Label("Home", systemImage: "house") }
@@ -74,6 +75,19 @@ private struct DemoResultView: View {
 
     var body: some View {
         if let saved = analyses.first { FitResultView(saved: saved) }
+    }
+}
+
+/// The newest saved analysis on the avatar.
+private struct DemoAvatarView: View {
+    @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
+
+    var body: some View {
+        if let saved = analyses.first(where: { $0.spec != nil && $0.analysis?.recommendedSize != nil }),
+           let spec = saved.spec, let analysis = saved.analysis, let size = analysis.recommendedSize?.label {
+            AvatarFitView(analysis: analysis, spec: spec, sizeLabel: size, material: saved.material,
+                          productName: saved.productName, imageURL: saved.imageURL)
+        }
     }
 }
 #endif
