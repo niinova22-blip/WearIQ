@@ -72,6 +72,7 @@ struct FitResultView: View {
                 if let personID { PersonBadge(personID: personID) }
                 recommendationCard
                 ReturnRiskCard(analysis: analysis, size: selectedLabel, category: category, productName: productName)
+                StyleFitCard(spec: spec, analysis: analysis)
                 BrandNoteView(brand: brand, category: category, recommended: analysis.recommendedSize?.label)
                 if analysis.sizes.count > 1 { sizePicker }
                 if let selected { regionsCard(selected) }

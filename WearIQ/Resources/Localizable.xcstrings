@@ -11600,6 +11600,446 @@
           }
         }
       }
+    },
+    "Your way of wearing clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giyinme tarzın"
+          }
+        }
+      }
+    },
+    "Every check now also says which size suits your style.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Artık her kontrol, tarzına hangi bedenin uyduğunu da söylüyor."
+          }
+        }
+      }
+    },
+    "Learn it again": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden öğren"
+          }
+        }
+      }
+    },
+    "Wear the clothes you love most and stand in front of the phone. WearIQ sees how you like them to sit (close, regular or roomy) and your colours, and then tells you which size suits your style, not just your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En sevdiğin kıyafetleri giy ve telefonun karşısına geç. WearIQ kıyafetlerin üzerinde nasıl durmasını sevdiğini (dar, normal ya da bol) ve renklerini görür; sonra sadece vücuduna değil tarzına da hangi bedenin uyduğunu söyler."
+          }
+        }
+      }
+    },
+    "Learn my style": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stilimi öğren"
+          }
+        }
+      }
+    },
+    "Tops: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Üstler: %@"
+          }
+        }
+      }
+    },
+    "skirts and dresses": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "etek ve elbise"
+          }
+        }
+      }
+    },
+    "Bottoms: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altlar: %@"
+          }
+        }
+      }
+    },
+    "Colours: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renkler: %@"
+          }
+        }
+      }
+    },
+    "mini": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mini"
+          }
+        }
+      }
+    },
+    "knee length": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "diz boyu"
+          }
+        }
+      }
+    },
+    "midi": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "midi"
+          }
+        }
+      }
+    },
+    "maxi": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "maksi"
+          }
+        }
+      }
+    },
+    "Measure yourself first": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce ölçülerini al"
+          }
+        }
+      }
+    },
+    "Your style is read against your own measurements: scan once or enter them in the profile.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarzın kendi ölçülerine göre okunur: bir kez tarama yap ya da ölçülerini profile gir."
+          }
+        }
+      }
+    },
+    "Learn your style": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stilini öğren"
+          }
+        }
+      }
+    },
+    "Put on your favourite outfit: the clothes you feel best in.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En sevdiğin kıyafetleri giy: kendini en iyi hissettiğin kombini."
+          }
+        }
+      }
+    },
+    "Lean the phone upright at about waist height, front camera towards you.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonu bel hizasında dik olarak bir yere yasla, ön kamera sana baksın."
+          }
+        }
+      }
+    },
+    "Step back until you're seen head to toe, feet a little apart, arms slightly away from your body.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baştan ayağa görünene kadar geri çekil; ayakların hafif açık, kolların vücudundan biraz uzakta olsun."
+          }
+        }
+      }
+    },
+    "Hold still for a moment: the photo takes itself. It's read on this phone and deleted.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir an kıpırdamadan dur: fotoğraf kendiliğinden çekilir. Bu telefonda okunur ve silinir."
+          }
+        }
+      }
+    },
+    "Step back until you're seen head to toe.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baştan ayağa görünene kadar geri çekil."
+          }
+        }
+      }
+    },
+    "Reading your outfit…": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kombinin okunuyor…"
+          }
+        }
+      }
+    },
+    "Here's what your outfit says about how you like to wear clothes. Correct anything that's off.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kombinin, kıyafetleri nasıl giymeyi sevdiğin hakkında bunları söylüyor. Yanlış olanı düzelt."
+          }
+        }
+      }
+    },
+    "How they sit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nasıl duruyor"
+          }
+        }
+      }
+    },
+    "Mostly skirts and dresses": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çoğunlukla etek ve elbise"
+          }
+        }
+      }
+    },
+    "That's my style": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu benim tarzım"
+          }
+        }
+      }
+    },
+    "%@ fits you as the garment is cut; for your %@ style, %@.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kıyafetin kesimine göre sana %1$@ uyuyor; %2$@ tarzın için %3$@."
+          }
+        }
+      }
+    },
+    "To wear with what you checked": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrol ettiklerinle ne giyilir"
+          }
+        }
+      }
+    },
+    " or ": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " ya da "
+          }
+        }
+      }
+    },
+    "a %@ mini skirt": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bir mini etek"
+          }
+        }
+      }
+    },
+    "a %@ midi skirt": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bir midi etek"
+          }
+        }
+      }
+    },
+    "%@ slim jeans": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ dar kot"
+          }
+        }
+      }
+    },
+    "%@ straight trousers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ düz paça pantolon"
+          }
+        }
+      }
+    },
+    "%@ wide-leg trousers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bol paça pantolon"
+          }
+        }
+      }
+    },
+    "%@ tailored trousers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kumaş pantolon"
+          }
+        }
+      }
+    },
+    "%@ shorts": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ şort"
+          }
+        }
+      }
+    },
+    "a fitted %@ top": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vücuda oturan %@ bir üst"
+          }
+        }
+      }
+    },
+    "a cropped %@ top": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bir crop üst"
+          }
+        }
+      }
+    },
+    "a relaxed %@ shirt": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rahat kesim %@ bir gömlek"
+          }
+        }
+      }
+    },
+    "a %@ knit": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bir triko"
+          }
+        }
+      }
+    },
+    "a %@ tee": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bir tişört"
+          }
+        }
+      }
+    },
+    "a %@ denim jacket": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bir kot ceket"
+          }
+        }
+      }
+    },
+    "a %@ blazer": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bir blazer ceket"
+          }
+        }
+      }
+    },
+    "a %@ trench coat": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bir trençkot"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

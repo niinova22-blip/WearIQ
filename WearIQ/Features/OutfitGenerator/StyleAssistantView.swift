@@ -31,6 +31,8 @@ struct StyleAssistantView: View {
                 ScrollView {
                     VStack(spacing: Theme.Spacing.l) {
                         StyleProfileCard()
+                        LearnStyleCard()
+                        ScanPairingsSection()
                         PremiumFeaturePlaceholder(
                             title: "Style assistant",
                             detail: "Outfit suggestions from your own wardrobe for daily, work, formal, sport and evening occasions.",
@@ -68,6 +70,8 @@ struct StyleAssistantView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.l) {
                 StyleProfileCard()
+                LearnStyleCard()
+                ScanPairingsSection()
                 occasionChips
                 if all.isEmpty {
                     emptyState
