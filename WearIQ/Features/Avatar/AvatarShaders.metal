@@ -33,6 +33,8 @@ void avatarFabric(realitykit::surface_parameters params)
 void avatarGlow(realitykit::surface_parameters params)
 {
     half4 c = half4(params.geometry().color());
+    // Unlit: what shows is the emissive colour (the base colour alone came out black).
     params.surface().set_base_color(c.rgb);
+    params.surface().set_emissive_color(c.rgb);
     params.surface().set_opacity(c.a);
 }
