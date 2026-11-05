@@ -44,4 +44,24 @@ import WearIQCore
         info.availableSizes = ["S", "M"]
         #expect(ProductSpec.make(from: info) == nil)
     }
+
+    /// LC Waikiki's "Boxy Fit Kalın Kumaş Tişört /05" was saved as shorts by an older
+    /// build (a tester's avatar wore it as shorts): opening it again rebuilds it as a top.
+    @Test func savedTeeReadAsShortsIsRepaired() throws {
+        let name = "Boxy Fit Kalın Kumaş Tişört /05"
+        #expect(GarmentClassifier.category(from: name) == .tshirt)
+        #expect(GarmentClassifier.category(from: "Erkek > Erkek Giyim > Erkek Tişört " + name) == .tshirt)
+        let shorts = GarmentSpec(category: .shorts, fitStyle: .oversized, stretch: .none, chartKind: .body,
+                                 sizes: ["S", "M", "L", "XL", "2XL"].map { SizeEntry(label: $0, values: [.waist: MeasuredValue(cm: 80, uncertaintyCm: 1, source: .manual)]) },
+                                 legCut: .wide)
+        let fixed = try #require(ProductSpec.repaired(shorts, name: name, audience: .men))
+        #expect(fixed.category == .tshirt)
+        #expect(fixed.fitStyle == .oversized)
+        #expect(fixed.legCut == nil)
+        #expect(fixed.sizes.map(\.label) == ["S", "M", "L", "XL", "2XL"])
+        #expect(fixed.sizes.allSatisfy { $0.values[.chest] != nil })
+        // Nothing to fix: a top saved as a top, a name that says nothing.
+        #expect(ProductSpec.repaired(fixed, name: name, audience: .men) == nil)
+        #expect(ProductSpec.repaired(shorts, name: "Yeni sezon", audience: .men) == nil)
+    }
 }

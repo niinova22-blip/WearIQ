@@ -40,3 +40,23 @@ public enum ProductSpec {
         return (spec, source)
     }
 }
+
+extension ProductSpec {
+    /// A spec saved while the product's name was misread (builds before 43 took the
+    /// "şort" inside "tişört" for shorts): when the name now says a top where the spec
+    /// says a bottom, or the other way round, the garment rebuilt on typical measurements
+    /// for the size labels it had. Nil when there's nothing to fix or no chart for them.
+    public static func repaired(_ spec: GarmentSpec, name: String?, audience: GarmentAudience?) -> GarmentSpec? {
+        guard let name, let category = GarmentClassifier.category(from: name),
+              category.isBottom != spec.category.isBottom else { return nil }
+        var info = ProductInfo()
+        info.name = name
+        info.category = category
+        info.fitStyle = GarmentClassifier.fitStyle(from: name)
+        info.legCut = GarmentClassifier.legCut(from: name)
+        info.stretch = spec.stretch
+        info.audience = audience
+        info.availableSizes = spec.sizes.map(\.label)
+        return make(from: info, fallbackAudience: audience)?.spec
+    }
+}

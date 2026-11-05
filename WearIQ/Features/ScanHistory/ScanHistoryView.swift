@@ -5,7 +5,10 @@ import SwiftUI
 /// Saved analyses. Opening one never uses a scan.
 struct ScanHistoryView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
+    @Environment(AppContainer.self) private var container
+    @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var all: [SavedAnalysis]
+    /// The checks of whoever the app is shopping for.
+    private var analyses: [SavedAnalysis] { all.filter { $0.personID == container.activePersonID } }
 
     var body: some View {
         List {

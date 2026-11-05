@@ -25,6 +25,7 @@ struct WearIQApp: App {
                 .task { await ProductTracker.refreshAll(in: container.modelContainer.mainContext) }
                 .onOpenURL { container.handle($0) }
                 .task {
+                    SavedAnalysisRepair.run(container.modelContainer.mainContext)
                     WidgetPublisher.publish(container.modelContainer.mainContext)
                     ShoppingMemory.publishShopper(container.modelContainer.mainContext)
                     ShoppingMemory.importInbox(container.modelContainer.mainContext)

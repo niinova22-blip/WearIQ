@@ -831,7 +831,7 @@ extension BodyModel {
                 var limb = arm.limb
                 if reach > armLength {
                     let wrist = arm.start + arm.dir * armLength
-                    limb.bones.append(Bone(a: wrist, b: wrist + arm.dir * (reach - armLength), ra: upperArmR * 0.6, rb: upperArmR * 0.6))
+                    limb.bones.append(Bone(a: wrist, b: wrist + arm.dir * (reach - armLength), ra: upperArmR * 0.55, rb: upperArmR * 0.55))
                 }
                 let end = arm.start + arm.dir * reach
                 let start = arm.start, dir = arm.dir
@@ -986,6 +986,12 @@ extension BodyModel {
         // cloth ended inside it or right on it (the small of the back under loose
         // trousers), it goes back out, so no skin shows through fabric.
         liftOffSkin(&mesh.positions, clearance: max(0.003, thickness + 0.002))
+        // The solver's grid buckles in creases one cell wide, which read as crumpled paper
+        // and as a ragged hem; real cloth's bending stiffness doesn't make them. They're
+        // smoothed away, the folds wider than a few cells kept, and the fabric put back
+        // off the skin.
+        Self.smoothCloth(&mesh.positions, neighbours: neighbours, boundary: Self.boundaryVertices(mesh), pinned: pinned)
+        liftOffSkin(&mesh.positions, clearance: max(0.003, thickness + 0.002))
         // Tightness is the body pressing on the fabric. Over another garment, a top
         // stretched round the trousers' loose fabric isn't tight: that fabric gives.
         let pressing = under == nil ? cloth.contact : cloth.positions.indices.map { i in
@@ -1033,6 +1039,8 @@ extension BodyModel {
                 let blend = f * f
                 frames[k] = frame.indices.map { i in frame[i] + (mesh.positions[i] - simulated[i]) * blend }
             }
+            // Exactly the finished garment, not within rounding of it.
+            frames[frames.count - 1] = mesh.positions
         }
 
         (mesh.tones, mesh.toneWeight) = tones(shape, rest: cloth.rest, tags: tags, stretch: cloth.stretch,
@@ -1235,6 +1243,31 @@ extension BodyModel {
             out.indices.append(UInt32(map[Int(i)]))
         }
         return out
+    }
+
+    /// Taubin's λ|μ smoothing (1995): a shrinking and an inflating Laplacian step in turn,
+    /// a low-pass filter on the surface that removes creases a few cells wide without the
+    /// shrinkage plain Laplacian smoothing causes. An open edge (a hem, a cuff) is smoothed
+    /// along itself only, so it straightens without being pulled up into the garment.
+    static func smoothCloth(_ points: inout [Vec3], neighbours: [[Int]], boundary: Set<Int>, pinned: [Bool],
+                            iterations: Int = 10, lambda: Float = 0.5, mu: Float = -0.53) {
+        guard points.count == neighbours.count else { return }
+        let ring: [[Int]] = neighbours.indices.map { i in
+            boundary.contains(i) ? neighbours[i].filter { boundary.contains($0) } : neighbours[i]
+        }
+        var next = points
+        for k in 0..<(2 * iterations) {
+            let w = k % 2 == 0 ? lambda : mu
+            for i in points.indices {
+                let n = ring[i]
+                guard !pinned[i], n.count >= 2 else { next[i] = points[i]; continue }
+                var c = Vec3(0, 0, 0)
+                for j in n { c = c + points[j] }
+                c = c * (1 / Float(n.count))
+                next[i] = points[i] + (c - points[i]) * w
+            }
+            swap(&points, &next)
+        }
     }
 
     static func neighbours(_ mesh: Mesh) -> [[Int]] {

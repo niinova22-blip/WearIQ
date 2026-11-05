@@ -34,7 +34,7 @@ let package = Package(
         // The smart shopping memory: a product page read as browsed, sized for the user.
         .target(name: "ShoppingAssistant", dependencies: ["WearIQCore", "FitEngine", "ProductMeasurementParser"]),
         .testTarget(name: "FitEngineTests", dependencies: ["FitEngine"]),
-        .testTarget(name: "ShoppingAssistantTests", dependencies: ["ShoppingAssistant", "FitEngine", "WearIQCore"]),
+        .testTarget(name: "ShoppingAssistantTests", dependencies: ["ShoppingAssistant", "FitEngine", "WearIQCore", "ProductMeasurementParser"]),
         .testTarget(name: "BodyMeasurementEngineTests", dependencies: ["BodyMeasurementEngine"]),
         .testTarget(name: "VisionIntegrationTests", dependencies: ["BodyScanVision", "BodyMeasurementEngine", "ProductMeasurementParser"],
                     resources: [.copy("Resources")]),

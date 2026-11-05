@@ -10,6 +10,7 @@ struct StyleProfileCard: View {
     @AppStorage("bodySex") private var sexRaw = ""
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
     @State private var editing = false
+    @State private var expandedSections: Set<String> = []
 
     private var profile: StyleProfile? {
         stored.data(using: .utf8).flatMap { try? JSONDecoder().decode(StyleProfile.self, from: $0) }
@@ -30,18 +31,58 @@ struct StyleProfileCard: View {
                     Spacer()
                     Button("Change") { editing = true }.font(.subheadline)
                 }
-                section(profile.colorSeason.title, profile.colorSeason.explanation)
-                swatches(profile.palette.flattering)
-                Text("Keep away from your face: \(profile.palette.avoid.map(\.title).joined(separator: ", "))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if let shape {
-                    Divider()
-                    section(shape.title, shape.advice)
+                summary(profile)
+                let a = StyleAdvice.make(shape: shape, vibe: profile.vibe, occasion: profile.occasion ?? .everyday,
+                                         ease: profile.ease ?? .fitted)
+                VStack(spacing: 0) {
+                    StyleDisclosure(icon: "paintpalette", title: String(localized: "Your colours"),
+                                    subtitle: profile.colorSeason.title, expanded: $expandedSections.contains("colours")) {
+                        Text(profile.colorSeason.explanation).styleBody()
+                        swatches(profile.palette.flattering)
+                        Text("Keep away from your face: \(profile.palette.avoid.map(\.title).joined(separator: ", "))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        let names = profile.palette.flattering.prefix(3).map(\.title)
+                        if names.count == 3 {
+                            Text("60-30-10: about 60% of an outfit in \(names[0]), 30% in \(names[1]) and a 10% accent of \(names[2]). Keep your best colours near your face.")
+                                .styleBody()
+                        }
+                    }
+                    if let shape {
+                        StyleDisclosure(icon: "figure.stand", title: String(localized: "Your build"), subtitle: shape.title,
+                                        expanded: $expandedSections.contains("build")) {
+                            Text(shape.advice).styleBody()
+                        }
+                    }
+                    StyleDisclosure(icon: a.suitsChosen ? "checkmark.seal.fill" : "lightbulb.fill",
+                                    title: profile.vibe.title,
+                                    subtitle: a.suitsChosen ? String(localized: "Suits your build")
+                                        : a.bestVibes.first.map { String(localized: "\($0.title) may suit you better") } ?? "",
+                                    tint: a.suitsChosen ? .green : .orange,
+                                    expanded: $expandedSections.contains("vibe")) {
+                        Text(profile.vibe.pieces).styleBody()
+                        if !a.suitsChosen, let better = a.bestVibes.first {
+                            Text("\(profile.vibe.title) works with care; \(better.title) may suit you better.")
+                                .font(.subheadline.weight(.semibold)).foregroundStyle(.orange)
+                            Text(better.pieces).styleBody()
+                        }
+                    }
+                    StyleDisclosure(icon: "scissors", title: String(localized: "Cuts"), subtitle: a.cuts.first?.text ?? "",
+                                    expanded: $expandedSections.contains("cuts")) { bullets(a.cuts) }
+                    StyleDisclosure(icon: "square.stack.3d.down.forward.fill", title: String(localized: "Fabrics"),
+                                    subtitle: a.fabrics.first?.text ?? "", expanded: $expandedSections.contains("fabrics")) { bullets(a.fabrics) }
+                    if !a.sparingly.isEmpty {
+                        StyleDisclosure(icon: "exclamationmark.circle", title: String(localized: "Use sparingly"),
+                                        subtitle: a.sparingly.first?.text ?? "", expanded: $expandedSections.contains("sparingly")) { bullets(a.sparingly) }
+                    }
+                    StyleDisclosure(icon: "drop.fill", title: String(localized: "Washing and care"),
+                                    subtitle: String(localized: "Cotton, wool, viscose, linen"), divider: false,
+                                    expanded: $expandedSections.contains("care")) {
+                        ForEach(Self.care, id: \.self) { line in
+                            Label(line, systemImage: "circle.fill").labelStyle(BulletLabel()).styleBody()
+                        }
+                    }
                 }
-                Divider()
-                section(profile.vibe.title, profile.vibe.pieces)
-                advice(profile)
             } else {
                 Label("Find your colours and cuts", systemImage: "paintpalette.fill").font(.headline)
                 Text("A quick skin tone scan and three questions. With your measurements, WearIQ suggests the style, colours, fabrics and cuts that suit you.")
@@ -55,54 +96,36 @@ struct StyleProfileCard: View {
         .sheet(isPresented: $editing) { StyleQuestionsView(stored: $stored, initial: profile) }
     }
 
-    /// What suits this build, the style the user likes measured against it, and how to
-    /// put it together and look after it.
-    @ViewBuilder
-    private func advice(_ profile: StyleProfile) -> some View {
-        let a = StyleAdvice.make(shape: shape, vibe: profile.vibe, occasion: profile.occasion ?? .everyday,
-                                 ease: profile.ease ?? .fitted)
-        Divider()
-        if a.suitsChosen {
-            Label("\(profile.vibe.title) suits your build.", systemImage: "checkmark.seal.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.green)
-        } else if let better = a.bestVibes.first {
-            VStack(alignment: .leading, spacing: 4) {
-                Label("\(profile.vibe.title) works with care; \(better.title) may suit you better.", systemImage: "lightbulb.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.orange)
-                Text(better.pieces).font(.subheadline).foregroundStyle(.secondary)
-            }
-        }
-        tips(String(localized: "Cuts"), a.cuts)
-        tips(String(localized: "Fabrics"), a.fabrics)
-        tips(String(localized: "Use sparingly"), a.sparingly)
-        let names = profile.palette.flattering.prefix(3).map(\.title)
-        if names.count == 3 {
-            section(String(localized: "Colour proportions"),
-                    String(localized: "60-30-10: about 60% of an outfit in \(names[0]), 30% in \(names[1]) and a 10% accent of \(names[2]). Keep your best colours near your face."))
-        }
-        DisclosureGroup {
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(Self.care, id: \.self) { line in
-                    Label(line, systemImage: "drop.fill").font(.footnote).foregroundStyle(.secondary)
+    /// Three tiles that say the whole style at a glance; the sections below open for more.
+    private func summary(_ profile: StyleProfile) -> some View {
+        HStack(alignment: .top, spacing: Theme.Spacing.s) {
+            tile(String(localized: "Colours"), profile.colorSeason.title) {
+                HStack(spacing: -6) {
+                    ForEach(profile.palette.flattering.prefix(4), id: \.self) { c in
+                        Circle().fill(c.swatch).frame(width: 18, height: 18)
+                            .overlay(Circle().strokeBorder(.black.opacity(0.25)))
+                    }
                 }
             }
-            .padding(.top, 4)
-        } label: {
-            Text("Washing and care").font(.subheadline.weight(.semibold))
+            if let shape { tile(String(localized: "Build"), shape.title) { Image(systemName: "figure.stand").foregroundStyle(Color.accentColor) } }
+            tile(String(localized: "Style"), profile.vibe.title) { Image(systemName: "sparkles").foregroundStyle(Color.accentColor) }
         }
     }
 
-    private func tips(_ title: String, _ list: [StyleAdvice.Tip]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.subheadline.weight(.semibold))
-            ForEach(list, id: \.self) { tip in
-                Label(tip.text, systemImage: "circle.fill")
-                    .labelStyle(BulletLabel())
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+    private func tile(_ caption: String, _ value: String, @ViewBuilder icon: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            icon().frame(height: 18)
+            Text(caption).font(.caption2.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+            Text(value).font(.footnote.weight(.semibold)).lineLimit(3).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
+        .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func bullets(_ list: [StyleAdvice.Tip]) -> some View {
+        ForEach(list, id: \.self) { tip in
+            Label(tip.text, systemImage: "circle.fill").labelStyle(BulletLabel()).styleBody()
         }
     }
 
@@ -114,13 +137,6 @@ struct StyleProfileCard: View {
         String(localized: "Elastane blends: no tumble dryer; heat ruins the stretch."),
         String(localized: "Wash dark and bright colours apart the first few times, and check the care label."),
     ]
-
-    private func section(_ title: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.subheadline.weight(.semibold))
-            Text(text).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-        }
-    }
 
     private func swatches(_ colors: [ColorFamily]) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -379,5 +395,81 @@ private struct BulletLabel: LabelStyle {
             Image(systemName: "circle.fill").font(.system(size: 5)).alignmentGuide(.firstTextBaseline) { $0[.bottom] + 3 }
             configuration.title
         }
+    }
+}
+
+/// One part of the style card: a row that says the gist and opens to the whole advice.
+struct StyleDisclosure<Content: View>: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    var tint: Color = .accentColor
+    var divider = true
+    @Binding var expanded: Bool
+    @ViewBuilder var content: Content
+
+    init(icon: String, title: String, subtitle: String, tint: Color = .accentColor, divider: Bool = true,
+         expanded: Binding<Bool>, @ViewBuilder content: () -> Content) {
+        self.icon = icon
+        self.title = title
+        self.subtitle = subtitle
+        self.tint = tint
+        self.divider = divider
+        _expanded = expanded
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.snappy) { expanded.toggle() }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(tint)
+                        .frame(width: 32, height: 32)
+                        .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                        if !subtitle.isEmpty {
+                            Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(expanded ? nil : 1)
+                                .multilineTextAlignment(.leading)
+                        }
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(expanded ? 180 : 0))
+                }
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(expanded ? Text("Hides the details") : Text("Shows the details"))
+            if expanded {
+                VStack(alignment: .leading, spacing: 8) { content }
+                    .padding(.leading, 44)
+                    .padding(.bottom, 10)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            if divider { Divider().padding(.leading, 44) }
+        }
+    }
+}
+
+extension View {
+    /// Secondary body text in the style card, wrapping freely.
+    func styleBody() -> some View {
+        font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+extension Binding where Value == Set<String> {
+    /// Whether the set holds `key`, as a toggle.
+    func contains(_ key: String) -> Binding<Bool> {
+        Binding<Bool>(get: { wrappedValue.contains(key) },
+                      set: { on in if on { wrappedValue.insert(key) } else { wrappedValue.remove(key) } })
     }
 }

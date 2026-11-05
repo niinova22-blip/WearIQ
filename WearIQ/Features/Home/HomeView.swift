@@ -6,6 +6,8 @@ struct HomeView: View {
     @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
     @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
     @State private var remaining = 0
+    /// The checks of whoever the app is shopping for.
+    private var mine: [SavedAnalysis] { analyses.filter { $0.personID == container.activePersonID } }
     let selectTab: (AppTab) -> Void
 
     var body: some View {
@@ -20,7 +22,7 @@ struct HomeView: View {
                     quotaTile
                     profileTile
                 }
-                if !analyses.isEmpty { recentCard }
+                if !mine.isEmpty { recentCard }
             }
             .padding(Theme.Spacing.m)
         }
@@ -100,7 +102,7 @@ struct HomeView: View {
                 Spacer()
                 NavigationLink("See all") { ScanHistoryView() }
             }
-            ForEach(analyses.prefix(3)) { saved in
+            ForEach(mine.prefix(3)) { saved in
                 NavigationLink {
                     FitResultView(saved: saved)
                 } label: {

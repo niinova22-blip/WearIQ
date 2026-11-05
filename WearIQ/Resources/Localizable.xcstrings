@@ -2496,7 +2496,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sınırda"
+            "value": "Kapat"
           }
         }
       }
@@ -10741,16 +10741,6 @@
         }
       }
     },
-    "The measurements leave a lot of room either way.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ölçüler iki yöne de epey pay bırakıyor."
-          }
-        }
-      }
-    },
     "A small difference in your measurements could change the size.": {
       "localizations": {
         "tr": {
@@ -12307,6 +12297,276 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tablo fotoğrafı"
+          }
+        }
+      }
+    },
+    "Your measurements sit at the edge of this size: the size next to it could be the right one.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülerin bu bedenin sınırında: yanındaki beden de doğru beden olabilir."
+          }
+        }
+      }
+    },
+    "Your colours": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renklerin"
+          }
+        }
+      }
+    },
+    "Your build": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut yapın"
+          }
+        }
+      }
+    },
+    "Suits your build": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut yapına uyuyor"
+          }
+        }
+      }
+    },
+    "%@ may suit you better": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sana daha iyi uyabilir"
+          }
+        }
+      }
+    },
+    "Cotton, wool, viscose, linen": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pamuk, yün, viskon, keten"
+          }
+        }
+      }
+    },
+    "Build": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücut"
+          }
+        }
+      }
+    },
+    "Hides the details": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayrıntıları gizler"
+          }
+        }
+      }
+    },
+    "Shows the details": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayrıntıları gösterir"
+          }
+        }
+      }
+    },
+    "Opens its size and the avatar": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedenini ve avatarı açar"
+          }
+        }
+      }
+    },
+    "I mostly wear skirts or dresses": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çoğunlukla etek ya da elbise giyerim"
+          }
+        }
+      }
+    },
+    "On: sizes are suggested for skirts and dresses, by their length. Off: for trousers, by how they sit and their leg cut.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açıksa beden önerileri etek ve elbiseler için boylarına göre yapılır. Kapalıysa pantolonlar için, nasıl durduklarına ve paça kesimine göre."
+          }
+        }
+      }
+    },
+    "C error": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C hata"
+          }
+        }
+      }
+    },
+    "Test · Elif": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test · Elif"
+          }
+        }
+      }
+    },
+    "Test · Mert": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test · Mert"
+          }
+        }
+      }
+    },
+    "Two ready-made shoppers, a woman and a man, each with 30 checked products: every kind of garment, cut and leg. Switch to one and every screen (checks, avatar, style, size passport) is theirs. Your own data isn't touched.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hazır iki kullanıcı, bir kadın ve bir erkek; her birinde 30 kontrol edilmiş ürün var: her kıyafet türü, kesim ve paça. Birine geçince tüm ekranlar (kontroller, avatar, tarz, beden pasaportu) onun olur. Senin verilerine dokunulmaz."
+          }
+        }
+      }
+    },
+    "Only in test builds. Heights and weights are picked at random in a healthy range; measurements are the population's for them.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalnızca test sürümlerinde. Boy ve kilo sağlıklı aralıkta rastgele seçilir; ölçüler o boy ve kilodaki insanların ortalamasıdır."
+          }
+        }
+      }
+    },
+    "Make them again (new height and weight)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yeniden oluştur (yeni boy ve kilo)"
+          }
+        }
+      }
+    },
+    "Create the test shoppers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test kullanıcılarını oluştur"
+          }
+        }
+      }
+    },
+    "Remove the test shoppers": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test kullanıcılarını sil"
+          }
+        }
+      }
+    },
+    "Remove the test shoppers and their checks?": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test kullanıcıları ve kontrolleri silinsin mi?"
+          }
+        }
+      }
+    },
+    "Couldn't create them": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oluşturulamadı"
+          }
+        }
+      }
+    },
+    "Test panel": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test paneli"
+          }
+        }
+      }
+    },
+    "Using this shopper": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu kullanıcı kullanılıyor"
+          }
+        }
+      }
+    },
+    "Switch to this shopper": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu kullanıcıya geç"
+          }
+        }
+      }
+    },
+    "Height and weight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boy ve kilo"
+          }
+        }
+      }
+    },
+    "Checked products": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrol edilen ürünler"
           }
         }
       }

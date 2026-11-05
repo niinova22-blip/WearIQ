@@ -46,6 +46,19 @@ enum TapeCalibration {
         return min(1.15, max(0.85, shrunk))
     }
 
+    /// Tape values typed in before this scan (in setup or on the review screen, as manual
+    /// values) teach the correction the same way as replacing a scanned value does, when
+    /// they're recent and the weight hasn't moved: then the difference is the scan's, not
+    /// the body's. Each is learned once, because the new profile replaces them.
+    static func learn(from previous: BodyProfile?, scanned profile: BodyProfile, now: Date = Date()) {
+        guard let previous, now.timeIntervalSince(previous.createdAt) < 60 * 86_400 else { return }
+        if let w = profile.weightKg, let w0 = previous.weightKg, abs(w - w0) > 2 { return }
+        for d in calibrated {
+            guard let tape = previous[d], tape.source == .manual, let v = profile[d], v.source == .scan else { continue }
+            record(d, scanned: v.cm * factor(d), tape: tape.cm)
+        }
+    }
+
     /// Corrects the scanned values of a new profile.
     static func apply(to profile: inout BodyProfile) {
         for d in calibrated {

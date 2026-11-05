@@ -728,6 +728,7 @@ final class BodyScanViewModel {
 
             switch outcome {
             case var .success(profile):
+                TapeCalibration.learn(from: basics.previous, scanned: profile)
                 TapeCalibration.apply(to: &profile)
                 // The body's shape from the silhouettes, for an avatar that looks like the
                 // person (not from everyday clothes: their outline isn't the body's shape).

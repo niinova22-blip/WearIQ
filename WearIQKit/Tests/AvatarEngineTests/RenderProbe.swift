@@ -105,6 +105,40 @@ import WearIQCore
         }
     }
 
+    /// A tester's outfit as the app dresses it: a regular-fit shirt with sleeves and body
+    /// 6 cm long over regular shorts, on a 174 cm, 70 kg man. Front and back.
+    @Test func testerOutfit() {
+        guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
+        let body = BodyProfile(values: [
+            .height: .manual(174), .chest: .manual(97.5), .waist: .manual(84.5), .hip: .manual(94), .thigh: .manual(56.3),
+            .shoulderWidth: .manual(37.4), .armLength: .manual(57.8), .inseam: .manual(84.3), .torsoLength: .manual(43.1),
+            .outseam: .manual(105.4), .neck: .manual(41.6),
+        ], weightKg: 70, sex: .male)
+        let shirt = GarmentSpec(category: .shirt, fitStyle: .regular, chartKind: .garment, sizes: [
+            SizeEntry(label: "M", values: [.chest: .manual(110), .shoulderWidth: .manual(45), .sleeveLength: .manual(64),
+                                           .bodyLength: .manual(76), .waist: .manual(104)])])
+        let shorts = GarmentSpec(category: .shorts, fitStyle: .regular, chartKind: .garment, sizes: [
+            SizeEntry(label: "M", values: [.waist: .manual(84), .hip: .manual(104), .inseam: .manual(18)])])
+        let m = Avatar.Measurements(body)!
+        let top = AvatarFitMapper.fit(spec: shirt, size: shirt.sizes[0], body: body)
+        let bottom = AvatarFitMapper.fit(spec: shorts, size: shorts.sizes[0], body: body)
+        let only = ProcessInfo.processInfo.environment["VARIANTS"]
+        if only == nil || only == "outfit" {
+            let a = Avatar(m, garments: [top, bottom], detail: .animated)
+            render(a, yaw: 0, fitMap: false, name: "tester_front")
+            render(a, yaw: .pi, fitMap: false, name: "tester_back")
+        }
+        if only == nil || only == "shirt" {
+            let a = Avatar(m, garments: [top], detail: .animated)
+            render(a, yaw: .pi, fitMap: false, name: "tester_shirt_back")
+            render(a, yaw: 0.5, fitMap: false, name: "tester_shirt_side")
+        }
+        if only == nil || only == "shorts" {
+            let a = Avatar(m, garments: [bottom], detail: .animated)
+            render(a, yaw: 0.3, fitMap: false, name: "tester_shorts")
+        }
+    }
+
     @Test func renders() {
         guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil else { return }
         render(Avatar(me), yaw: 0, fitMap: false, name: "body_front")

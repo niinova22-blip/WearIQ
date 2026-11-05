@@ -82,7 +82,7 @@ extension ReturnRisk.Reason {
         case .fromEstimates: String(localized: "Your key measurement is an estimate from height and weight. A scan makes this surer.")
         case .criticalRegionOff: String(localized: "This size is off where it matters most (chest for tops, waist and hips for bottoms).")
         case .otherRegionOff: String(localized: "This size is clearly off somewhere (length or sleeves).")
-        case .lowConfidence: String(localized: "The measurements leave a lot of room either way.")
+        case .lowConfidence: String(localized: "Your measurements sit at the edge of this size: the size next to it could be the right one.")
         case .mediumConfidence: String(localized: "A small difference in your measurements could change the size.")
         }
     }

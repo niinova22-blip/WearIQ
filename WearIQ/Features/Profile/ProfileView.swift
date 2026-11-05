@@ -49,6 +49,9 @@ struct ProfileView: View {
                 Button("Scan again") { showRescan = true }
                 NavigationLink("Measurement changes") { MeasurementTrackingView() }
                 NavigationLink("Measurement validation") { ValidationView() }
+                if TesterBuild.isActive {
+                    NavigationLink { TesterPanelView() } label: { Label("Test panel", systemImage: "testtube.2") }
+                }
             } header: {
                 Text("Measurements")
             } footer: {

@@ -291,51 +291,53 @@ final class StyleCaptureModel {
         return (o, colors.top, colors.bottom)
     }
 
-    /// The main colour of the top (between shoulders and hips) and the bottom (hips to knees).
+    /// The main colour of the top (the torso between shoulders and hips) and the bottom
+    /// (along each thigh, hip to knee: the middle of that box is the gap between the legs).
     nonisolated static func colors(_ buffer: CVPixelBuffer, joints: [BodyJoint: Point2D]) -> (top: ColorFamily?, bottom: ColorFamily?) {
         CVPixelBufferLockBaseAddress(buffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
         guard let base = CVPixelBufferGetBaseAddress(buffer) else { return (nil, nil) }
         let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer), row = CVPixelBufferGetBytesPerRow(buffer)
-        func sample(_ a: [BodyJoint], _ b: [BodyJoint]) -> ColorFamily? {
-            let top = a.compactMap { joints[$0] }, bottom = b.compactMap { joints[$0] }
-            guard !top.isEmpty, !bottom.isEmpty else { return nil }
-            let xs = (top + bottom).map(\.x), y0 = top.map(\.y).reduce(0, +) / Double(top.count)
-            let y1 = bottom.map(\.y).reduce(0, +) / Double(bottom.count)
-            let x0 = xs.min()!, x1 = xs.max()!
+        func pixel(_ x: Double, _ y: Double) -> GarmentColor.RGB? {
+            let px = Int(x * Double(w)), py = Int(y * Double(h))
+            guard px >= 0, px < w, py >= 0, py < h else { return nil }
+            let p = base.advanced(by: py * row + px * 4).assumingMemoryBound(to: UInt8.self)
+            return GarmentColor.RGB(Double(p[2]) / 255, Double(p[1]) / 255, Double(p[0]) / 255)
+        }
+        func name(_ pixels: [GarmentColor.RGB]) -> ColorFamily? {
+            GarmentColor.dominant(pixels).map { ColorFamily.nearest(red: $0.color.r, green: $0.color.g, blue: $0.color.b) }
+        }
+        var top: ColorFamily?
+        if let ls = joints[.leftShoulder], let rs = joints[.rightShoulder], let lh = joints[.leftHip], let rh = joints[.rightHip] {
+            let y0 = (ls.y + rs.y) / 2, y1 = (lh.y + rh.y) / 2
+            let x0 = min(ls.x, rs.x, lh.x, rh.x), x1 = max(ls.x, rs.x, lh.x, rh.x)
             var pixels: [GarmentColor.RGB] = []
             for j in 0..<24 {
-                let y = Int((y0 + (y1 - y0) * (0.15 + 0.7 * Double(j) / 23)) * Double(h))
+                let y = y0 + (y1 - y0) * (0.15 + 0.7 * Double(j) / 23)
                 for i in 0..<24 {
-                    let x = Int((x0 + (x1 - x0) * (0.25 + 0.5 * Double(i) / 23)) * Double(w))
-                    guard x >= 0, x < w, y >= 0, y < h else { continue }
-                    let p = base.advanced(by: y * row + x * 4).assumingMemoryBound(to: UInt8.self)
-                    pixels.append(GarmentColor.RGB(Double(p[2]) / 255, Double(p[1]) / 255, Double(p[0]) / 255))
+                    if let p = pixel(x0 + (x1 - x0) * (0.25 + 0.5 * Double(i) / 23), y) { pixels.append(p) }
                 }
             }
-            return GarmentColor.dominant(pixels).map { ColorFamily.nearest($0.color) }
+            top = name(pixels)
         }
-        return (sample([.leftShoulder, .rightShoulder], [.leftHip, .rightHip]),
-                sample([.leftHip, .rightHip], [.leftKnee, .rightKnee]))
-    }
-}
-
-extension ColorFamily {
-    /// The named colour closest to a measured one.
-    static func nearest(_ c: GarmentColor.RGB) -> ColorFamily {
-        let palette: [(ColorFamily, (Double, Double, Double))] = [
-            (.black, (0.08, 0.08, 0.09)), (.white, (0.93, 0.93, 0.92)), (.gray, (0.55, 0.55, 0.56)),
-            (.navy, (0.12, 0.16, 0.32)), (.beige, (0.84, 0.76, 0.62)), (.brown, (0.45, 0.3, 0.2)),
-            (.denim, (0.3, 0.42, 0.6)), (.blue, (0.15, 0.35, 0.8)), (.green, (0.2, 0.55, 0.3)),
-            (.olive, (0.42, 0.42, 0.22)), (.red, (0.8, 0.12, 0.12)), (.burgundy, (0.45, 0.08, 0.15)),
-            (.pink, (0.95, 0.6, 0.72)), (.orange, (0.95, 0.5, 0.15)), (.yellow, (0.95, 0.85, 0.2)),
-            (.purple, (0.5, 0.25, 0.6)),
-        ]
-        return palette.min { a, b in
-            let da = pow(a.1.0 - c.r, 2) + pow(a.1.1 - c.g, 2) + pow(a.1.2 - c.b, 2)
-            let db = pow(b.1.0 - c.r, 2) + pow(b.1.1 - c.g, 2) + pow(b.1.2 - c.b, 2)
-            return da < db
-        }!.0
+        var bottom: ColorFamily?
+        if let lh = joints[.leftHip], let rh = joints[.rightHip] {
+            // Half a thigh's width either side of the line from hip to knee.
+            let half = abs(lh.x - rh.x) * 0.22
+            var pixels: [GarmentColor.RGB] = []
+            for (hip, knee) in [(lh, joints[.leftKnee]), (rh, joints[.rightKnee])] {
+                guard let knee else { continue }
+                for j in 0..<20 {
+                    let t = 0.12 + 0.68 * Double(j) / 19
+                    let cx = hip.x + (knee.x - hip.x) * t, cy = hip.y + (knee.y - hip.y) * t
+                    for i in 0..<9 {
+                        if let p = pixel(cx + half * (Double(i) / 4 - 1), cy) { pixels.append(p) }
+                    }
+                }
+            }
+            bottom = name(pixels)
+        }
+        return (top, bottom)
     }
 }
 
@@ -343,6 +345,11 @@ extension ColorFamily {
 struct StyleResultView: View {
     @State var learned: LearnedStyle
     let onConfirm: (LearnedStyle) -> Void
+    @AppStorage("bodySex") private var sexRaw = ""
+    @State private var sawSkirt = false
+
+    /// Skirts are asked about only of women, or when the photo showed one.
+    private var offersSkirts: Bool { BodySex(rawValue: sexRaw) == .female || sawSkirt }
 
     var body: some View {
         Form {
@@ -360,8 +367,10 @@ struct StyleResultView: View {
                     ForEach(ColorFamily.allCases, id: \.self) { Text($0.title).tag(ColorFamily?.some($0)) }
                 }
             }
-            Section("Bottoms") {
-                Toggle("Mostly skirts and dresses", isOn: $learned.style.wearsSkirts)
+            Section {
+                if offersSkirts {
+                    Toggle("I mostly wear skirts or dresses", isOn: $learned.style.wearsSkirts)
+                }
                 if learned.style.wearsSkirts {
                     Picker("Length", selection: $learned.style.skirtLength) {
                         Text("Not sure").tag(StyleLearning.Length?.none)
@@ -380,6 +389,12 @@ struct StyleResultView: View {
                     Text("Not sure").tag(ColorFamily?.none)
                     ForEach(ColorFamily.allCases, id: \.self) { Text($0.title).tag(ColorFamily?.some($0)) }
                 }
+            } header: {
+                Text("Bottoms")
+            } footer: {
+                if offersSkirts {
+                    Text("On: sizes are suggested for skirts and dresses, by their length. Off: for trousers, by how they sit and their leg cut.")
+                }
             }
             Section {
                 Button {
@@ -393,6 +408,7 @@ struct StyleResultView: View {
             }
         }
         .navigationTitle("Your style")
+        .onAppear { if learned.style.wearsSkirts { sawSkirt = true } }
     }
 }
 
@@ -421,12 +437,20 @@ struct StyleFitCard: View {
 
 /// From what the user checked: what to wear with each piece.
 struct ScanPairingsSection: View {
+    @Environment(AppContainer.self) private var container
     @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
+    @Query(sort: \StoredBodyProfile.createdAt, order: .reverse) private var profiles: [StoredBodyProfile]
     @AppStorage("bodySex") private var sexRaw = ""
     @AppStorage(LearnedStyle.key) private var stored: Data?
 
+    /// Whoever the app is shopping for: their sex from their own profile.
+    private var female: Bool {
+        if let sex = profiles.of(container.activePersonID).first?.profile?.sex { return sex == .female }
+        return BodySex(rawValue: sexRaw) == .female
+    }
+
     var body: some View {
-        let items = analyses.filter { $0.personID == nil && $0.spec != nil }.prefix(5)
+        let items = analyses.filter { $0.personID == container.activePersonID && $0.spec != nil }.prefix(5)
         if !items.isEmpty {
             Card {
                 Label("To wear with what you checked", systemImage: "rectangle.on.rectangle.angled")
@@ -436,13 +460,36 @@ struct ScanPairingsSection: View {
                         let item = Pairing.Item(kind: spec.category.pairingKind, color: ColorFamily.named(in: saved.productName ?? ""),
                                                 fit: spec.fitStyle.pairingFit)
                         let favourite = stored.flatMap { try? JSONDecoder().decode(LearnedStyle.self, from: $0) }?.topColor
-                        let suggestions = Pairing.suggest(for: item, female: BodySex(rawValue: sexRaw) == .female, favourite: favourite)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(saved.productName ?? String(localized: "Garment")).font(.subheadline.weight(.semibold)).lineLimit(1)
-                            Text(suggestions.prefix(2).map(\.text).joined(separator: String(localized: " or ")))
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                        let suggestions = Pairing.suggest(for: item, female: female, favourite: container.activePersonID == nil ? favourite : nil)
+                        NavigationLink {
+                            FitResultView(saved: saved)
+                        } label: {
+                            HStack(spacing: Theme.Spacing.s) {
+                                ProductThumbnail(url: saved.imageURL, category: spec.category)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(saved.productName ?? String(localized: "Garment"))
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(1)
+                                    Text(suggestions.prefix(2).map(\.text).joined(separator: String(localized: " or ")))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.leading)
+                                    if let size = saved.analysis?.recommendedSize?.label {
+                                        Text("Your size: \(size)")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(Color.accentColor)
+                                    }
+                                }
+                                Spacer(minLength: 4)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(Text("Opens its size and the avatar"))
                     }
                 }
             }
@@ -491,5 +538,25 @@ extension Pairing.Suggestion {
         case .blazer: String(localized: "a \(colour) blazer")
         case .trenchCoat: String(localized: "a \(colour) trench coat")
         }
+    }
+}
+
+/// A checked product's photo, or its kind of garment when there's none.
+struct ProductThumbnail: View {
+    let url: URL?
+    let category: GarmentCategory
+
+    var body: some View {
+        AsyncImage(url: url) { image in
+            image.resizable().scaledToFill()
+        } placeholder: {
+            Image(systemName: category.isBottom ? "figure.walk" : "tshirt")
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+        }
+        .frame(width: 48, height: 60)
+        .background(Color.accentColor.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityHidden(true)
     }
 }
