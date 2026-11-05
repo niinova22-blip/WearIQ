@@ -114,6 +114,9 @@ def main(app_id, metadata_path, shots_dir=None):
 
     review = call("GET", f"/appStoreVersions/{version['id']}/appStoreReviewDetail").get("data")
     attrs = {"notes": meta["reviewNotes"], "demoAccountRequired": False}
+    # The contact App Review calls, from a repository secret (never in the repository).
+    if os.environ.get("REVIEW_CONTACT"):
+        attrs.update(json.loads(os.environ["REVIEW_CONTACT"]))
     if review:
         call("PATCH", f"/appStoreReviewDetails/{review['id']}",
              {"data": {"type": "appStoreReviewDetails", "id": review["id"], "attributes": attrs}})

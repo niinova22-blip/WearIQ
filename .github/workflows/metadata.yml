@@ -36,6 +36,7 @@ jobs:
           P8: ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          REVIEW_CONTACT: ${{ secrets.REVIEW_CONTACT }}
         run: |
           printf '%s' "$P8" > "$RUNNER_TEMP/AuthKey.p8"
           python3 -m venv "$RUNNER_TEMP/venv"
