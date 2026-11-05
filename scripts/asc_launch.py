@@ -4,6 +4,7 @@
 Usage:
   asc_launch.py <app_id> status
   asc_launch.py <app_id> subscriptions <review_screenshot.png>
+  asc_launch.py <app_id> submit <version> <build_number>
 
 status: prints what the App Store submission still needs (subscriptions, prices, the
 app's price and availability, age rating, review contact, the version and its build).
@@ -226,11 +227,56 @@ def subscriptions(app_id, screenshot):
             print("  review screenshot uploaded")
 
 
+def submit(app_id, version_string, build_number):
+    """Attaches the build to the version, puts the subscriptions in with it, and sends
+    the lot to App Review."""
+    call("PATCH", f"/apps/{app_id}", {"data": {"type": "apps", "id": app_id,
+                                               "attributes": {"contentRightsDeclaration": "DOES_NOT_USE_THIRD_PARTY_CONTENT"}}})
+    version = next(v for v in call("GET", f"/apps/{app_id}/appStoreVersions?filter[platform]=IOS&limit=10")["data"]
+                   if v["attributes"]["versionString"] == version_string)
+    builds = call("GET", f"/builds?filter[app]={app_id}&filter[version]={build_number}"
+                         f"&filter[preReleaseVersion.version]={version_string}&limit=5")["data"]
+    if not builds:
+        sys.exit(f"::error::No build {build_number} of {version_string}")
+    build = builds[0]
+    state = build["attributes"].get("processingState")
+    if state != "VALID":
+        sys.exit(f"::error::Build {build_number} is {state}")
+    call("PATCH", f"/appStoreVersions/{version['id']}/relationships/build",
+         {"data": {"type": "builds", "id": build["id"]}})
+    print(f"version {version_string}: build {build_number}")
+    for g in call("GET", f"/apps/{app_id}/subscriptionGroups")["data"]:
+        for sub in call("GET", f"/subscriptionGroups/{g['id']}/subscriptions")["data"]:
+            st = sub["attributes"].get("state")
+            print(f"{sub['attributes']['productId']}: {st}")
+            if st == "READY_TO_SUBMIT":
+                call("POST", "/subscriptionSubmissions", {"data": {
+                    "type": "subscriptionSubmissions", "relationships": {"subscription": rel("subscriptions", sub["id"])}}})
+                print("  submitted with the version")
+    open_subs = call("GET", f"/reviewSubmissions?filter[app]={app_id}&filter[platform]=IOS"
+                            "&filter[state]=READY_FOR_REVIEW,WAITING_FOR_REVIEW,IN_REVIEW,UNRESOLVED_ISSUES")["data"]
+    if open_subs and open_subs[0]["attributes"]["state"] != "READY_FOR_REVIEW":
+        print(f"already with App Review: {open_subs[0]['attributes']['state']}")
+        return
+    rs = open_subs[0] if open_subs else call("POST", "/reviewSubmissions", {"data": {
+        "type": "reviewSubmissions", "attributes": {"platform": "IOS"},
+        "relationships": {"app": rel("apps", app_id)}}})["data"]
+    try_call("POST", "/reviewSubmissionItems", {"data": {
+        "type": "reviewSubmissionItems",
+        "relationships": {"reviewSubmission": rel("reviewSubmissions", rs["id"]),
+                          "appStoreVersion": rel("appStoreVersions", version["id"])}}})
+    call("PATCH", f"/reviewSubmissions/{rs['id']}", {"data": {
+        "type": "reviewSubmissions", "id": rs["id"], "attributes": {"submitted": True}}})
+    print("submitted for review")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         sys.exit(__doc__)
     if sys.argv[2] == "status":
         status(sys.argv[1])
+    elif sys.argv[2] == "submit":
+        submit(sys.argv[1], sys.argv[3], sys.argv[4])
     elif sys.argv[2] == "subscriptions":
         subscriptions(sys.argv[1], sys.argv[3] if len(sys.argv) > 3 else None)
     else:
