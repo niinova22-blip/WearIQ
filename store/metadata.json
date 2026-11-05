@@ -13,8 +13,8 @@
    "description": "WearIQ vücut ölçülerini bir kez çıkarır ve her kıyafetin üzerinde nasıl duracağını bölge bölge, kendi 3D avatarında gösterir.\n\n• Bir kez tara: telefonunun önünde bir tur dön. Fotoğraflar cihazında işlenir, yüklenmez. İstersen ölçülerini mezurayla kendin de girebilirsin.\n• Ürün bağlantısı, barkod ya da beden tablosu ekran görüntüsüyle her kıyafeti kontrol et. Yüzlerce giyim mağazasıyla çalışır.\n• Omuz, göğüs, bel, kalça, kol ve boy için \"dar\", \"ideal\", \"bol\" gibi açık değerlendirmeler ve cm farkı.\n• 3D avatarında gör: seçtiğin beden, gerçek kumaş gibi dökülür.\n• Sipariş vermeden iade riski, ve her markadaki bedenin tek bir beden pasaportunda.\n• Safari uzantısı: gezdiğin giyim sayfalarında bedenin hemen orada.\n• Her gün 5 ücretsiz kıyafet kontrolü.\n\nWearIQ Premium: sınırsız kontrol, reklamsız kullanım ve Tarz sekmesi: renklerin, vücut tipine uygun kesimler, stiline göre beden, kombin önerileri ve gardırobundan kıyafetler.\n\nPremium aylık ya da yıllık otomatik yenilenen bir aboneliktir. Ödeme, satın alma onayıyla Apple Hesabından alınır. Abonelik, dönem bitiminden en az 24 saat önce iptal edilmezse yenilenir. Aboneliğini App Store hesap ayarlarından yönetebilir ve iptal edebilirsin.\n\nKullanım Koşulları: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\nGizlilik Politikası: https://niinova22-blip.github.io/WearIQ/privacy.html\n\nWearIQ bir sağlık uygulaması değildir ve tıbbi değerlendirme yapmaz."
   },
   "en-US": {
-   "name": "WearIQ",
-   "subtitle": "Size advice & 3D fit check",
+   "name": "WearIQ: Size & Fit",
+   "subtitle": "Body scan, 3D try-on, style",
    "privacyPolicyUrl": "https://niinova22-blip.github.io/WearIQ/privacy.html",
    "supportUrl": "https://niinova22-blip.github.io/WearIQ/support.html",
    "keywords": "size,fit,clothing size,body measurements,size chart,try on,avatar,outfit,style,returns",
