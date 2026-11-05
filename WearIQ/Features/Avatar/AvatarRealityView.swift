@@ -265,7 +265,7 @@ struct AvatarRealityView: UIViewRepresentable {
             let shader = CustomMaterial.SurfaceShader(named: surface, in: library)
             let modifier = CustomMaterial.GeometryModifier(named: "avatarSway", in: library)
             var material = try? CustomMaterial(surfaceShader: shader, geometryModifier: modifier, lightingModel: surface == "avatarGlow" ? .unlit : .lit)
-            if surface == "avatarGlow" { material?.blending = .transparent(opacity: 1) }
+            if surface == "avatarGlow" { material?.blending = .transparent(opacity: .init(floatLiteral: 1.0)) }
             return material
         }
 
