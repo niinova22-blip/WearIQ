@@ -61,8 +61,16 @@ struct TriangleCloth {
     /// Vertices one or two edges away, which may sit close without colliding.
     private let nearby: [Set<Int>]
     private let meanEdge: Float
+    /// Mesh edges where two pattern pieces are sewn together (vertex pairs).
+    private(set) var seamEdges: [(Int, Int)] = []
 
-    init(_ mesh: Mesh) {
+    /// `panels`, when given, names the pattern piece of each triangle: the garment is
+    /// then sewn from flat pieces. Inside a piece the fabric's bending rests flat (the
+    /// distance across two triangles laid open), as cloth cut from a flat bolt does, so
+    /// it hangs and folds under its weight instead of keeping the moulded shape it was
+    /// cut in; a seam keeps the angle it was sewn at (a sleeve set into its armhole, the
+    /// side of a trouser leg). Lengths stay as cut.
+    init(_ mesh: Mesh, panels: [Int]? = nil) {
         positions = mesh.positions
         rest = mesh.positions
         indices = mesh.indices
@@ -82,6 +90,7 @@ struct TriangleCloth {
         let rest = mesh.positions, indices = mesh.indices
         // In a fixed order: dictionary order changes from run to run, and the order the
         // constraints are solved in moves the result a little.
+        var seams: [(Int, Int)] = []
         for (key, triangles) in edgeTriangles.sorted(by: { $0.key < $1.key }) {
             let a = key >> 32, b = key & 0xFFFF_FFFF
             edges.append(Link(a: a, b: b, length: (rest[a] - rest[b]).length))
@@ -91,13 +100,41 @@ struct TriangleCloth {
                 let corners: [Int] = [Int(indices[t]), Int(indices[t + 1]), Int(indices[t + 2])]
                 return corners.first { $0 != a && $0 != b } ?? a
             }
-            bends.append(Link(a: opposite[0], b: opposite[1], length: (rest[opposite[0]] - rest[opposite[1]]).length))
+            if let panels {
+                guard panels[triangles[0] / 3] == panels[triangles[1] / 3] else {
+                    // A seam holds the angle it was sewn at (the seam allowance stiffens
+                    // it): a free hinge there let a trouser leg fold flat at its seams.
+                    seams.append((a, b))
+                    bends.append(Link(a: opposite[0], b: opposite[1], length: (rest[opposite[0]] - rest[opposite[1]]).length))
+                    continue
+                }
+                bends.append(Link(a: opposite[0], b: opposite[1],
+                                  length: Self.unfolded(rest[a], rest[b], rest[opposite[0]], rest[opposite[1]])))
+            } else {
+                bends.append(Link(a: opposite[0], b: opposite[1], length: (rest[opposite[0]] - rest[opposite[1]]).length))
+            }
         }
+        seamEdges = seams
         self.edges = edges
         self.bends = bends
         self.area = area
         nearby = ring.indices.map { i in ring[i].reduce(into: ring[i]) { $0.formUnion(ring[$1]) } }
         meanEdge = edges.isEmpty ? 0.01 : edges.reduce(0) { $0 + $1.length } / Float(edges.count)
+    }
+
+    /// The distance between `c` and `d`, the far corners of triangles (a, b, c) and
+    /// (a, b, d), when the two are laid flat on either side of their shared edge.
+    static func unfolded(_ a: Vec3, _ b: Vec3, _ c: Vec3, _ d: Vec3) -> Float {
+        let l = (b - a).length
+        guard l > 1e-7 else { return (c - d).length }
+        func place(_ p: Vec3) -> (Float, Float) {
+            let ap = (p - a).length, bp = (p - b).length
+            let x = (ap * ap - bp * bp + l * l) / (2 * l)
+            return (x, max(0, ap * ap - x * x).squareRoot())
+        }
+        let (xc, yc) = place(c), (xd, yd) = place(d)
+        let dx = xc - xd, dy = yc + yd
+        return (dx * dx + dy * dy).squareRoot()
     }
 
     /// Settles the cloth on the body. `pinned` vertices don't fall or get pulled, but are

@@ -169,6 +169,25 @@ public struct Avatar: Sendable {
         public var shoulderDelta: Double = 0
         /// The fabric; without one, tops drape as a plain knit and trousers as a woven.
         public var fabric: Fabric?
+        /// Sewn from flat pattern pieces (`BodyModel.panels`) and draped for real. Off:
+        /// the older moulded shell, kept for comparison.
+        public var sewn = true
+
+        /// Drapes from flat pieces: garments that follow the body (a regular tee or shirt,
+        /// close-cut trousers). Cuts whose silhouette is the design (straight, wide and
+        /// flared legs, oversized tops, coats, jackets, dresses, skirts) keep the shape
+        /// they are cut in, as their stiffer fabric and shaped pattern keep it on a person:
+        /// draped from flat, a wide leg fell straight and an oversized tee sagged at the
+        /// neck (RenderProbe/cuts).
+        var drapesFromFlat: Bool {
+            guard sewn else { return false }
+            switch kind {
+            case .skirt: return false
+            case .trousers: return ![LegCut.straight, .wide, .flare].contains(legCut ?? .slim)
+            // As much room as an oversized cut is its silhouette too, whatever the label.
+            case .top: return style == .plain && cut != .oversized && chestEase < 20
+            }
+        }
         /// What the size-chart check concluded, where it concluded something. The drape
         /// keeps the garment's real dimensions; the colours, lines and labels say what
         /// this says, so the avatar and the verdicts beside it never disagree.
@@ -926,14 +945,21 @@ extension BodyModel {
         }
         let tags = mesh.positions.map(owner)
 
-        // Drape it.
-        var cloth = TriangleCloth(mesh)
+        // Drape it, sewn from its pattern pieces.
+        var cloth = TriangleCloth(mesh, panels: fit.drapesFromFlat ? panels(fit, mesh: mesh, owner: owner) : nil)
         let pinned = mesh.positions.map { $0.y >= pinnedAbove }
         let thickness = fabric.thickness
         let margin = skinMargin
         let rests: (Vec3) -> Float = under.map { inner in { p in min(self.distance(p) - margin, inner(p) - thickness) } }
             ?? { p in self.distance(p) - margin }
         var motion = animated ? TriangleCloth.Motion.dressing : .settle
+        // A sewn garment settles for real: long enough for its weight to drape it.
+        if fit.drapesFromFlat && !animated {
+            // 72 steps of 1/60 s: as good as twice as many (RenderProbe), the extra time
+            // a fraction of a second.
+            motion.steps = 72
+            motion.damping = 0.9
+        }
         if animated {
             switch fit.kind {
             case .top:
@@ -976,10 +1002,12 @@ extension BodyModel {
 
         // Folds: loose fabric hanging in vertical folds, deepening towards the hem (more
         // and deeper for fluid fabrics), and extra length bunched at hems and cuffs.
+        // A sewn garment's folds are its own (the simulation drapes it); only the
+        // extra length's bunching at hems and cuffs is added.
         for i in mesh.positions.indices where !pinned[i] {
             let p = mesh.positions[i]
             var push: Float = 0
-            if let (amount, axis) = hang(tags[i], cloth.rest[i]), amount > 0.004 {
+            if !fit.drapesFromFlat, let (amount, axis) = hang(tags[i], cloth.rest[i]), amount > 0.004 {
                 let top = tags[i] == 0 ? chestY : crotchY
                 let ramp = min(1, max(0, (top - p.y) / max(0.1, top - lo.y)))
                 let theta = atan2(p.z - axis.z, p.x - axis.x)
@@ -1021,6 +1049,45 @@ extension BodyModel {
         let placed = placements(shape, lengthKnown: fit.lengthFromChart, sleeveKnown: fit.sleeveFromChart)
         return Dressed(mesh: mesh, seams: seams, anchors: anchors, cut: shell, report: report, frames: frames, lines: lines,
                        placements: placed)
+    }
+
+    /// The pattern piece each triangle is cut from, as a garment of this kind is sewn
+    /// (Aldrich, "Metric Pattern Cutting"; GarmentCode's tee, pants and skirt panels):
+    /// - a top: front and back bodice joined at the side and shoulder seams (a jacket or
+    ///   coat's front in two halves, open down the middle), each sleeve one piece set into
+    ///   its armhole;
+    /// - trousers: a front and a back piece per leg, from the waistband to the hem, joined
+    ///   at the outside and inside leg seams and down the middle front and back;
+    /// - a skirt: a front and a back joined at the side seams.
+    /// Front and back divide where the side seams run, at the middle of the body's depth
+    /// (of the leg's, below the seat), as the drawn seams do.
+    func panels(_ fit: Avatar.GarmentFit, mesh: Mesh, owner: (Vec3) -> Int) -> [Int] {
+        let mid = { (y: Float) -> Float in self.torso.ring(at: max(y, self.crotchY)).center.z }
+        var out: [Int] = []
+        out.reserveCapacity(mesh.indices.count / 3)
+        for t in stride(from: 0, to: mesh.indices.count - 2, by: 3) {
+            let a = mesh.positions[Int(mesh.indices[t])], b = mesh.positions[Int(mesh.indices[t + 1])]
+            let c = mesh.positions[Int(mesh.indices[t + 2])]
+            let p = (a + b + c) * (1.0 / 3)
+            let part = owner(p)
+            switch fit.kind {
+            case .top:
+                if part > 0 {
+                    out.append(10 + part)
+                } else if p.z >= mid(p.y) {
+                    out.append(fit.style.isOuter && p.x < 0 ? 2 : 0)
+                } else {
+                    out.append(1)
+                }
+            case .trousers:
+                let right = p.x >= 0 ? 0 : 2
+                let depth = part == 0 ? mid(p.y) : self.legs[part - 1].knee.z
+                out.append(right + (p.z >= depth ? 0 : 1))
+            case .skirt:
+                out.append(p.z >= mid(p.y) ? 0 : 1)
+            }
+        }
+        return out
     }
 
     /// Where a garment of this kind usually ends, before its length moves it: a top just
