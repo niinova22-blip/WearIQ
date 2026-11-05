@@ -77,6 +77,15 @@ def status(app_id):
             n = prices.get("meta", {}).get("paging", {}).get("total")
             print(f"  {a['productId']}: state={a.get('state')} period={a.get('subscriptionPeriod')} prices={n} "
                   f"USA={current_price(s['id'], 'USA')} TUR={current_price(s['id'], 'TUR')}")
+            for l in call("GET", f"/subscriptions/{s['id']}/subscriptionLocalizations")["data"]:
+                print(f"    localization {l['attributes']['locale']}: {l['attributes'].get('state')}")
+            shot = (try_call("GET", f"/subscriptions/{s['id']}/appStoreReviewScreenshot") or {}).get("data") or {}
+            print(f"    review screenshot: {(shot.get('attributes') or {}).get('assetDeliveryState')}")
+            offers = (try_call("GET", f"/subscriptions/{s['id']}/introductoryOffers?limit=1") or {}).get("meta", {})
+            print(f"    intro offers: {offers.get('paging', {}).get('total')}")
+    for g in groups:
+        for l in call("GET", f"/subscriptionGroups/{g['id']}/subscriptionGroupLocalizations")["data"]:
+            print(f"  group localization {l['attributes']['locale']}: {l['attributes'].get('state')}")
     sched = try_call("GET", f"/apps/{app_id}/appPriceSchedule")
     print(f"app price schedule: {'set' if sched and sched.get('data') else 'missing'}")
     avail = try_call("GET", f"/apps/{app_id}/appAvailabilityV2")
