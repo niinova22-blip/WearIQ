@@ -28,7 +28,7 @@ PLUM_BOTTOM = (150, 44, 104)
 # (screen, kicker, headline, line, chips, dark background)
 SLOTS = [
     ("result", "SIZE ADVICE", "Know your size\nbefore you buy",
-     "Every garment checked against your body,\nregion by region.", ["✓  Waist: ideal", "S fits you best"], False),
+     "Every garment checked against your body,\nregion by region.", ["✓  Waist: ideal", "Size M · high confidence"], False),
     ("avatar", "3D TRY-ON", "See it on your\nown 3D body",
      "Your avatar wears the exact size you pick,\nwith real fabric drape.", ["Tight · Ideal · Loose"], True),
     ("profile", "BODY SCAN", "Measured in one\nturn, no tape",
@@ -140,7 +140,7 @@ def compose(raw, slot, fonts):
         chip_font.set_variation_by_name(b"SemiBold")
     except Exception:
         pass
-    positions = [(40, top + 300), (W - 40, top + 1450)]
+    positions = [(40, top + 560), (W - 40, top + 1450)]
     for i, text in enumerate(chips[:2]):
         c = chip(text, chip_font, dark)
         cx, cy = positions[i]
