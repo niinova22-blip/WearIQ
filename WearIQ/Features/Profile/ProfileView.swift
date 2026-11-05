@@ -114,6 +114,10 @@ struct ProfileView: View {
             }
         }
         .navigationTitle("Profile")
+        #if DEBUG
+        .navigationDestination(isPresented: .constant(DemoMode.opensPassport)) { SizePassportView() }
+        .navigationDestination(isPresented: .constant(DemoMode.opensMemory)) { ShoppingMemoryView() }
+        #endif
         .navigationDestination(item: $editing) { profile in
             MeasurementReviewView(profile: profile) { editing = nil }
         }

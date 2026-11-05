@@ -57,8 +57,6 @@ struct GarmentDraftView: View {
                           pageURL: draft.info.pageURL, analysis: route.analysis, isSaved: route.saved,
                           category: draft.category, fitStyle: draft.fitStyle, chartNote: chartNote,
                           tagSize: draft.preferredLabel, spec: draft.spec, material: draft.info.material)
-                // Ads only ever appear after a result, never before a scan.
-                .onDisappear { container.ads.showInterstitialIfDue(isPremium: container.isPremium) }
         }
         .sheet(isPresented: $showQuotaLimit) {
             PaywallView(reason: "You've used today's free scans. They renew tomorrow, or go unlimited with Premium.")
@@ -286,8 +284,12 @@ struct GarmentDraftView: View {
         do {
             switch try container.analysisCoordinator().run(draft, preference: preference) {
             case let .analyzed(saved):
+                // Free plan: the ad plays first, then the result.
                 container.ads.analysisCompleted()
-                if let analysis = saved.analysis { result = ResultRoute(analysis: analysis, saved: true) }
+                guard let analysis = saved.analysis else { return }
+                container.ads.presentBeforeResult(isPremium: container.isPremium) {
+                    result = ResultRoute(analysis: analysis, saved: true)
+                }
             case let .insufficientData(analysis):
                 result = ResultRoute(analysis: analysis, saved: false)
             case .needsBodyProfile:

@@ -6,19 +6,20 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var purchasing: Product.ID?
+    /// Whether this Apple Account can still have the yearly plan's free week (once per account).
+    @State private var trialEligible = false
     var reason: LocalizedStringKey?
 
     private var subscriptions: SubscriptionService { container.subscriptions }
 
     private let features: [(String, LocalizedStringKey)] = [
-        ("infinity", "Unlimited garment scans"),
+        ("infinity", "Unlimited garment checks"),
         ("nosign", "No ads"),
-        ("square.split.2x2", "Detailed region-by-region analysis"),
-        ("arrow.left.arrow.right", "Compare several sizes"),
+        ("sparkles", "The Style tab: your colours, cuts and outfits"),
+        ("figure.stand", "Size advice for the way you like to wear clothes"),
         ("tshirt", "Digital wardrobe"),
-        ("sparkles", "Outfit suggestions and style tips"),
+        ("person.2", "Shop for your partner, kids or a gift"),
         ("chart.line.uptrend.xyaxis", "Measurement change tracking"),
-        ("clock.arrow.circlepath", "Full fit history"),
     ]
 
     var body: some View {
@@ -51,7 +52,12 @@ struct PaywallView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
             }
-            .task { if subscriptions.products.isEmpty { await subscriptions.loadProducts() } }
+            .task {
+                if subscriptions.products.isEmpty { await subscriptions.loadProducts() }
+                if let yearly = subscriptions.products.first(where: { $0.subscription?.subscriptionPeriod.unit == .year }) {
+                    trialEligible = await yearly.subscription?.isEligibleForIntroOffer ?? false
+                }
+            }
         }
     }
 
@@ -67,7 +73,9 @@ struct PaywallView: View {
             }
         } else {
             VStack(spacing: Theme.Spacing.s) {
-                ForEach(subscriptions.products) { product in
+                // Yearly first: the better deal, and the one with the free trial.
+                ForEach(subscriptions.products.sorted { ($0.subscription?.subscriptionPeriod.unit == .year ? 0 : 1) < ($1.subscription?.subscriptionPeriod.unit == .year ? 0 : 1) }) { product in
+                    let yearly = product.subscription?.subscriptionPeriod.unit == .year
                     Button {
                         Task {
                             purchasing = product.id
@@ -77,20 +85,42 @@ struct PaywallView: View {
                         }
                     } label: {
                         HStack {
-                            VStack(alignment: .leading) {
-                                Text(product.displayName).font(.headline)
-                                Text(product.periodDescription).font(.subheadline).opacity(0.85)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text(product.displayName).font(.headline)
+                                    if yearly, let saving = savingPercent(yearly: product) {
+                                        Text("Save \(saving)%")
+                                            .font(.caption.weight(.bold))
+                                            .padding(.horizontal, 7).padding(.vertical, 2)
+                                            .background(Theme.gold, in: Capsule())
+                                            .foregroundStyle(.black)
+                                    }
+                                }
+                                if yearly, trialEligible, product.subscription?.introductoryOffer?.paymentMode == .freeTrial {
+                                    Text("Free for 7 days, then \(product.displayPrice) a year").font(.subheadline).opacity(0.9)
+                                } else if yearly {
+                                    Text("\(product.priceFormatStyle.format(product.price / 12)) a month, billed yearly")
+                                        .font(.subheadline).opacity(0.9)
+                                } else {
+                                    Text(product.periodDescription).font(.subheadline).opacity(0.85)
+                                }
                             }
                             Spacer()
                             if purchasing == product.id {
-                                ProgressView().tint(.white)
+                                ProgressView().tint(yearly ? .white : .accentColor)
                             } else {
                                 Text(product.displayPrice).font(.headline)
                             }
                         }
                         .padding(Theme.Spacing.m)
-                        .foregroundStyle(.white)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .foregroundStyle(yearly ? Color.white : Color.primary)
+                        .background {
+                            if yearly {
+                                RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.accentGradient)
+                            } else {
+                                RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.accentColor, lineWidth: 1.5)
+                            }
+                        }
                     }
                     .disabled(purchasing != nil || subscriptions.isPremium)
                 }
@@ -108,6 +138,17 @@ struct PaywallView: View {
             Button("Privacy") { openURL(AppLinks.privacy) }
         }
         .font(.footnote)
+    }
+}
+
+extension PaywallView {
+    /// How much the yearly plan saves against twelve months of the monthly one.
+    func savingPercent(yearly: Product) -> Int? {
+        guard let monthly = subscriptions.products.first(where: { $0.subscription?.subscriptionPeriod.unit == .month }) else { return nil }
+        let twelve = monthly.price * 12
+        guard twelve > 0 else { return nil }
+        let saving = (1 - NSDecimalNumber(decimal: yearly.price / twelve).doubleValue) * 100
+        return saving >= 5 ? Int(saving.rounded()) : nil
     }
 }
 

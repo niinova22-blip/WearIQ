@@ -19,7 +19,8 @@ import urllib.request
 from asc_signing import call
 
 SCREENSHOT_TYPE = "APP_IPHONE_67"  # 6.7"/6.9" iPhone slot (1290x2796, 1320x2868)
-SHOT_DIRS = {"tr": "tr", "en-US": "en"}
+# The English images for every language: the listing's images are in English.
+SHOT_DIRS = {"en-US": "en", "tr": "en"}
 
 
 def first(items, pred):
@@ -84,6 +85,12 @@ def main(app_id, metadata_path, shots_dir=None):
     with open(metadata_path, encoding="utf-8") as f:
         meta = json.load(f)
     locs = meta["localizations"]
+
+    # English is the app's primary language; devices in Turkish get the Turkish listing.
+    if meta.get("primaryLocale"):
+        call("PATCH", f"/apps/{app_id}", {"data": {"type": "apps", "id": app_id,
+                                                   "attributes": {"primaryLocale": meta["primaryLocale"]}}})
+        print(f"primary locale: {meta['primaryLocale']}")
 
     infos = call("GET", f"/apps/{app_id}/appInfos")["data"]
     info = first(infos, lambda i: i["attributes"].get("state") not in ("READY_FOR_DISTRIBUTION", "REPLACED_WITH_NEW_INFO")) or infos[0]

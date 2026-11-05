@@ -63,7 +63,7 @@ public final class DailyScanQuotaManager {
     private let store: QuotaStateStore
     private let calendar: Calendar
 
-    public init(dailyLimit: Int = 4, clock: QuotaClock = SystemClock(), store: QuotaStateStore, calendar: Calendar = .current) {
+    public init(dailyLimit: Int = 5, clock: QuotaClock = SystemClock(), store: QuotaStateStore, calendar: Calendar = .current) {
         self.dailyLimit = dailyLimit
         self.clock = clock
         self.store = store

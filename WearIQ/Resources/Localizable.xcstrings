@@ -66,7 +66,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Premium: sınırsız tarama"
+            "value": "Premium: sınırsız kontrol"
           }
         }
       }
@@ -76,7 +76,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bugün kalan tarama"
+            "value": "Bugün kalan kontrol"
           }
         }
       }
@@ -96,7 +96,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ücretsiz taramalar her gün yenilenir."
+            "value": "Ücretsiz kontroller her gün yenilenir."
           }
         }
       }
@@ -2146,7 +2146,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bugün %lld ücretsiz tarama hakkın kaldı"
+            "value": "Bugün %lld ücretsiz kontrol hakkın kaldı"
           }
         }
       }
@@ -2466,7 +2466,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bugünkü ücretsiz taramalarını kullandın"
+            "value": "Bugünkü ücretsiz kontrollerini kullandın"
           }
         }
       }
@@ -2476,7 +2476,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ücretsiz taramalar yarın yenilenir. Kayıtlı analizlerin erişilebilir kalır ve onları açmak hak tüketmez."
+            "value": "Ücretsiz kontroller yarın yenilenir. Kayıtlı analizlerin erişilebilir kalır ve onları açmak hak tüketmez."
           }
         }
       }
@@ -2486,7 +2486,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Premium: sınırsız tarama, reklamsız"
+            "value": "Premium: sınırsız kontrol, reklamsız"
           }
         }
       }
@@ -2566,7 +2566,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sınırsız kıyafet tarama"
+            "value": "Sınırsız kıyafet kontrolü"
           }
         }
       }
@@ -2756,7 +2756,7 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bugünkü ücretsiz taramalarını kullandın. Yarın yenilenecek ya da Premium ile sınırsız kullanabilirsin."
+            "value": "Bugünkü 5 ücretsiz kontrolünü kullandın. Yarın yenilenir ya da Premium ile sınırsız kontrol et."
           }
         }
       }
@@ -12567,6 +12567,186 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kontrol edilen ürünler"
+          }
+        }
+      }
+    },
+    "Cuts for your build": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vücuduna uygun kesimler"
+          }
+        }
+      }
+    },
+    "What to wear it with": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neyle giyilir"
+          }
+        }
+      }
+    },
+    "Outfits from your wardrobe": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gardırobundan kombinler"
+          }
+        }
+      }
+    },
+    "The shades that suit your skin tone, and the ones to keep away from your face.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ten rengine yakışan tonlar ve yüzünden uzak tutman gerekenler."
+          }
+        }
+      }
+    },
+    "Which cuts, fabrics and lengths flatter your measurements.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hangi kesim, kumaş ve boyların ölçülerine yakıştığı."
+          }
+        }
+      }
+    },
+    "Show your favourite outfit once: every check then says the size for the way you like to wear it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En sevdiğin kombini bir kez göster: her kontrol, giyinme tarzına uygun bedeni de söyler."
+          }
+        }
+      }
+    },
+    "Pairings for every garment you check.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrol ettiğin her kıyafet için kombin önerileri."
+          }
+        }
+      }
+    },
+    "Daily, work, evening and sport outfits from your own clothes.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kendi kıyafetlerinden günlük, iş, akşam ve spor kombinleri."
+          }
+        }
+      }
+    },
+    "Unlimited garment checks": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sınırsız kıyafet kontrolü"
+          }
+        }
+      }
+    },
+    "The Style tab: your colours, cuts and outfits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarz sekmesi: renklerin, kesimlerin ve kombinlerin"
+          }
+        }
+      }
+    },
+    "Size advice for the way you like to wear clothes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giyinme tarzına göre beden önerisi"
+          }
+        }
+      }
+    },
+    "Shop for your partner, kids or a gift": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eşin, çocukların ya da hediye için alışveriş"
+          }
+        }
+      }
+    },
+    "Style is part of Premium.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarz, Premium'un bir parçası."
+          }
+        }
+      }
+    },
+    "Your personal stylist": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kişisel stilistin"
+          }
+        }
+      }
+    },
+    "Style is part of Premium, with unlimited checks and no ads.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarz; sınırsız kontrol ve reklamsız kullanımla birlikte Premium'da."
+          }
+        }
+      }
+    },
+    "Save %lld%%": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%%%lld tasarruf"
+          }
+        }
+      }
+    },
+    "Free for 7 days, then %@ a year": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 gün ücretsiz, sonra yıllık %@"
+          }
+        }
+      }
+    },
+    "%@ a month, billed yearly": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aylık %@, yıllık faturalandırılır"
           }
         }
       }

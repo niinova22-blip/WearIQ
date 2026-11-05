@@ -1,8 +1,9 @@
 name: App Store screenshots
 
-# Builds the Debug app for a 6.9" iPhone simulator and captures each main screen in
-# Turkish and English using demo mode (WearIQ/App/DemoMode.swift). The PNGs are uploaded
-# as the "screenshots" artifact; scripts/asc_metadata.py can push them to App Store Connect.
+# Builds the Debug app for a 6.9" iPhone simulator, captures each main screen in English
+# using demo mode (WearIQ/App/DemoMode.swift), and turns them into the store's marketing
+# images (scripts/store_shots.py). The "screenshots" artifact holds en/ (the store images)
+# and raw/; scripts/asc_metadata.py pushes en/ to App Store Connect.
 
 on:
   workflow_dispatch:
@@ -47,21 +48,26 @@ jobs:
 
       - name: Capture
         run: |
-          for lang in tr en; do
-            locale=$([ "$lang" = tr ] && echo tr_TR || echo en_US)
-            mkdir -p "shots/$lang"
-            n=1
-            for screen in home result profile wardrobe style avatar; do
-              xcrun simctl launch "$UDID" com.niinova.weariq \
-                -WQDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$locale" > /dev/null
-              # The avatar is cut and draped first (several seconds on the simulator).
-              if [ "$screen" = avatar ]; then sleep 60; else sleep 6; fi
-              xcrun simctl io "$UDID" screenshot "shots/$lang/0${n}_${screen}.png"
-              xcrun simctl terminate "$UDID" com.niinova.weariq || true
-              n=$((n + 1))
-            done
+          # English only: the store shows these to every language.
+          mkdir -p raw
+          for screen in result avatar profile scan memory style passport home; do
+            xcrun simctl launch "$UDID" com.niinova.weariq               -WQDemo "$screen" -AppleLanguages "(en)" -AppleLocale en_US > /dev/null
+            # The avatar is cut and draped first (several seconds on the simulator).
+            if [ "$screen" = avatar ]; then sleep 60; else sleep 8; fi
+            xcrun simctl io "$UDID" screenshot "raw/${screen}.png"
+            xcrun simctl terminate "$UDID" com.niinova.weariq || true
           done
-          sips -g pixelWidth -g pixelHeight shots/tr/01_home.png
+          sips -g pixelWidth -g pixelHeight raw/result.png
+
+      - name: Compose store images
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet pillow==11.0.0
+          mkdir -p fonts
+          curl -sfL -o fonts/DMSerifDisplay.ttf https://github.com/google/fonts/raw/main/ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf
+          curl -sfL -o fonts/Inter.ttf "https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf"
+          "$RUNNER_TEMP/venv/bin/python" scripts/store_shots.py raw shots/en fonts/DMSerifDisplay.ttf fonts/Inter.ttf
+          cp -R raw shots/raw
 
       - uses: actions/upload-artifact@v5
         with:

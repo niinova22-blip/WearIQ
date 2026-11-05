@@ -34,6 +34,7 @@ final class AdvertisingService {
     private(set) var canRequestAds = false
     private var policy = AdPolicy()
     private var interstitial: InterstitialAd?
+    private var relay: InterstitialRelay?
     private var started = false
 
     /// Call once the user has finished onboarding (not on first launch, so the
@@ -56,10 +57,21 @@ final class AdvertisingService {
         policy.analysisCompleted()
     }
 
-    /// Called when the user leaves a result screen.
-    func showInterstitialIfDue(isPremium: Bool) {
+    /// Between a check and its result (free plan): the interstitial, then `then` once it
+    /// has been closed. With no ad ready (none loaded yet, offline, no consent) the result
+    /// comes straight away: an ad never holds up the answer.
+    func presentBeforeResult(isPremium: Bool, then: @escaping @MainActor () -> Void) {
         guard policy.shouldShowInterstitial(now: Date(), isPremium: isPremium, canRequestAds: canRequestAds),
-              let ad = interstitial, let root = Self.topViewController() else { return }
+              let ad = interstitial, let root = Self.topViewController() else {
+            then()
+            return
+        }
+        let relay = InterstitialRelay { [weak self] in
+            self?.relay = nil
+            then()
+        }
+        self.relay = relay
+        ad.fullScreenContentDelegate = relay
         ad.present(from: root)
         policy.interstitialShown(at: Date())
         interstitial = nil
@@ -91,4 +103,22 @@ final class AdvertisingService {
         while let presented = top?.presentedViewController { top = presented }
         return top
     }
+}
+
+/// Calls back once an interstitial is closed, or couldn't be shown.
+private final class InterstitialRelay: NSObject, FullScreenContentDelegate {
+    private var done: (@MainActor () -> Void)?
+
+    init(_ done: @escaping @MainActor () -> Void) {
+        self.done = done
+    }
+
+    private func finish() {
+        guard let done else { return }
+        self.done = nil
+        Task { @MainActor in done() }
+    }
+
+    func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) { finish() }
+    func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) { finish() }
 }

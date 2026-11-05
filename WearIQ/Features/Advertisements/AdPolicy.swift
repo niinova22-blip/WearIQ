@@ -3,12 +3,13 @@ import Foundation
 /// When ads may appear. Kept free of SDK types so the rules are unit-testable.
 ///
 /// - Never before a scan, never for premium users.
-/// - Interstitial only after leaving a result screen, at most every
-///   `analysesPerInterstitial` analyses and never within `minimumInterval`.
+/// - Free plan: one interstitial for every garment check, between tapping "Analyze fit"
+///   and its result (a natural pause, never in the middle of a task). Reopening a saved
+///   check shows none.
 /// - Banners only on browsing screens (home, history), never on camera/scan screens.
 struct AdPolicy {
-    var analysesPerInterstitial = 2
-    var minimumInterval: TimeInterval = 180
+    var analysesPerInterstitial = 1
+    var minimumInterval: TimeInterval = 0
 
     private(set) var analysesSinceInterstitial = 0
     private(set) var lastInterstitial: Date?

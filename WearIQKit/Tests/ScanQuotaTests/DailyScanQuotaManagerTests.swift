@@ -22,22 +22,22 @@ private let start = Date(timeIntervalSince1970: 1_793_170_800)
         DailyScanQuotaManager(clock: clock, store: store, calendar: makeCalendar())
     }
 
-    @Test func allowsFourAnalysesPerDay() {
+    @Test func allowsFiveAnalysesPerDay() {
         let q = make(TestClock(start))
-        for i in 0..<4 {
-            #expect(q.check(productKey: "p\(i)", isPremium: false) == .allowed(remainingBefore: 4 - i))
+        for i in 0..<5 {
+            #expect(q.check(productKey: "p\(i)", isPremium: false) == .allowed(remainingBefore: 5 - i))
             #expect(q.recordSuccess(productKey: "p\(i)", isPremium: false))
         }
         #expect(q.remaining() == 0)
-        #expect(q.check(productKey: "p5", isPremium: false) == .exhausted)
-        #expect(!q.recordSuccess(productKey: "p5", isPremium: false))
+        #expect(q.check(productKey: "p6", isPremium: false) == .exhausted)
+        #expect(!q.recordSuccess(productKey: "p6", isPremium: false))
     }
 
     @Test func failedLookupDoesNotConsume() {
         let q = make(TestClock(start))
         // check() alone never consumes; only recordSuccess does.
         _ = q.check(productKey: "broken", isPremium: false)
-        #expect(q.remaining() == 4)
+        #expect(q.remaining() == 5)
     }
 
     @Test func sameProductIsFree() {
@@ -45,15 +45,15 @@ private let start = Date(timeIntervalSince1970: 1_793_170_800)
         q.recordSuccess(productKey: "a", isPremium: false)
         #expect(q.check(productKey: "a", isPremium: false) == .free)
         q.recordSuccess(productKey: "a", isPremium: false)
-        #expect(q.remaining() == 3)
+        #expect(q.remaining() == 4)
     }
 
     @Test func resetsNextDay() {
         let clock = TestClock(start)
         let q = make(clock)
-        for i in 0..<4 { q.recordSuccess(productKey: "p\(i)", isPremium: false) }
+        for i in 0..<5 { q.recordSuccess(productKey: "p\(i)", isPremium: false) }
         clock.advance(hours: 15) // 01:00 next day
-        #expect(q.remaining() == 4)
+        #expect(q.remaining() == 5)
     }
 
     @Test func turningClockBackDoesNotReset() {
@@ -61,7 +61,7 @@ private let start = Date(timeIntervalSince1970: 1_793_170_800)
         let store = InMemoryQuotaStore()
         let q = make(clock, store)
         clock.advance(hours: 15) // next day
-        for i in 0..<4 { q.recordSuccess(productKey: "p\(i)", isPremium: false) }
+        for i in 0..<5 { q.recordSuccess(productKey: "p\(i)", isPremium: false) }
         clock.advance(hours: -15) // user sets clock back to "yesterday"
         #expect(q.remaining() == 0)
     }
@@ -69,7 +69,7 @@ private let start = Date(timeIntervalSince1970: 1_793_170_800)
     @Test func premiumIsUnlimited() {
         let q = make(TestClock(start))
         for i in 0..<20 { #expect(q.check(productKey: "p\(i)", isPremium: true) == .free) }
-        #expect(q.remaining(isPremium: false) == 4)
+        #expect(q.remaining(isPremium: false) == 5)
     }
 
     @Test func storesOnlyHashedKeys() {
@@ -84,6 +84,6 @@ private let start = Date(timeIntervalSince1970: 1_793_170_800)
         let clock = TestClock(start)
         let store = InMemoryQuotaStore()
         make(clock, store).recordSuccess(productKey: "x", isPremium: false)
-        #expect(make(clock, store).remaining() == 3)
+        #expect(make(clock, store).remaining() == 4)
     }
 }

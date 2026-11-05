@@ -28,19 +28,8 @@ struct StyleAssistantView: View {
     var body: some View {
         Group {
             if !container.isPremium {
-                ScrollView {
-                    VStack(spacing: Theme.Spacing.l) {
-                        StyleProfileCard()
-                        LearnStyleCard()
-                        ScanPairingsSection()
-                        PremiumFeaturePlaceholder(
-                            title: "Style assistant",
-                            detail: "Outfit suggestions from your own wardrobe for daily, work, formal, sport and evening occasions.",
-                            symbol: "sparkles")
-                    }
-                    .padding(.vertical, Theme.Spacing.m)
-                }
-                .background(Theme.screenBackground)
+                // Free plan: the whole Style tab is Premium.
+                StyleLockedView()
             } else {
                 content
             }
@@ -418,6 +407,69 @@ extension Outfit.Reason {
         case .seasonAppropriate: nil
         case .goodFit: String(localized: "Pieces that fit you well")
         case .layeredForCold: String(localized: "Layered for the weather")
+        }
+    }
+}
+
+/// The Style tab on the free plan: what Premium opens, and the way to it.
+struct StyleLockedView: View {
+    @State private var showPaywall = false
+
+    private let features: [(String, LocalizedStringKey, LocalizedStringKey)] = [
+        ("paintpalette.fill", "Your colours", "The shades that suit your skin tone, and the ones to keep away from your face."),
+        ("figure.stand", "Cuts for your build", "Which cuts, fabrics and lengths flatter your measurements."),
+        ("sparkles", "Learn your style", "Show your favourite outfit once: every check then says the size for the way you like to wear it."),
+        ("rectangle.on.rectangle.angled", "What to wear it with", "Pairings for every garment you check."),
+        ("tshirt.fill", "Outfits from your wardrobe", "Daily, work, evening and sport outfits from your own clothes."),
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Theme.Spacing.l) {
+                VStack(spacing: Theme.Spacing.s) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 46, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 96, height: 96)
+                        .background(Theme.accentGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        .shadow(color: Theme.berry.opacity(0.35), radius: 18, y: 8)
+                    Text("Your personal stylist").font(.title.bold()).multilineTextAlignment(.center)
+                    Text("Style is part of Premium, with unlimited checks and no ads.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, Theme.Spacing.l)
+                Card {
+                    ForEach(features, id: \.0) { symbol, title, detail in
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: symbol)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                                .frame(width: 32, height: 32)
+                                .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(title).font(.subheadline.weight(.semibold))
+                                Text(detail).font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                .padding(.horizontal, Theme.Spacing.m)
+                Button {
+                    showPaywall = true
+                } label: {
+                    Label("Unlock with Premium", systemImage: "crown.fill").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.primary)
+                .padding(.horizontal, Theme.Spacing.m)
+            }
+            .padding(.bottom, Theme.Spacing.l)
+        }
+        .background(Theme.screenBackground)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(reason: "Style is part of Premium.")
         }
     }
 }
