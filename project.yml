@@ -99,6 +99,7 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_NSCameraUsageDescription: "WearIQ uses the camera to scan your body measurements and read barcodes or size labels. Photos are processed on your device and are not uploaded."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "WearIQ reads size chart screenshots and garment photos you choose. They are processed on your device."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "WearIQ never writes to Health. It only reads your latest weight, if you turn that on."
         INFOPLIST_KEY_NSHealthShareUsageDescription: "If you turn it on, WearIQ reads your latest weight to tell you when your measurements may have changed. Nothing is written to Health and nothing leaves your phone."
         INFOPLIST_KEY_NSUserTrackingUsageDescription: "Allowing tracking lets us show more relevant ads. Your body measurements are never shared with advertisers."
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO

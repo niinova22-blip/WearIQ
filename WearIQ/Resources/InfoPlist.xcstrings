@@ -72,10 +72,33 @@
     "NSHealthShareUsageDescription": {
       "extractionState": "manual",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you turn it on, WearIQ reads your latest weight to tell you when your measurements may have changed. Nothing is written to Health and nothing leaves your phone."
+          }
+        },
         "tr": {
           "stringUnit": {
             "state": "translated",
             "value": "Açarsan WearIQ, ölçülerinin değişmiş olabileceğini söylemek için son kilonu okur. Sağlık uygulamasına hiçbir şey yazılmaz ve hiçbir şey telefonundan çıkmaz."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ never writes to Health. It only reads your latest weight, if you turn that on."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ Sağlık uygulamasına asla yazmaz. Yalnızca, açarsan, son kilonu okur."
           }
         }
       }
