@@ -58,6 +58,10 @@ targets:
         embed: true
       - target: WearIQWidget
         embed: true
+      - target: WearIQSafari
+        embed: true
+      - package: WearIQKit
+        product: ShoppingAssistant
       - sdk: HealthKit.framework
     info:
       path: WearIQ/Info.plist
@@ -121,6 +125,52 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.niinova.weariq.share
         PRODUCT_NAME: WearIQShare
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: WearIQ
+        CODE_SIGN_STYLE: Automatic
+
+  # Safari Web Extension: the smart shopping memory (your size on clothing pages).
+  WearIQSafari:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: WearIQSafari/SafariWebExtensionHandler.swift
+      # At the root of the extension, where Safari looks for them.
+      - path: WearIQSafari/Resources/manifest.json
+        buildPhase: resources
+      - path: WearIQSafari/Resources/background.js
+        buildPhase: resources
+      - path: WearIQSafari/Resources/content.js
+        buildPhase: resources
+      - path: WearIQSafari/Resources/_locales
+        type: folder
+        buildPhase: resources
+      - path: WearIQSafari/Resources/images
+        type: folder
+        buildPhase: resources
+      - path: WearIQ/SharedShopping
+    dependencies:
+      - package: WearIQKit
+        product: ShoppingAssistant
+      - package: WearIQKit
+        product: FitEngine
+      - package: WearIQKit
+        product: ProductMeasurementParser
+      - package: WearIQKit
+        product: WearIQCore
+    info:
+      path: WearIQSafari/Info.plist
+      properties:
+        CFBundleDisplayName: WearIQ
+        WQKeychainGroup: $(DEVELOPMENT_TEAM).com.niinova.weariq.shared
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.Safari.web-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.niinova.weariq.safari
+        PRODUCT_NAME: WearIQSafari
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: WearIQ

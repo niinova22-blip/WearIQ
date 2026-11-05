@@ -38,20 +38,15 @@ struct ScanEntryView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: Theme.Spacing.m) {
-                if clipboardHasLink, linkText.isEmpty, !loadingLink { copiedLinkCard }
+            VStack(spacing: Theme.Spacing.l) {
                 linkCard
-                HStack(spacing: Theme.Spacing.m) {
+                HStack(alignment: .top, spacing: Theme.Spacing.m) {
                     barcodeTile
                     photoTile
+                    quickTile
                 }
                 statusMessages
-                Button("Quick check without a link") {
-                    quickCheckBarcode = nil
-                    showQuickCheck = true
-                }
-                    .font(.subheadline)
-                    .padding(.top, Theme.Spacing.s)
+                safariTip
             }
             .padding(Theme.Spacing.m)
         }
@@ -83,72 +78,116 @@ struct ScanEntryView: View {
 
     // MARK: Cards
 
-    private var copiedLinkCard: some View {
-        Card {
-            Label("You copied a link", systemImage: "doc.on.clipboard").font(.headline)
-            Text("Tap Paste and the fit check starts straight away.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            PasteButton(payloadType: String.self) { strings in
-                guard let s = strings.first else { return }
-                clipboardHasLink = false
-                linkText = s
-                Task { await loadLink() }
-            }
-            .buttonBorderShape(.capsule)
-        }
-    }
-
+    /// The one place to start: paste or type a link; a copied link is a single tap.
     private var linkCard: some View {
-        Card {
-            Label("Paste a product link", systemImage: "link").font(.headline)
-            HStack {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            Text("Will it fit you?")
+                .font(.system(.title2, design: .rounded, weight: .bold))
+            Text("Paste the link of any garment from any store.")
+                .font(.subheadline)
+                .opacity(0.85)
+            if clipboardHasLink, linkText.isEmpty, !loadingLink {
+                PasteButton(payloadType: String.self) { strings in
+                    guard let s = strings.first else { return }
+                    clipboardHasLink = false
+                    linkText = s
+                    Task { await loadLink() }
+                }
+                .buttonBorderShape(.capsule)
+                .tint(.white)
+                .foregroundStyle(Theme.plum)
+            }
+            HStack(spacing: Theme.Spacing.s) {
+                Image(systemName: "link").foregroundStyle(.secondary)
                 TextField("https://…", text: $linkText)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .textFieldStyle(.roundedBorder)
                     .onSubmit { Task { await loadLink() } }
-                PasteButton(payloadType: String.self) { strings in
-                    if let s = strings.first {
-                        linkText = s
-                        Task { await loadLink() }
-                    }
-                }
-                .labelStyle(.iconOnly)
+                    .foregroundStyle(.primary)
             }
+            .padding(.horizontal, 14)
+            .frame(minHeight: 48)
+            .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             Button {
                 Task { await loadLink() }
             } label: {
-                if loadingLink {
-                    HStack { ProgressView().tint(.white); Text("Reading the product…") }
-                } else {
-                    Text("Check the fit")
+                Group {
+                    if loadingLink {
+                        HStack { ProgressView().tint(Theme.plum); Text("Reading the product…") }
+                    } else {
+                        Text("Check the fit")
+                    }
                 }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .foregroundStyle(Theme.plum)
+                .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .buttonStyle(.primary)
             .disabled(linkText.isEmpty || loadingLink)
+            .opacity(linkText.isEmpty ? 0.75 : 1)
             if let linkError {
-                Label(linkError, systemImage: "exclamationmark.triangle")
-                    .font(.subheadline).foregroundStyle(.orange)
+                Label(linkError, systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline)
                 Button("Continue with this link") {
                     var info = ProductInfo()
                     info.pageURL = failedLinkURL
                     open(GarmentDraft(info: info))
                 }
-                .font(.subheadline)
+                .font(.subheadline.weight(.semibold))
                 .disabled(failedLinkURL == nil)
             }
         }
+        .foregroundStyle(.white)
+        .padding(Theme.Spacing.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.accentGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .shadow(color: Theme.berry.opacity(0.3), radius: 18, y: 10)
     }
 
+    private var quickTile: some View {
+        Button {
+            quickCheckBarcode = nil
+            showQuickCheck = true
+        } label: {
+            tile("Quick check", symbol: "bolt.fill", busy: false)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.tint)
+    }
+
+    /// Even simpler: the Safari extension sizes garments while browsing.
+    private var safariTip: some View {
+        NavigationLink {
+            ShoppingMemoryView()
+        } label: {
+            HStack(spacing: Theme.Spacing.m) {
+                Image(systemName: "safari.fill").font(.title2).foregroundStyle(Theme.gold)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("No pasting with Safari").font(.subheadline.weight(.semibold))
+                    Text("Turn on the WearIQ extension and your size shows on every clothing page.")
+                        .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.footnote).foregroundStyle(.tertiary)
+            }
+            .padding(Theme.Spacing.m)
+            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// A round option under the link card.
     private func tile(_ title: LocalizedStringKey, symbol: String, busy: Bool) -> some View {
         VStack(spacing: Theme.Spacing.s) {
-            if busy { ProgressView() } else { Image(systemName: symbol).font(.title2) }
-            Text(title).font(.subheadline.weight(.medium)).multilineTextAlignment(.center)
+            ZStack {
+                Circle().fill(Theme.cardBackground).frame(width: 64, height: 64)
+                    .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
+                if busy { ProgressView() } else { Image(systemName: symbol).font(.title2) }
+            }
+            Text(title).font(.footnote.weight(.medium)).multilineTextAlignment(.center).foregroundStyle(.primary)
         }
-        .frame(maxWidth: .infinity, minHeight: 88)
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
@@ -163,7 +202,7 @@ struct ScanEntryView: View {
                     }
                 }
             } label: {
-                tile("Scan a barcode", symbol: "barcode.viewfinder", busy: lookingUpBarcode)
+                tile("Barcode", symbol: "barcode.viewfinder", busy: lookingUpBarcode)
             }
             .buttonStyle(.pressable)
             .foregroundStyle(.tint)
@@ -172,7 +211,7 @@ struct ScanEntryView: View {
 
     private var photoTile: some View {
         PhotosPicker(selection: $photoItem, matching: .images) {
-            tile("Size chart photo", symbol: "text.viewfinder", busy: readingPhoto)
+            tile("Chart photo", symbol: "text.viewfinder", busy: readingPhoto)
         }
         .buttonStyle(.plain)
         .foregroundStyle(.tint)

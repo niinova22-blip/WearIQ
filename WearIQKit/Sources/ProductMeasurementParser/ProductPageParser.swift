@@ -309,15 +309,18 @@ public struct ProductPageParser: Sendable {
 /// Keyword heuristics for Turkish and English product names.
 public enum GarmentClassifier {
     public static func category(from text: String) -> GarmentCategory? {
-        let t = SizeChartParser.fold(text)
+        // Padded with spaces, so a key can ask for a word's start: "şort" is inside
+        // "tişört", and "short" in "short sleeve".
+        let t = " " + SizeChartParser.fold(text).replacingOccurrences(of: "short sleeve", with: "kisa kollu")
+            .replacingOccurrences(of: "short-sleeve", with: "kisa kollu") + " "
         let rules: [(GarmentCategory, [String])] = [
             // Most specific first: "elbise" before "gomlek" (a shirt dress is a dress),
             // "palto" and "trenchcoat" before "coat" in "coat"-less jackets.
             (.shirt, ["dress shirt"]),
             (.dress, ["elbise", "dress", "abiye"]),
             (.skirt, ["etek", "skirt"]),
-            (.shorts, ["sort", "short", "bermuda"]),
-            (.pants, ["pantolon", "jean", "kot ", "chino", "trouser", "pants", "jogger", "esofman alti", "tayt", "legging",
+            (.shorts, [" sort", " short", "bermuda"]),
+            (.pants, ["pantolon", "jean", " kot ", "chino", "trouser", "pants", "jogger", "esofman alti", "tayt", "legging",
                       "kargo", "cargo", "palazzo"]),
             (.coat, ["palto", "kaban", "trenckot", "trenchcoat", "trench", "overcoat", "parka", "pardesu", "coat"]),
             (.jacket, ["ceket", "mont", "blazer", "jacket", "yelek", "bomber", "kase", "deri ceket"]),

@@ -48,6 +48,9 @@ jobs:
           UDID=$(xcrun simctl list devices available -j \
             | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          # Booted before the tests, so a cold start isn't charged to the first UI test.
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
       - name: Build & test
         run: |
           xcodebuild test \

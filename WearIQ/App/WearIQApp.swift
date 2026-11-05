@@ -24,11 +24,20 @@ struct WearIQApp: App {
                 .task { container.subscriptions.start() }
                 .task { await ProductTracker.refreshAll(in: container.modelContainer.mainContext) }
                 .onOpenURL { container.handle($0) }
-                .task { WidgetPublisher.publish(container.modelContainer.mainContext) }
+                .task {
+                    WidgetPublisher.publish(container.modelContainer.mainContext)
+                    ShoppingMemory.publishShopper(container.modelContainer.mainContext)
+                    ShoppingMemory.importInbox(container.modelContainer.mainContext)
+                }
         }
         .onChange(of: scenePhase) { _, phase in
-            // Leaving the app: back up (when on) and refresh the widget.
+            let context = container.modelContainer.mainContext
+            // Back in the app: what the Safari extension saw meanwhile.
+            if phase == .active { ShoppingMemory.importInbox(context) }
+            // Leaving the app: back up (when on), refresh the widget, and leave the latest
+            // body for the Safari extension.
             guard phase == .background else { return }
+            ShoppingMemory.publishShopper(context)
             CloudBackup.backUp(container.modelContainer.mainContext)
             WidgetPublisher.publish(container.modelContainer.mainContext)
         }

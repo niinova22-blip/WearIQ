@@ -131,7 +131,7 @@ jobs:
           /usr/bin/openssl genrsa -out "$SIGN_DIR/dist.key" 2048
           /usr/bin/openssl req -new -key "$SIGN_DIR/dist.key" -out "$SIGN_DIR/dist.csr" -subj "/CN=WearIQ CI/C=TR"
           ASC_KEY_PATH="$SIGN_DIR/AuthKey.p8" "$RUNNER_TEMP/venv/bin/python" scripts/asc_signing.py \
-            create "$SIGN_DIR/dist.csr" "$SIGN_DIR" "$BUNDLE_ID,$BUNDLE_ID.share,$BUNDLE_ID.widget" "WearIQ CI ${{ github.run_id }}"
+            create "$SIGN_DIR/dist.csr" "$SIGN_DIR" "$BUNDLE_ID,$BUNDLE_ID.share,$BUNDLE_ID.widget,$BUNDLE_ID.safari" "WearIQ CI ${{ github.run_id }}"
 
           /usr/bin/openssl x509 -inform DER -in "$SIGN_DIR/dist.cer" -out "$SIGN_DIR/dist.pem"
           P12_PASS="$(openssl rand -hex 12)"
@@ -224,6 +224,18 @@ jobs:
             codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" \
               --entitlements "$SIGN_DIR/widget-entitlements.plist" \
               --requirements "$(requirement "$BUNDLE_ID.widget")" "$WIDGET"
+          fi
+          # The Safari extension: its own profile, and the shared keychain group (the
+          # body it sizes for, the products it leaves for the app).
+          SAFARI="$APP/PlugIns/WearIQSafari.appex"
+          if [ -d "$SAFARI" ]; then
+            cp "$SIGN_DIR/safari.mobileprovision" "$SAFARI/embedded.mobileprovision"
+            sed -e "s/$TEAM.$BUNDLE_ID</$TEAM.$BUNDLE_ID.safari</" \
+                -e "s#<key>beta-reports-active</key><true/>#<key>beta-reports-active</key><true/><key>keychain-access-groups</key><array><string>$TEAM.$BUNDLE_ID.safari</string><string>$SHARED_GROUP</string></array>#" \
+                "$SIGN_DIR/entitlements.plist" > "$SIGN_DIR/safari-entitlements.plist"
+            codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" \
+              --entitlements "$SIGN_DIR/safari-entitlements.plist" \
+              --requirements "$(requirement "$BUNDLE_ID.safari")" "$SAFARI"
           fi
           codesign --force --sign "$SIGN_IDENTITY" --keychain "$KEYCHAIN" \
             --entitlements "$SIGN_DIR/app-entitlements.plist" \

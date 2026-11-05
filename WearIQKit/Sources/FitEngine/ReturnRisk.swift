@@ -8,7 +8,7 @@ import WearIQCore
 /// Garments that can't be returned (swimwear, underwear: hygiene rules) are judged more
 /// strictly, because a wrong size there can't be fixed by sending it back.
 public struct ReturnRisk: Sendable, Equatable {
-    public enum Level: String, Sendable, Comparable, CaseIterable {
+    public enum Level: String, Codable, Sendable, Comparable, CaseIterable {
         case low, medium, high
 
         private var rank: Int { Self.allCases.firstIndex(of: self) ?? 0 }

@@ -43,6 +43,8 @@ struct ProfileView: View {
                     Text("No body profile yet.")
                         .foregroundStyle(.secondary)
                 }
+                NavigationLink("Size passport") { SizePassportView() }
+                NavigationLink("Shopping memory") { ShoppingMemoryView() }
                 NavigationLink("My 3D avatar") { AvatarEditorView() }
                 Button("Scan again") { showRescan = true }
                 NavigationLink("Measurement changes") { MeasurementTrackingView() }

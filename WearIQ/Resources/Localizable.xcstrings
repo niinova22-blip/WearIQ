@@ -12040,6 +12040,276 @@
           }
         }
       }
+    },
+    "Brands": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markalar"
+          }
+        }
+      }
+    },
+    "Colours": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renkler"
+          }
+        }
+      }
+    },
+    "Kinds": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Türler"
+          }
+        }
+      }
+    },
+    "What you keep looking at": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En çok baktıkların"
+          }
+        }
+      }
+    },
+    "Shopping memory": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alışveriş hafızası"
+          }
+        }
+      }
+    },
+    "Settings → Apps → Safari → Extensions → WearIQ: turn it on.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayarlar → Uygulamalar → Safari → Uzantılar → WearIQ: aç."
+          }
+        }
+      }
+    },
+    "On a clothing store's page, tap the page menu (aA or the puzzle piece) → WearIQ → Always Allow on Every Website, or on the stores you choose.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir giyim mağazasının sayfasında sayfa menüsüne (aA ya da yapboz parçası) dokun → WearIQ → Her Web Sitesinde Her Zaman İzin Ver ya da seçtiğin mağazalarda izin ver."
+          }
+        }
+      }
+    },
+    "Browse as usual: your size shows on every garment page, and what you looked at is here when you open WearIQ.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her zamanki gibi gez: her kıyafet sayfasında bedenin görünür, baktıkların WearIQ'yu açtığında burada olur."
+          }
+        }
+      }
+    },
+    "Safari extension": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari uzantısı"
+          }
+        }
+      }
+    },
+    "Only clothing pages of the stores you allow are read, on this iPhone; nothing you type, no accounts, nothing sent anywhere.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalnızca izin verdiğin mağazaların kıyafet sayfaları bu iPhone'da okunur; yazdığın hiçbir şey, hiçbir hesap okunmaz ve hiçbir şey bir yere gönderilmez."
+          }
+        }
+      }
+    },
+    "Turn on the Safari extension: your size on every clothing page, and everything you looked at, here.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari uzantısını aç: her kıyafet sayfasında bedenin, baktığın her şey de burada."
+          }
+        }
+      }
+    },
+    "%lld garments from your browsing, sized for you.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gezindiğin sayfalardan, senin için bedeni hesaplanmış %lld kıyafet."
+          }
+        }
+      }
+    },
+    "Your sizes": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedenlerin"
+          }
+        }
+      }
+    },
+    "From typical size charts; a store's own chart can differ, which is what each check is for.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standart beden tablolarına göre; bir mağazanın kendi tablosu farklı olabilir, her kontrol de bunun içindir."
+          }
+        }
+      }
+    },
+    "Brand by brand": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marka marka"
+          }
+        }
+      }
+    },
+    "✓ a purchase you said fit right; the rest are WearIQ's checks.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "✓ tam oldu dediğin bir alışveriş; diğerleri WearIQ'nun kontrolleri."
+          }
+        }
+      }
+    },
+    "Share my size passport": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden pasaportumu paylaş"
+          }
+        }
+      }
+    },
+    "No measurements yet": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz ölçü yok"
+          }
+        }
+      }
+    },
+    "Scan or enter your measurements to get your size passport.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden pasaportun için tarama yap ya da ölçülerini gir."
+          }
+        }
+      }
+    },
+    "Size passport": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden pasaportu"
+          }
+        }
+      }
+    },
+    "My WearIQ size passport": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ beden pasaportum"
+          }
+        }
+      }
+    },
+    "%@ (EU)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (EU)"
+          }
+        }
+      }
+    },
+    "%@ (waist)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (bel)"
+          }
+        }
+      }
+    },
+    "Paste the link of any garment from any store.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herhangi bir mağazadan herhangi bir kıyafetin bağlantısını yapıştır."
+          }
+        }
+      }
+    },
+    "No pasting with Safari": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari ile yapıştırmaya gerek yok"
+          }
+        }
+      }
+    },
+    "Turn on the WearIQ extension and your size shows on every clothing page.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WearIQ uzantısını aç, her kıyafet sayfasında bedenin görünsün."
+          }
+        }
+      }
+    },
+    "Chart photo": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tablo fotoğrafı"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -11,12 +11,22 @@ enum Theme {
     }
 
     static let cornerRadius: CGFloat = 20
-    static let cardBackground = Color(uiColor: .secondarySystemGroupedBackground)
-    static let screenBackground = Color(uiColor: .systemGroupedBackground)
-    /// Brand gradient for primary actions and highlights.
-    static let accentGradient = LinearGradient(
-        colors: [Color(red: 1.00, green: 0.48, blue: 0.35), Color(red: 0.91, green: 0.27, blue: 0.49)],
-        startPoint: .topLeading, endPoint: .bottomTrailing)
+
+    /// The same colour in light and dark appearance.
+    private static func dynamic(_ light: UIColor, _ dark: UIColor) -> Color {
+        Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? dark : light })
+    }
+
+    /// Cards: white on a faint blush in light mode, the system's raised grey in dark.
+    static let cardBackground = dynamic(.white, .secondarySystemGroupedBackground)
+    static let screenBackground = dynamic(UIColor(red: 0.985, green: 0.965, blue: 0.972, alpha: 1), .systemGroupedBackground)
+    /// The brand's plum, berry and rose (the icon's field), for primary actions and highlights.
+    static let plum = Color(red: 0.35, green: 0.12, blue: 0.39)
+    static let berry = Color(red: 0.70, green: 0.23, blue: 0.48)
+    static let rose = Color(red: 0.90, green: 0.52, blue: 0.62)
+    /// Champagne gold, as the icon's tape measure: small accents only.
+    static let gold = Color(red: 0.79, green: 0.64, blue: 0.42)
+    static let accentGradient = LinearGradient(colors: [plum, berry, rose], startPoint: .topLeading, endPoint: .bottomTrailing)
 }
 
 extension FitSeverity {

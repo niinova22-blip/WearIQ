@@ -1,0 +1,44 @@
+{
+  "extension_name": {
+    "message": "WearIQ"
+  },
+  "extension_description": {
+    "message": "Your size on every clothing page, from your own measurements. Read on your iPhone; nothing is sent anywhere."
+  },
+  "your_size": {
+    "message": "Your size"
+  },
+  "between": {
+    "message": "Between"
+  },
+  "and": {
+    "message": "and"
+  },
+  "for_your_style": {
+    "message": "for your style"
+  },
+  "risk_low": {
+    "message": "Sure fit"
+  },
+  "risk_medium": {
+    "message": "Check the chart"
+  },
+  "risk_high": {
+    "message": "Risky: check before buying"
+  },
+  "no_returns": {
+    "message": "Usually can't be returned"
+  },
+  "typical": {
+    "message": "typical sizes"
+  },
+  "no_body": {
+    "message": "Open WearIQ to add your measurements"
+  },
+  "no_chart": {
+    "message": "Saved in WearIQ: open the size guide to size it"
+  },
+  "close": {
+    "message": "Close"
+  }
+}

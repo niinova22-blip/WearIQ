@@ -18,6 +18,8 @@ final class SavedAnalysis {
     var material: String?
     /// Who it was checked for: nil for the app's own user, otherwise a `Person`.
     var personID: UUID?
+    /// Seen while browsing in Safari (the extension), not checked in the app.
+    var fromSafari: Bool?
 
     init(productKey: String, productName: String?, brand: String?, imageURL: URL?, pageURL: URL?,
          spec: GarmentSpec, analysis: FitAnalysis, material: String? = nil, createdAt: Date = Date(),

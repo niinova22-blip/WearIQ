@@ -16,6 +16,7 @@ let package = Package(
         .library(name: "ScanQuota", targets: ["ScanQuota"]),
         .library(name: "OutfitRecommendationEngine", targets: ["OutfitRecommendationEngine"]),
         .library(name: "AvatarEngine", targets: ["AvatarEngine"]),
+        .library(name: "ShoppingAssistant", targets: ["ShoppingAssistant"]),
     ],
     targets: [
         .target(name: "WearIQCore"),
@@ -30,7 +31,10 @@ let package = Package(
         // Its body shape model is NVIDIA SOMA-X's (Apache-2.0), see scripts/build_soma_body.py.
         .target(name: "AvatarEngine", dependencies: ["WearIQCore", "FitEngine", "ProductMeasurementParser"],
                 resources: [.copy("Resources/SomaBody.bin"), .copy("Resources/SOMA-X-LICENSE.txt")]),
+        // The smart shopping memory: a product page read as browsed, sized for the user.
+        .target(name: "ShoppingAssistant", dependencies: ["WearIQCore", "FitEngine", "ProductMeasurementParser"]),
         .testTarget(name: "FitEngineTests", dependencies: ["FitEngine"]),
+        .testTarget(name: "ShoppingAssistantTests", dependencies: ["ShoppingAssistant", "FitEngine", "WearIQCore"]),
         .testTarget(name: "BodyMeasurementEngineTests", dependencies: ["BodyMeasurementEngine"]),
         .testTarget(name: "VisionIntegrationTests", dependencies: ["BodyScanVision", "BodyMeasurementEngine", "ProductMeasurementParser"],
                     resources: [.copy("Resources")]),

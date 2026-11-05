@@ -1,0 +1,44 @@
+{
+  "extension_name": {
+    "message": "WearIQ"
+  },
+  "extension_description": {
+    "message": "Her kıyafet sayfasında, kendi ölçülerinden bedenin. iPhone'unda okunur, hiçbir yere gönderilmez."
+  },
+  "your_size": {
+    "message": "Bedenin"
+  },
+  "between": {
+    "message": "Arada"
+  },
+  "and": {
+    "message": "ve"
+  },
+  "for_your_style": {
+    "message": "tarzın için"
+  },
+  "risk_low": {
+    "message": "Kesin uyar"
+  },
+  "risk_medium": {
+    "message": "Tabloya bak"
+  },
+  "risk_high": {
+    "message": "Riskli: almadan kontrol et"
+  },
+  "no_returns": {
+    "message": "Genelde iade edilemez"
+  },
+  "typical": {
+    "message": "standart ölçüler"
+  },
+  "no_body": {
+    "message": "Ölçülerini eklemek için WearIQ'yu aç"
+  },
+  "no_chart": {
+    "message": "WearIQ'ya kaydedildi: bedeni görmek için beden tablosunu aç"
+  },
+  "close": {
+    "message": "Kapat"
+  }
+}

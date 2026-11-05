@@ -14,6 +14,7 @@ struct HomeView: View {
                 ActivePersonBanner()
                 heroCard
                 PendingPurchasesCard()
+                ShoppingMemoryCard()
                 WeightChangeCard()
                 HStack(spacing: Theme.Spacing.m) {
                     quotaTile
