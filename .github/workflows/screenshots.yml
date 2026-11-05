@@ -50,7 +50,7 @@ jobs:
         run: |
           # English only: the store shows these to every language.
           mkdir -p raw
-          for screen in result avatar profile scan memory style passport home; do
+          for screen in result avatar profile scan memory style passport home paywall; do
             xcrun simctl launch "$UDID" com.niinova.weariq               -WQDemo "$screen" -AppleLanguages "(en)" -AppleLocale en_US > /dev/null
             # The avatar is cut and draped first (several seconds on the simulator).
             if [ "$screen" = avatar ]; then sleep 60; else sleep 8; fi

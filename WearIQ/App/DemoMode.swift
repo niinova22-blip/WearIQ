@@ -30,6 +30,8 @@ enum DemoMode {
     /// Profile → size passport, and Profile → shopping memory (what Safari saw).
     static var opensPassport: Bool { screen == "passport" }
     static var opensMemory: Bool { screen == "memory" }
+    /// The paywall, for App Review's subscription screenshot (on the free plan).
+    static var opensPaywall: Bool { screen == "paywall" }
 
     private static var turkish: Bool { Locale.current.language.languageCode?.identifier == "tr" }
     private static func text(_ tr: String, _ en: String) -> String { turkish ? tr : en }

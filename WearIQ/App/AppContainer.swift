@@ -87,7 +87,7 @@ final class AppContainer {
         let app = preview()
         try? DemoMode.seed(app.modelContainer.mainContext, engine: app.fitEngine)
         app.onboardingCompleted = true
-        app.isPremium = true
+        app.isPremium = !DemoMode.opensPaywall
         app.subscriptions.onPremiumChange = nil
         return app
     }

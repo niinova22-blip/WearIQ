@@ -30,6 +30,7 @@ struct MainTabView: View {
                 #if DEBUG
                     .navigationDestination(isPresented: .constant(DemoMode.opensResult)) { DemoResultView() }
                     .fullScreenCover(isPresented: .constant(DemoMode.opensAvatar)) { DemoAvatarView() }
+                    .sheet(isPresented: .constant(DemoMode.opensPaywall)) { PaywallView(reason: "Style is part of Premium.") }
                 #endif
             }
                 .tabItem { Label("Home", systemImage: "house") }

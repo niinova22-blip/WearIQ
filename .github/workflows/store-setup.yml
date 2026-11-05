@@ -1,0 +1,44 @@
+name: Store setup
+
+# App Store launch setup (scripts/asc_launch.py): "status" lists what the submission
+# still needs; "subscriptions" creates the Premium subscriptions with their prices,
+# free week and review screenshot (from an "App Store screenshots" run's raw/paywall.png).
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: status or subscriptions
+        required: true
+        default: status
+      screenshots_run_id:
+        description: Run ID of an "App Store screenshots" run, for the paywall image (subscriptions)
+        required: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
+        if: inputs.screenshots_run_id != ''
+        with:
+          name: screenshots
+          path: shots
+          run-id: ${{ inputs.screenshots_run_id }}
+          github-token: ${{ github.token }}
+      - run: pip install --quiet "pyjwt[crypto]==2.9.0"
+      - env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          printf '%s' "$P8" > "$RUNNER_TEMP/key.p8"
+          SHOT=""
+          [ -f shots/raw/paywall.png ] && SHOT=shots/raw/paywall.png
+          cd scripts
+          ASC_KEY_PATH="$RUNNER_TEMP/key.p8" python3 asc_launch.py 6828076171 "${{ inputs.action }}" $SHOT
+          rm -f "$RUNNER_TEMP/key.p8"

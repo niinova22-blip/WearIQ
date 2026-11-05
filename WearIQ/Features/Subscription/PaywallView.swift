@@ -63,7 +63,13 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var productButtons: some View {
-        if subscriptions.products.isEmpty {
+        if subscriptions.products.isEmpty, Self.demoPlans {
+            // Screenshot mode: the plans as App Store Connect sells them.
+            VStack(spacing: Theme.Spacing.s) {
+                demoPlan(String(localized: "Premium Yearly"), "Free for 7 days, then $39.99 a year", "$39.99", saving: 52, yearly: true)
+                demoPlan(String(localized: "Premium Monthly"), "Billed monthly", "$6.99", saving: nil, yearly: false)
+            }
+        } else if subscriptions.products.isEmpty {
             if subscriptions.isLoading {
                 ProgressView().frame(maxWidth: .infinity)
             } else {
@@ -142,6 +148,43 @@ struct PaywallView: View {
 }
 
 extension PaywallView {
+    static var demoPlans: Bool {
+        #if DEBUG
+        DemoMode.opensPaywall
+        #else
+        false
+        #endif
+    }
+
+    func demoPlan(_ name: String, _ detail: LocalizedStringKey, _ price: String, saving: Int?, yearly: Bool) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(name).font(.headline)
+                    if let saving {
+                        Text("Save \(saving)%")
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(Theme.gold, in: Capsule())
+                            .foregroundStyle(.black)
+                    }
+                }
+                Text(detail).font(.subheadline).opacity(0.9)
+            }
+            Spacer()
+            Text(price).font(.headline)
+        }
+        .padding(Theme.Spacing.m)
+        .foregroundStyle(yearly ? Color.white : Color.primary)
+        .background {
+            if yearly {
+                RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.accentGradient)
+            } else {
+                RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.accentColor, lineWidth: 1.5)
+            }
+        }
+    }
+
     /// How much the yearly plan saves against twelve months of the monthly one.
     func savingPercent(yearly: Product) -> Int? {
         guard let monthly = subscriptions.products.first(where: { $0.subscription?.subscriptionPeriod.unit == .month }) else { return nil }
