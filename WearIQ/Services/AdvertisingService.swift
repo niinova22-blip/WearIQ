@@ -44,6 +44,10 @@ final class AdvertisingService {
     /// permission prompts don't stack on top of the introduction).
     func prepare(isPremium: Bool) async {
         guard !started, !isPremium else { return }
+        #if DEBUG
+        // Screenshot mode: no consent forms over the screens being captured.
+        if DemoMode.isActive { return }
+        #endif
         started = true
 
         await requestConsentIfNeeded()
