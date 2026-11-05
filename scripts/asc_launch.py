@@ -19,7 +19,18 @@ import json
 import sys
 import urllib.request
 
+import asc_signing
 from asc_signing import call, try_call
+
+
+def call_v2(method, path, body=None):
+    """The same call on the API's v2 paths (app availability)."""
+    saved = asc_signing.API
+    asc_signing.API = saved.replace("/v1", "/v2")
+    try:
+        return call(method, path, body)
+    finally:
+        asc_signing.API = saved
 
 GROUP = "WearIQ Premium"
 PRODUCTS = [
@@ -63,7 +74,8 @@ def status(app_id):
             a = s["attributes"]
             prices = try_call("GET", f"/subscriptions/{s['id']}/prices?limit=1") or {}
             n = prices.get("meta", {}).get("paging", {}).get("total")
-            print(f"  {a['productId']}: state={a.get('state')} period={a.get('subscriptionPeriod')} prices={n}")
+            print(f"  {a['productId']}: state={a.get('state')} period={a.get('subscriptionPeriod')} prices={n} "
+                  f"USA={current_price(s['id'], 'USA')} TUR={current_price(s['id'], 'TUR')}")
     sched = try_call("GET", f"/apps/{app_id}/appPriceSchedule")
     print(f"app price schedule: {'set' if sched and sched.get('data') else 'missing'}")
     avail = try_call("GET", f"/apps/{app_id}/appAvailabilityV2")
@@ -84,6 +96,13 @@ def status(app_id):
         print(f"app info {info['attributes'].get('state')}: age rating {'set' if age.get('data') else 'missing'}")
 
 
+def current_price(sub_id, territory):
+    """The customer price a territory pays now, or None."""
+    data = try_call("GET", f"/subscriptions/{sub_id}/prices?filter[territory]={territory}&include=subscriptionPricePoint&limit=10") or {}
+    points = [i for i in data.get("included", []) if i["type"] == "subscriptionPricePoints"]
+    return points[-1]["attributes"]["customerPrice"] if points else None
+
+
 def price_point(sub_id, territory, price):
     points = pages(f"/subscriptions/{sub_id}/pricePoints?filter[territory]={territory}&limit=200")
     best = min(points, key=lambda p: abs(float(p["attributes"]["customerPrice"]) - float(price)))
@@ -91,10 +110,14 @@ def price_point(sub_id, territory, price):
 
 
 def set_prices(sub_id, usd, try_price):
-    existing = call("GET", f"/subscriptions/{sub_id}/prices?limit=1").get("meta", {}).get("paging", {}).get("total", 0)
-    if existing:
-        print(f"  prices already set ({existing})")
+    usa, tur = current_price(sub_id, "USA"), current_price(sub_id, "TUR")
+    if usa and tur and abs(float(usa) - float(usd)) < 0.01 and abs(float(tur) - float(try_price)) < 0.01:
+        print(f"  prices already {usa} USD, {tur} TRY")
         return
+    print(f"  prices were {usa} USD, {tur} TRY")
+    # Not yet on sale: the old prices can go, and the new ones take their place.
+    for price in pages(f"/subscriptions/{sub_id}/prices?limit=200"):
+        try_call("DELETE", f"/subscriptionPrices/{price['id']}")
     us = price_point(sub_id, "USA", usd)
     print(f"  USA {us['attributes']['customerPrice']}")
     points = {"USA": us["id"]}
@@ -113,7 +136,24 @@ def set_prices(sub_id, usd, try_price):
                               "territory": rel("territories", terr)}}})
 
 
+def availability(app_id):
+    """The app on sale in every territory, and in new ones as they open."""
+    if (try_call("GET", f"/apps/{app_id}/appAvailabilityV2") or {}).get("data"):
+        print("app availability: already set")
+        return
+    territories = [t["id"] for t in pages("/territories?limit=200")]
+    call_v2("POST", "/appAvailabilities", {
+        "data": {"type": "appAvailabilities", "attributes": {"availableInNewTerritories": True},
+                 "relationships": {"app": rel("apps", app_id),
+                                   "territoryAvailabilities": {"data": [{"type": "territoryAvailabilities", "id": f"${{{t}}}"}
+                                                                        for t in territories]}}},
+        "included": [{"type": "territoryAvailabilities", "id": f"${{{t}}}", "attributes": {"available": True},
+                      "relationships": {"territory": rel("territories", t)}} for t in territories]})
+    print(f"app availability: {len(territories)} territories")
+
+
 def subscriptions(app_id, screenshot):
+    availability(app_id)
     groups = call("GET", f"/apps/{app_id}/subscriptionGroups")["data"]
     group = next((g for g in groups if g["attributes"]["referenceName"] == GROUP), groups[0] if groups else None)
     if not group:
