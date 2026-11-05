@@ -79,16 +79,23 @@ private struct DemoResultView: View {
     }
 }
 
-/// The newest saved analysis on the avatar.
+/// An outfit on the avatar: the jeans with the tee, as the store images show it.
 private struct DemoAvatarView: View {
     @Query(sort: \SavedAnalysis.createdAt, order: .reverse) private var analyses: [SavedAnalysis]
 
     var body: some View {
-        if let saved = analyses.first(where: { $0.spec != nil && $0.analysis?.recommendedSize != nil }),
-           let spec = saved.spec, let analysis = saved.analysis, let size = analysis.recommendedSize?.label {
-            AvatarFitView(analysis: analysis, spec: spec, sizeLabel: size, material: saved.material,
-                          productName: saved.productName, imageURL: saved.imageURL)
+        if let main = analyses.first(where: { $0.productKey == "demo-jeans" }) ?? analyses.first,
+           let spec = main.spec, let analysis = main.analysis, let size = analysis.recommendedSize?.label {
+            AvatarFitView(analysis: analysis, spec: spec, sizeLabel: size, material: main.material,
+                          productName: main.productName, imageURL: main.imageURL, startingCompanion: tee)
         }
+    }
+
+    private var tee: AvatarFitView.Companion? {
+        guard let t = analyses.first(where: { $0.productKey == "demo-tee" }), let spec = t.spec, let analysis = t.analysis,
+              let size = analysis.recommendedSize?.label else { return nil }
+        return AvatarFitView.Companion(key: t.productKey, name: t.productName ?? "", spec: spec, analysis: analysis,
+                                       material: t.material, size: size)
     }
 }
 #endif

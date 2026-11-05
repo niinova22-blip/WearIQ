@@ -2,7 +2,7 @@
 """Turns raw simulator screenshots into App Store marketing images.
 
 Usage:
-  store_shots.py <raw_dir> <out_dir> <serif.ttf> <sans.ttf>
+  store_shots.py <raw_dir> <out_dir> <serif.ttf> <sans.ttf> [en|tr]
 
 raw_dir holds the captures named after DemoMode screens (result.png, avatar.png, …).
 Each image is 1320x2868 (6.9"): a headline set in a serif display face, a short line
@@ -25,25 +25,49 @@ BLUSH_BOTTOM = (246, 221, 231)
 PLUM_TOP = (64, 20, 72)
 PLUM_BOTTOM = (150, 44, 104)
 
-# (screen, kicker, headline, line, chips, dark background)
-SLOTS = [
-    ("result", "SIZE ADVICE", "Know your size\nbefore you buy",
-     "Every garment checked against your body,\nregion by region.", ["✓  Waist: ideal", "Size M · high confidence"], False),
-    ("avatar", "3D TRY-ON", "See it on your\nown 3D body",
-     "Your avatar wears the exact size you pick,\nwith real fabric drape.", ["Tight · Ideal · Loose"], True),
-    ("profile", "BODY SCAN", "Measured in one\nturn, no tape",
-     "Turn once in front of your phone.\nPhotos never leave your device.", ["One turn, 30 seconds", "Processed on-device"], False),
-    ("scan", "ANY STORE", "Any link, any\nsize chart",
-     "Paste a product link, scan a barcode\nor snap a size chart.", ["Works with 100+ stores"], True),
-    ("memory", "SAFARI", "Your size, right\nwhere you shop",
-     "WearIQ reads clothing pages as you browse\nand keeps them ready for you.", ["Saved from Safari"], False),
-    ("style", "PERSONAL STYLIST", "Colours and cuts\nthat suit you",
-     "From your skin tone and your shape,\nand the way you like to dress.", ["Your palette"], True),
-    ("passport", "SIZE PASSPORT", "Every brand,\none passport",
-     "Your size in each brand you buy,\nready to share.", ["Brand by brand"], False),
-    ("home", "FEWER RETURNS", "Shop with\nconfidence",
-     "Know how it fits before it ships.\nKeep what you order.", ["Fewer returns"], True),
-]
+# (screen, kicker, headline, line, chips, dark background), per language.
+SLOTS = {
+    "en": [
+        ("result", "SIZE ADVICE", "Know your size|before you buy",
+         "Every garment checked against your body,|region by region.", ["✓  Waist: ideal", "Size M · high confidence"], False),
+        ("body", "3D BODY SCAN", "Your body,|scanned in 3D",
+         "One turn in front of your phone builds|your 3D twin. No tape, no studio.", ["30-second scan", "Processed on-device"], True),
+        ("avatar", "3D TRY-ON", "Try it on your|3D twin",
+         "Jeans and a tee on your own body, in the|size you pick, draped like real fabric.", ["Tight · Ideal · Loose"], False),
+        ("profile", "12 MEASUREMENTS", "Every measurement,|no tape",
+         "Chest, waist, hips, inseam and more,|each with how sure it is.", ["Accurate to ~2 cm"], True),
+        ("scan", "ANY STORE", "Any link, any|size chart",
+         "Paste a product link, scan a barcode|or snap a size chart.", ["Works with 100+ stores"], False),
+        ("memory", "SAFARI", "Your size, right|where you shop",
+         "WearIQ reads clothing pages as you browse|and keeps them ready for you.", ["Saved from Safari"], True),
+        ("style", "PERSONAL STYLIST", "Colours and cuts|that suit you",
+         "From your skin tone and your shape,|and the way you like to dress.", ["Your palette"], False),
+        ("passport", "SIZE PASSPORT", "Every brand,|one passport",
+         "Your size in each brand you buy,|ready to share.", ["Brand by brand"], True),
+        ("home", "FEWER RETURNS", "Shop with|confidence",
+         "Know how it fits before it ships.|Keep what you order.", ["Fewer returns"], False),
+    ],
+    "tr": [
+        ("result", "BEDEN ÖNERİSİ", "Almadan önce|bedenini bil",
+         "Her kıyafet vücuduna göre,|bölge bölge kontrol edilir.", ["✓  Bel: ideal", "M beden · yüksek güven"], False),
+        ("body", "3D VÜCUT TARAMA", "Tek turda|3D vücut taraması",
+         "Telefonun önünde bir tur dön, 3D ikizin|hazır. Mezura yok, stüdyo yok.", ["30 saniyede tarama", "Cihazında işlenir"], True),
+        ("avatar", "3D DENEME", "Kıyafeti 3D|ikizinde dene",
+         "Jean ve tişört kendi vücudunda, seçtiğin|bedende, gerçek kumaş gibi dökülür.", ["Dar · İdeal · Bol"], False),
+        ("profile", "12 ÖLÇÜ", "Tüm ölçülerin,|mezurasız",
+         "Göğüs, bel, kalça, iç bacak ve fazlası,|her biri güven aralığıyla.", ["~2 cm hassasiyet"], True),
+        ("scan", "HER MAĞAZA", "Her bağlantı,|her beden tablosu",
+         "Ürün bağlantısını yapıştır, barkodu okut|ya da beden tablosunun fotoğrafını çek.", ["100+ mağazayla çalışır"], False),
+        ("memory", "SAFARI", "Bedenin, alışveriş|yaptığın yerde",
+         "WearIQ gezdiğin giyim sayfalarını okur|ve senin için hazır tutar.", ["Safari'den kaydedildi"], True),
+        ("style", "KİŞİSEL STİLİST", "Sana yakışan|renk ve kesimler",
+         "Ten rengine, vücut tipine|ve giyinme tarzına göre.", ["Renk paletin"], False),
+        ("passport", "BEDEN PASAPORTU", "Her marka,|tek pasaport",
+         "Aldığın her markadaki bedenin,|paylaşmaya hazır.", ["Marka marka"], True),
+        ("home", "DAHA AZ İADE", "Gönül rahatlığıyla|alışveriş yap",
+         "Kargolanmadan önce nasıl oturacağını bil.|Sipariş ettiğini elinde tut.", ["Daha az iade"], False),
+    ],
+}
 
 
 def gradient(top, bottom):
@@ -119,11 +143,11 @@ def compose(raw, slot, fonts):
     spaced = " ".join(kicker)  # tracked-out caps
     d.text((W // 2, y), spaced, font=sans_bold, fill=GOLD if dark else BERRY, anchor="mt")
     y += 92
-    for text_line in headline.split("\n"):
+    for text_line in headline.split("|"):
         d.text((W // 2, y), text_line, font=serif, fill=ink, anchor="mt")
         y += 146
     y += 22
-    for text_line in line.split("\n"):
+    for text_line in line.split("|"):
         d.text((W // 2, y), text_line, font=sans, fill=soft, anchor="mt")
         y += 66
     # The phone rises from the bottom edge.
@@ -151,7 +175,7 @@ def compose(raw, slot, fonts):
     return img.convert("RGB")
 
 
-def main(raw_dir, out_dir, serif_path, sans_path):
+def main(raw_dir, out_dir, serif_path, sans_path, lang="en"):
     os.makedirs(out_dir, exist_ok=True)
     serif = ImageFont.truetype(serif_path, 132)
     sans = ImageFont.truetype(sans_path, 50)
@@ -162,7 +186,7 @@ def main(raw_dir, out_dir, serif_path, sans_path):
         except Exception:
             pass
     n = 0
-    for slot in SLOTS:
+    for slot in SLOTS[lang]:
         path = os.path.join(raw_dir, slot[0] + ".png")
         if not os.path.exists(path):
             print("missing", path)
@@ -174,6 +198,6 @@ def main(raw_dir, out_dir, serif_path, sans_path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
+    if len(sys.argv) not in (5, 6):
         sys.exit(__doc__)
     main(*sys.argv[1:])

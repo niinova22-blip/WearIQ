@@ -56,6 +56,9 @@ struct AvatarFitView: View {
     var productName: String?
     /// The product photo, for the garment's own colour.
     var imageURL: URL?
+    /// A garment to wear with this one from the start (screenshots: a whole outfit).
+    var startingCompanion: Companion?
+    @State private var startedCompanion = false
     /// Fit colours (blue fits, yellow loose…) or the garment's own colour.
     @State private var showsFitColors = true
     @State private var productColor: UIColor?
@@ -159,7 +162,14 @@ struct AvatarFitView: View {
                                                    startRadius: 20, endRadius: 520))
                         panel
                     }
-                    .task(id: drapeKey) { await drape(body) }
+                    .task(id: drapeKey) {
+                        if !startedCompanion, let start = startingCompanion {
+                            startedCompanion = true
+                            companion = start
+                            return
+                        }
+                        await drape(body)
+                    }
                 } else {
                     ContentUnavailableView("Scan or enter your measurements first", systemImage: "figure.stand")
                 }

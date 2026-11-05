@@ -125,6 +125,7 @@ struct ProfileView: View {
         .navigationDestination(isPresented: .constant(DemoMode.opensPassport)) { SizePassportView() }
         // Its rows link on, which a constantly presented destination doesn't survive.
         .fullScreenCover(isPresented: .constant(DemoMode.opensMemory)) { NavigationStack { ShoppingMemoryView() } }
+        .fullScreenCover(isPresented: .constant(DemoMode.opensBody)) { NavigationStack { AvatarEditorView() } }
         #endif
         .navigationDestination(item: $editing) { profile in
             MeasurementReviewView(profile: profile) { editing = nil }

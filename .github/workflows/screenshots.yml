@@ -48,16 +48,18 @@ jobs:
 
       - name: Capture
         run: |
-          # English only: the store shows these to every language.
-          mkdir -p raw
-          for screen in result avatar profile scan memory style passport home paywall; do
-            xcrun simctl launch "$UDID" com.niinova.weariq               -WQDemo "$screen" -AppleLanguages "(en)" -AppleLocale en_US > /dev/null
-            # The avatar is cut and draped first (several seconds on the simulator).
-            if [ "$screen" = avatar ]; then sleep 60; else sleep 8; fi
-            xcrun simctl io "$UDID" screenshot "raw/${screen}.png"
-            xcrun simctl terminate "$UDID" com.niinova.weariq || true
+          # English and Turkish: each listing shows the app in its own language.
+          for lang in en tr; do
+            locale=$([ "$lang" = tr ] && echo tr_TR || echo en_US)
+            mkdir -p "raw/$lang"
+            for screen in result body avatar profile scan memory style passport home paywall; do
+              xcrun simctl launch "$UDID" com.niinova.weariq -WQDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$locale" > /dev/null
+              # The avatar is cut and draped first (several seconds on the simulator).
+              case "$screen" in avatar) sleep 75 ;; body) sleep 30 ;; *) sleep 8 ;; esac
+              xcrun simctl io "$UDID" screenshot "raw/$lang/${screen}.png"
+              xcrun simctl terminate "$UDID" com.niinova.weariq || true
+            done
           done
-          sips -g pixelWidth -g pixelHeight raw/result.png
 
       - name: Compose store images
         run: |
@@ -66,8 +68,11 @@ jobs:
           mkdir -p fonts
           curl -sfL -o fonts/DMSerifDisplay.ttf https://github.com/google/fonts/raw/main/ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf
           curl -sfL -o fonts/Inter.ttf "https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf"
-          "$RUNNER_TEMP/venv/bin/python" scripts/store_shots.py raw shots/en fonts/DMSerifDisplay.ttf fonts/Inter.ttf
-          cp -R raw shots/raw
+          for lang in en tr; do
+            "$RUNNER_TEMP/venv/bin/python" scripts/store_shots.py "raw/$lang" "shots/$lang" fonts/DMSerifDisplay.ttf fonts/Inter.ttf "$lang"
+          done
+          mkdir -p shots/raw && cp raw/en/paywall.png shots/raw/paywall.png
+          cp -R raw shots/raw/all
 
       - uses: actions/upload-artifact@v5
         with:

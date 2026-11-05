@@ -19,8 +19,8 @@ import urllib.request
 from asc_signing import call
 
 SCREENSHOT_TYPE = "APP_IPHONE_67"  # 6.7"/6.9" iPhone slot (1290x2796, 1320x2868)
-# The English images for every language: the listing's images are in English.
-SHOT_DIRS = {"en-US": "en", "tr": "en"}
+# Each listing shows the app in its own language.
+SHOT_DIRS = {"en-US": "en", "tr": "tr"}
 
 
 def first(items, pred):
