@@ -13,8 +13,17 @@ struct QuickCheckSheet: View {
     @State private var fit: FitStyle = .regular
     @State private var tagSize: String?
 
+    /// The sizes tags carry in the user's region (Profile → Size system). Men's trouser
+    /// tags are read by the waist in inches (the W of 31/32), which every men's trouser
+    /// and jean tag carries in some form.
     private var sizes: [String] {
-        category == .pants ? ["28", "29", "30", "31", "32", "33", "34", "36", "38", "40"] : ["XS", "S", "M", "L", "XL", "XXL"]
+        let audience: GarmentAudience? = switch BodySex(rawValue: UserDefaults.standard.string(forKey: "bodySex") ?? "") {
+        case .female?: .women
+        case .male?: .men
+        case nil: nil
+        }
+        if category == .pants, audience != .women { return ["28", "29", "30", "31", "32", "33", "34", "36", "38", "40"] }
+        return SizeSystems.ladder(for: category, audience: audience, region: SizeRegionSetting.current)
     }
 
     var body: some View {

@@ -4,8 +4,8 @@ import ProductMeasurementParser
 import WearIQCore
 
 /// The size passport: the user's sizes in the usual systems, worked out from their body
-/// with typical size charts (letters for tops, waist numbers for jeans, European numbers
-/// for women's clothes), and how sizes compare from brand to brand from what they
+/// with typical size charts (letters for tops, waist/length for jeans, the region's
+/// numbers for women's clothes and men's trousers), and how sizes compare from brand to brand from what they
 /// checked and bought.
 public enum SizePassport {
     public struct Line: Sendable, Equatable {
@@ -19,25 +19,34 @@ public enum SizePassport {
     public enum System: String, Sendable, Equatable {
         /// XS–XXL.
         case letters
-        /// Women's European numbers (34–48).
+        /// European numbers, Turkey's too: women's 34–46, men's trousers 44–58.
         case european
-        /// Trouser waist in inches (28–40).
-        case waistInches
+        /// US women's numbers (0–16).
+        case us
+        /// Jeans: waist and length in inches (31/32).
+        case waistLength
     }
 
-    public static func lines(for body: BodyProfile) -> [Line] {
+    /// The user's sizes in their region's systems (Profile → Size system): letters for
+    /// tops everywhere, W/L for jeans everywhere, and the region's numbers for women's
+    /// dresses, skirts and trousers and for men's non-denim trousers.
+    public static func lines(for body: BodyProfile, region: SizeRegion = .eu) -> [Line] {
         let female = body.sex == .female
         let audience: GarmentAudience = female ? .women : .men
-        let letters = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"]
+        func ladder(_ c: GarmentCategory, denim: Bool = false) -> [String] {
+            SizeSystems.ladder(for: c, audience: audience, region: region, productName: denim ? "jean" : nil)
+        }
+        let numbers: System = region == .us ? .us : .european
         var plan: [(GarmentCategory, System, [String])] = [
-            (.tshirt, .letters, letters), (.shirt, .letters, letters), (.sweater, .letters, letters),
-            (.jacket, .letters, letters), (.pants, .letters, letters),
+            (.tshirt, .letters, ladder(.tshirt)), (.shirt, .letters, ladder(.shirt)), (.sweater, .letters, ladder(.sweater)),
+            (.jacket, .letters, ladder(.jacket)),
         ]
         if female {
-            let eu = ["32", "34", "36", "38", "40", "42", "44", "46", "48"]
-            plan += [(.dress, .letters, letters), (.dress, .european, eu), (.skirt, .european, eu), (.pants, .european, eu)]
+            plan += [(.dress, .letters, ladder(.tshirt)), (.dress, numbers, ladder(.dress)), (.skirt, numbers, ladder(.skirt)),
+                     (.pants, numbers, ladder(.pants)), (.pants, .waistLength, ladder(.pants, denim: true))]
         } else {
-            plan.append((.pants, .waistInches, ["28", "29", "30", "31", "32", "33", "34", "36", "38", "40"]))
+            plan.append((.pants, .waistLength, ladder(.pants, denim: true)))
+            if region != .us { plan.append((.pants, .european, ladder(.pants))) }
         }
         return plan.compactMap { category, system, labels in
             guard let chart = StandardSizeCharts.chart(for: labels, category: category, audience: audience),

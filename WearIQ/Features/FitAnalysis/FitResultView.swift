@@ -1,5 +1,6 @@
 import FitEngine
 import OutfitRecommendationEngine
+import ProductMeasurementParser
 import SwiftUI
 import WearIQCore
 
@@ -135,6 +136,21 @@ struct FitResultView: View {
         }
     }
 
+    /// The recommended size as the user's size system writes it ("TR 38" for a store's
+    /// "US 6"), when the store writes it differently. Profile → Size system.
+    private var regionEquivalent: String? {
+        guard let category, let label = analysis.recommendedSize?.label else { return nil }
+        let region = SizeRegionSetting.current
+        let audience: GarmentAudience? = switch BodySex(rawValue: UserDefaults.standard.string(forKey: "bodySex") ?? "") {
+        case .female?: .women
+        case .male?: .men
+        case nil: nil
+        }
+        guard let size = SizeSystems.equivalent(of: label, storeLabels: analysis.sizes.map(\.label), category: category,
+                                                audience: audience, region: region, productName: productName) else { return nil }
+        return "\(region.code) \(size)"
+    }
+
     /// Big recommended size up front, the explanation underneath.
     private var recommendationCard: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.m) {
@@ -158,6 +174,11 @@ struct FitResultView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     if case let .size(_, confidence) = analysis.recommendation {
                         Label(confidence.title, systemImage: "gauge.with.dots.needle.67percent")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let equivalent = regionEquivalent {
+                        Label("In your size system: \(equivalent)", systemImage: "globe.europe.africa")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }

@@ -40,12 +40,23 @@ public enum StandardSizeCharts {
     public static func chart(for labels: [String], category: GarmentCategory?, audience: GarmentAudience?,
                              anchor: ModelFit? = nil) -> ParsedSizeChart? {
         guard var chart = chart(for: labels, category: category, audience: audience) else { return nil }
-        guard let anchor, let worn = anchor.size,
-              let reference = chart.sizes.first(where: { $0.label.uppercased() == worn }) else { return chart }
+        // The size worn of this garment's kind: a pair of jeans is anchored on the jeans'
+        // 31/32, never on the T-shirt's L worn with them. A model of the other sex (a
+        // unisex product shown on both) is no anchor for this body.
+        guard var anchor, let worn = anchor.wornSize(for: category).map(SizeLabel.normalized) else { return chart }
+        if let a = anchor.audience, let audience, a != audience { return chart }
+        guard let reference = chart.sizes.first(where: { SizeLabel.normalized($0.label) == worn }) else { return chart }
+        anchor.size = reference.label
         if let height = anchor.heightCm, (140...210).contains(height) {
             addLengths(to: &chart, modelHeight: height, category: category, worn: reference.label)
         }
         guard anchor.isAnchor else { return chart }
+        // Jeans sized in inches (W31, 31/32) name a waistband measurement, the same from
+        // brand to brand; the model's waist is taken at the narrowest point, well above
+        // where jeans sit. Shifting the chart to it made a 73 cm model waist in W31 push
+        // an 84 cm waist up to W35.
+        if category?.isBottom ?? false,
+           waistInches(labels, category: category, audience: audience ?? .men) { return chart }
         var shifted = false
         for (dim, value) in [(GarmentDimension.chest, anchor.chestCm), (.waist, anchor.waistCm), (.hip, anchor.hipCm)] {
             guard let value, let standard = reference.values[dim]?.cm else { continue }
@@ -58,7 +69,7 @@ public enum StandardSizeCharts {
             }
             shifted = true
         }
-        if shifted { chart.warnings.append(.anchoredToModel(size: worn)) }
+        if shifted { chart.warnings.append(.anchoredToModel(size: reference.label)) }
         return chart
     }
 
@@ -117,6 +128,11 @@ public enum StandardSizeCharts {
             }
             var values: [GarmentDimension: MeasuredValue] = [.waist: v(r.waist), .hip: v(r.hip)]
             if category != .pants { values[.chest] = v(r.chest) }
+            // The L of W/L is the inside leg in inches the trousers are cut for: 32 suits
+            // a leg of about 81 cm. The body it fits is within half a length step (±2.5 cm).
+            if let length = SizeLabel.waistLength(label)?.length, category?.isBottom ?? true {
+                values[.inseam] = MeasuredValue(cm: Double(length) * 2.54, uncertaintyCm: 1.5, source: .manual)
+            }
             return SizeEntry(label: label, values: values)
         }
         guard !sizes.isEmpty else { return nil }
@@ -129,10 +145,17 @@ public enum StandardSizeCharts {
     /// numbers, or nothing above 33, mean inches; even numbers reaching 34+ mean EU. Read
     /// as inches, a women's 38 had a 97 cm waist instead of 70.
     static func waistInches(_ labels: [String], category: GarmentCategory?, audience: GarmentAudience) -> Bool {
+        // Waist and length together (31/32, W31 L32) are inches whoever wears them.
+        let trousers = category == .pants || category == .shorts
+        if trousers || category == nil, labels.contains(where: { SizeLabel.waistLength($0) != nil }) { return true }
         let numbers = labels.compactMap { l in Int(l.uppercased().replacingOccurrences(of: "W", with: "")
             .split(separator: "/").first.map(String.init) ?? l) }
         guard !numbers.isEmpty else { return false }
-        let trousers = category == .pants || category == .shorts
+        // Men's European trouser sizes (44, 46, 48 … as Turkish stores sell suit and
+        // chino trousers) are even numbers from 42 up; a waist in inches range starts lower.
+        if audience == .men, numbers.allSatisfy({ $0 % 2 == 0 && $0 >= 42 }) { return false }
+        // US women's sizes (0–16) are never a waist in inches.
+        if audience == .women, numbers.allSatisfy({ $0 <= 22 }) { return false }
         if audience == .men { return trousers || category == nil }
         guard trousers else { return false }
         return numbers.contains { $0 % 2 == 1 } || numbers.max()! <= 33
@@ -143,7 +166,8 @@ public enum StandardSizeCharts {
         let label = rawLabel.uppercased().trimmingCharacters(in: .whitespaces)
         if let r = (audience == .men ? menLetters : womenLetters)[label] { return r }
         let bare = label.hasPrefix("W") ? String(label.dropFirst()) : label
-        guard let n = Int(bare.split(separator: "/").first.map(String.init) ?? bare) else { return nil }
+        guard let n = SizeLabel.waistLength(label)?.waist ?? Int(bare.split(separator: "/").first.map(String.init) ?? bare)
+        else { return nil }
         // Jeans and trousers in inches (W30): waist ≈ size × 2.54.
         let trousers = category == .pants || category == .shorts
         if inches && (24...(trousers ? 50 : 40)).contains(n) {
@@ -156,8 +180,13 @@ public enum StandardSizeCharts {
             return (chest - 2...chest + 2, chest - 14...chest - 8, chest + 2...chest + 8)
         }
         if audience == .women, (32...60).contains(n), n % 2 == 0 {
-            // EU women's sizes: 36 → bust 84, waist 68, hip 92; 4 cm per size.
+            // EU women's sizes (Turkey's too): 36 → bust 84, waist 68, hip 92; 4 cm per size.
             let step = Double(n - 36) * 2
+            return (82 + step...86 + step, 66 + step...70 + step, 90 + step...94 + step)
+        }
+        if audience == .women, (0...22).contains(n), n % 2 == 0 {
+            // US women's sizes: US 4 is EU 36, two US sizes per EU step of 2 (US = EU − 32).
+            let step = Double(n - 4) * 2
             return (82 + step...86 + step, 66 + step...70 + step, 90 + step...94 + step)
         }
         return nil
@@ -167,11 +196,37 @@ public enum StandardSizeCharts {
 extension GarmentClassifier {
     /// Men's or women's, from the product name, category text or URL.
     public static func audience(from text: String) -> GarmentAudience? {
-        let t = SizeChartParser.fold(text)
-        let women = ["kadin", "women", "woman", "bayan", "ladies", "/kadin", "female"]
-        let men = ["erkek", " men", "/men", "man ", "bay ", "male"]
-        if women.contains(where: t.contains) { return .women }
-        if men.contains(where: t.contains) { return .men }
+        if case let .one(a) = audienceSignal(text) { return a }
         return nil
+    }
+
+    /// Men's or women's from several texts, surest first (the name, the store's
+    /// department, the link, then descriptions). A text naming both ("for men and
+    /// women", "kadın ve erkeklerin kullanımına uygun") says nothing and the next one
+    /// decides; a product named unisex is neither.
+    public static func audience(in texts: [String?]) -> GarmentAudience? {
+        for text in texts.compactMap({ $0 }) {
+            switch audienceSignal(text) {
+            case let .one(a): return a
+            case .unisex: return nil
+            case .both, .none: continue
+            }
+        }
+        return nil
+    }
+
+    private enum AudienceSignal { case one(GarmentAudience), both, unisex, none }
+
+    private static func audienceSignal(_ text: String) -> AudienceSignal {
+        let t = " " + SizeChartParser.fold(text)
+            .replacingOccurrences(of: #"[/_\-|>,.:;()'"]"#, with: " ", options: .regularExpression) + " "
+        let women = [" kadin", " women ", " womens ", " woman ", " bayan", " ladies ", " female ", " kiz "]
+        let men = [" erkek", " men ", " mens ", " man ", " bay ", " male "]
+        let w = women.contains(where: t.contains), m = men.contains(where: t.contains)
+        if w && m { return .both }
+        if w { return .one(.women) }
+        if m { return .one(.men) }
+        if t.contains(" unisex ") { return .unisex }
+        return .none
     }
 }

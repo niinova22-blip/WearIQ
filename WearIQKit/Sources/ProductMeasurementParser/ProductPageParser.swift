@@ -33,6 +33,19 @@ public struct ProductInfo: Equatable, Sendable {
     public var currency: String?
     /// Whether each size is in stock, for the sizes whose offer says so.
     public var sizeStock: [String: Bool] = [:]
+    /// Where `availableSizes` came from: a better source replaces a worse one.
+    public var sizeSource: SizeSource?
+    /// The barcodes and codes of the product's own variants (structured data), to tell
+    /// its sizes from other products' in a page's script data.
+    public var variantIDs: [String] = []
+
+    /// Best first. Structured data and the product's own variants name the product's
+    /// sizes; the visible size buttons too; sizes found loose in a page's script data
+    /// may belong to another product shown on the page (a carousel's T-shirts).
+    public enum SizeSource: Int, Comparable, Sendable {
+        case structuredData = 0, variants, pageButtons, embedded
+        public static func < (a: Self, b: Self) -> Bool { a.rawValue < b.rawValue }
+    }
 
     public init() {}
 
@@ -70,23 +83,113 @@ public struct ProductPageParser: Sendable {
         if info.brand == nil { info.brand = og["product:brand"] ?? og["og:brand"] }
         if info.imageURL == nil, let img = og["og:image"] { info.imageURL = URL(string: img, relativeTo: pageURL)?.absoluteURL }
 
-        if info.availableSizes.isEmpty { info.availableSizes = Self.embeddedSizes(in: html) }
+        if !info.availableSizes.isEmpty, info.sizeSource == nil { info.sizeSource = .structuredData }
+        if info.availableSizes.isEmpty {
+            // Trousers sold by waist and length keep both in their variants ("29" + "30"):
+            // that's the size the store sells, 29/30, never a letter from elsewhere.
+            let variants = Self.waistLengthVariants(in: html, productIDs: Set(info.variantIDs))
+            if !variants.isEmpty {
+                info.availableSizes = variants
+                info.sizeSource = .variants
+            } else {
+                info.availableSizes = Self.embeddedSizes(in: html)
+                if !info.availableSizes.isEmpty { info.sizeSource = .embedded }
+            }
+        }
         info.sizeChartImageURLs = Self.sizeChartImages(in: html, base: pageURL)
         info.sizeChartSections = HTMLSizeTables.sections(in: html)
         let visible = Self.visibleText(html)
-        info.modelFit = ModelFitParser.parse(visible)
         if info.material == nil { info.material = FabricAdvice.compositionText(in: visible) }
 
         let text = [info.name, info.categoryText].compactMap { $0 }.joined(separator: " ")
         // The brand isn't the garment: "Tommy Jeans … Shirt" is a shirt.
         let withoutBrand = info.brand.map { text.replacingOccurrences(of: $0, with: " ", options: .caseInsensitive) } ?? text
         info.category = GarmentClassifier.category(from: withoutBrand)
+            ?? og["og:title"].flatMap { GarmentClassifier.category(from: $0) }
         info.fitStyle = GarmentClassifier.fitStyle(from: text)
         info.legCut = GarmentClassifier.legCut(from: text)
         if info.fitStyle == nil, let cut = info.legCut, info.category?.isBottom ?? true { info.fitStyle = cut.impliedFit }
         info.stretch = info.material.flatMap(GarmentClassifier.stretch(fromComposition:))
-        info.audience = GarmentClassifier.audience(from: text + " " + (pageURL?.path ?? "") + " " + (og["og:description"] ?? ""))
+        info.audience = GarmentClassifier.audience(in: [info.name, info.categoryText, Self.breadcrumbText(in: html),
+                                                        pageURL?.path, og["og:title"], og["og:description"]])
+        info.modelFit = ModelFitParser.parse(visible, audience: info.audience, category: info.category)
         return info
+    }
+
+    /// Breadcrumb names from JSON-LD ("Anasayfa > Erkek > Jean"): the store's own
+    /// department, surer than a description that says who else may wear it.
+    static func breadcrumbText(in html: String) -> String? {
+        var names: [String] = []
+        func walk(_ v: Any) {
+            if let a = v as? [Any] { a.forEach(walk); return }
+            guard let d = v as? [String: Any] else { return }
+            if (d["@type"] as? String) == "BreadcrumbList", let items = d["itemListElement"] as? [[String: Any]] {
+                for item in items {
+                    if let n = string(item["name"]) ?? string((item["item"] as? [String: Any])?["name"]) { names.append(n) }
+                }
+            }
+            d.values.forEach(walk)
+        }
+        jsonLDObjects(in: html).forEach(walk)
+        return names.isEmpty ? nil : names.joined(separator: " > ")
+    }
+
+    /// Trouser variants that keep waist and length apart, as "waist/length" labels in
+    /// wearing order. Two shapes are read:
+    ///
+    ///  - JSON objects with both keys: {"waist":"31","length":"32"} (also size/inseam, bel/boy);
+    ///  - keyed rows, where a key list ["id","length","size",…] is followed by rows that
+    ///    hold the values in that order ([-7,"8685…","30","29",…] is waist 29, length 30).
+    static func waistLengthVariants(in html: String, productIDs: Set<String> = []) -> [String] {
+        var pairs: [(Int, Int)] = []
+        func add(_ w: String, _ l: String) {
+            guard let w = Int(w), let l = Int(l), (22...52).contains(w), (26...38).contains(l),
+                  !pairs.contains(where: { $0 == (w, l) }) else { return }
+            pairs.append((w, l))
+        }
+        let ns = html as NSString
+        let waistKey = #""(?:waist|bel|waistSize|size)"\s*:\s*"?(\d{2})"?"#
+        let lengthKey = #""(?:length|inseam|boy|leg|legLength)"\s*:\s*"?(\d{2})"?"#
+        for (pattern, waistFirst) in [(#"\{[^{}]*"# + waistKey + #"[^{}]*"# + lengthKey + #"[^{}]*\}"#, true),
+                                      (#"\{[^{}]*"# + lengthKey + #"[^{}]*"# + waistKey + #"[^{}]*\}"#, false)] {
+            guard let re = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { continue }
+            for m in re.matches(in: html, range: NSRange(location: 0, length: ns.length)) {
+                let a = ns.substring(with: m.range(at: 1)), b = ns.substring(with: m.range(at: 2))
+                waistFirst ? add(a, b) : add(b, a)
+            }
+        }
+        // Keyed rows (Angular transfer state as Mavi serves it). The state holds the
+        // variants of every product on the page (the carousels' jeans too): with the
+        // product's barcodes known, only its own rows count.
+        if let schemaRe = try? NSRegularExpression(pattern: #"\[("(?:[A-Za-z]+)"(?:,"[A-Za-z]+")+)\]"#) {
+            for m in schemaRe.matches(in: html, range: NSRange(location: 0, length: ns.length)) {
+                let keys = ns.substring(with: m.range(at: 1)).split(separator: ",").map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "\"")) }
+                guard keys.count <= 8, let li = keys.firstIndex(where: { ["length", "inseam"].contains($0) }),
+                      let wi = keys.firstIndex(where: { ["size", "waist"].contains($0) }) else { continue }
+                let ii = keys.firstIndex(where: { ["id", "code", "gtin", "ean", "barcode", "sku"].contains($0) })
+                // Rows: [-n, then one value per key]. Values are strings or nested data;
+                // only the wanted positions must be strings of their shape.
+                let value = #"(?:"[^"]*"|\[[^\[\]]*\]|[^,\[\]]+)"#
+                let capture = (0..<keys.count).map { i in
+                    i == li || i == wi ? #"("\d{2}")"# : (i == ii ? #"("[^"]*")"# : value)
+                }.joined(separator: ",")
+                guard let rowRe = try? NSRegularExpression(pattern: #"\[-\d+,"# + capture + #"\]"#) else { continue }
+                // Capture groups are in key order.
+                let order = [(li, "l"), (wi, "w")] + (ii.map { [($0, "i")] } ?? [])
+                let groups = order.sorted { $0.0 < $1.0 }.map(\.1)
+                for r in rowRe.matches(in: html, range: NSRange(location: 0, length: ns.length)) {
+                    var v: [String: String] = [:]
+                    for (n, name) in groups.enumerated() {
+                        v[name] = ns.substring(with: r.range(at: n + 1)).replacingOccurrences(of: "\"", with: "")
+                    }
+                    if !productIDs.isEmpty, let id = v["i"], !productIDs.contains(id) { continue }
+                    if let w = v["w"], let l = v["l"] { add(w, l) }
+                }
+            }
+        }
+        // A real waist-and-length range has several waists; two stray numbers aren't one.
+        guard Set(pairs.map(\.0)).count >= 2 else { return [] }
+        return pairs.sorted { $0.0 == $1.0 ? $0.1 < $1.1 : $0.0 < $1.0 }.map { "\($0.0)/\($0.1)" }
     }
 
     // MARK: - Embedded page data
@@ -151,7 +254,15 @@ public struct ProductPageParser: Sendable {
         guard let dict = object as? [String: Any] else { return nil }
         if isType(dict, "Product") || isType(dict, "ProductGroup") { return dict }
         if let graph = dict["@graph"] { return findProduct(in: graph) }
-        if let main = dict["mainEntity"] { return findProduct(in: main) }
+        if let main = dict["mainEntity"], let product = findProduct(in: main) { return product }
+        // A page element offering the product (Mavi: WebPage → mainEntity → offers →
+        // itemOffered).
+        if let offers = dict["offers"] {
+            let list = (offers as? [Any]) ?? [offers]
+            for case let offer as [String: Any] in list {
+                if let item = offer["itemOffered"], let product = findProduct(in: item) { return product }
+            }
+        }
         return nil
     }
 
@@ -166,6 +277,17 @@ public struct ProductPageParser: Sendable {
         info.brand = string(p["brand"]) ?? string((p["brand"] as? [String: Any])?["name"])
         info.imageURL = imageURL(p["image"], base: base)
         info.gtin = ["gtin13", "gtin", "gtin12", "gtin14", "gtin8"].lazy.compactMap { string(p[$0]) }.first
+        for key in ["gtin13", "gtin", "gtin12", "gtin14", "gtin8"] {
+            // One product, one barcode per variant: Mavi lists them all under gtin13.
+            if let list = p[key] as? [Any] {
+                let ids = list.compactMap { string($0) }
+                info.variantIDs += ids
+                if info.gtin == nil { info.gtin = ids.first }
+            }
+        }
+        for variant in (p["hasVariant"] as? [[String: Any]]) ?? [] {
+            info.variantIDs += ["gtin13", "gtin", "sku"].compactMap { string(variant[$0]) }
+        }
         info.sku = string(p["sku"])
         info.categoryText = string(p["category"])
         info.material = string(p["material"])

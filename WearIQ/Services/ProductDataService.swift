@@ -80,7 +80,15 @@ struct ProductDataService: ProductDataServicing {
             }
             if let page {
                 var rendered = parser.parse(html: page.html, pageURL: page.url)
-                if rendered.modelFit == nil { rendered.modelFit = ModelFitParser.parse(page.text) }
+                let shown = SizeOptions.labels(from: page.sizeGroups, category: rendered.category ?? info?.category)
+                if !shown.isEmpty, rendered.sizeSource.map({ $0 > .pageButtons }) ?? true {
+                    rendered.availableSizes = shown
+                    rendered.sizeSource = .pageButtons
+                }
+                if rendered.modelFit == nil {
+                    rendered.modelFit = ModelFitParser.parse(page.text, audience: rendered.audience ?? info?.audience,
+                                                             category: rendered.category ?? info?.category)
+                }
                 if rendered.material == nil { rendered.material = FabricAdvice.compositionText(in: page.text) }
                 if !rendered.isEmpty { info = info.map { Self.merge($0, rendered) } ?? rendered }
                 renderedPage = page
@@ -151,7 +159,15 @@ struct ProductDataService: ProductDataServicing {
         m.categoryText = a.categoryText ?? b.categoryText
         m.material = a.material ?? b.material
         if m.stretch == nil { m.stretch = m.material.flatMap(GarmentClassifier.stretch(fromComposition:)) }
-        if a.availableSizes.isEmpty { m.availableSizes = b.availableSizes }
+        // The better-sourced size list wins: the rendered page's visible size buttons
+        // over sizes found loose in the plain page's script data (a carousel's).
+        if a.availableSizes.isEmpty || (b.sizeSource.map { bs in a.sizeSource.map { bs < $0 } ?? true } ?? false
+                                        && !b.availableSizes.isEmpty) {
+            m.availableSizes = b.availableSizes
+            m.sizeSource = b.sizeSource
+            m.sizeStock = a.sizeStock.isEmpty ? b.sizeStock : a.sizeStock
+        }
+        if m.variantIDs.isEmpty { m.variantIDs = b.variantIDs }
         if a.sizeChartImageURLs.isEmpty { m.sizeChartImageURLs = b.sizeChartImageURLs }
         if a.sizeChartSections.isEmpty { m.sizeChartSections = b.sizeChartSections }
         m.category = a.category ?? b.category
@@ -168,7 +184,8 @@ struct ProductDataService: ProductDataServicing {
     private func readChart(_ info: ProductInfo) async -> SizeChartScan? {
         if !info.sizeChartSections.isEmpty {
             return SizeChartScan(sections: info.sizeChartSections,
-                                 chosen: SizeTableReader.best(info.sizeChartSections, fit: info.fitStyle))
+                                 chosen: SizeTableReader.best(info.sizeChartSections, fit: info.fitStyle,
+                                                              category: info.category, audience: info.audience))
         }
         for imageURL in info.sizeChartImageURLs.prefix(2) {
             var request = URLRequest(url: imageURL, timeoutInterval: 15)
@@ -177,7 +194,10 @@ struct ProductDataService: ProductDataServicing {
                   (response as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) ?? true,
                   data.count <= Self.maxChartBytes,
                   let image = UIImage(data: data),
-                  let scan = try? await chartReader.readSections(from: image, fit: info.fitStyle) else { continue }
+                  var scan = try? await chartReader.readSections(from: image, fit: info.fitStyle) else { continue }
+            // An image with tables for several garments: the one for this garment.
+            if let better = SizeTableReader.best(scan.sections, fit: info.fitStyle, category: info.category,
+                                                 audience: info.audience) { scan.chosen = better }
             return scan
         }
         return nil

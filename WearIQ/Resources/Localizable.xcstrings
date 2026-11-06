@@ -12760,6 +12760,136 @@
           }
         }
       }
+    },
+    "Size system": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden sistemi"
+          }
+        }
+      }
+    },
+    "Automatic (%@)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otomatik (%@)"
+          }
+        }
+      }
+    },
+    "Türkiye": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Türkiye"
+          }
+        }
+      }
+    },
+    "Europe": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avrupa"
+          }
+        }
+      }
+    },
+    "United States": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ABD"
+          }
+        }
+      }
+    },
+    "Women 36/38/40, men's trousers 46/48/50, jeans 31/32": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kadın 36/38/40, erkek kumaş pantolon 46/48/50, jean 31/32"
+          }
+        }
+      }
+    },
+    "Women 36/38/40 (EN 13402), men's trousers 46/48/50, jeans W31 L32": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kadın 36/38/40 (EN 13402), erkek kumaş pantolon 46/48/50, jean W31 L32"
+          }
+        }
+      }
+    },
+    "Women 4/6/8, men's trousers and jeans 31×32": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kadın 4/6/8, erkek pantolon ve jean 31×32"
+          }
+        }
+      }
+    },
+    "Sizes are recommended in the store's own labels. When a store lists none, WearIQ uses this system, and shows the store's size in it too. %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beden, mağazanın kendi etiketiyle önerilir. Mağaza beden listesi vermediğinde WearIQ bu sistemi kullanır ve mağazanın bedeninin bu sistemdeki karşılığını da gösterir. %@"
+          }
+        }
+      }
+    },
+    "In your size system: %@": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senin beden sisteminde: %@"
+          }
+        }
+      }
+    },
+    "Jeans (W/L)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jean (bel/boy)"
+          }
+        }
+      }
+    },
+    "%@ (%@)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (%@)"
+          }
+        }
+      }
+    },
+    "%@ (US)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (ABD)"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

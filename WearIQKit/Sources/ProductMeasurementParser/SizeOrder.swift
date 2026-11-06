@@ -14,7 +14,9 @@ public enum SizeOrder {
             let canonical = ["2XS": "XXS", "3XS": "XXXS", "2XL": "XXL", "3XL": "XXXL"][l] ?? l
             return Double(letters.firstIndex(of: canonical) ?? i)
         }
-        // "32", "32/34", "W32", "38-40": the first number decides.
+        // Waist and length: by waist, then length (31/30, 31/32, 32/30).
+        if let wl = SizeLabel.waistLength(l) { return 1000 + Double(wl.waist) + Double(wl.length) / 100 }
+        // "32", "W32", "38-40": the first number decides.
         let digits = l.drop { !$0.isNumber }.prefix { $0.isNumber || $0 == "." || $0 == "," }
         return Double(digits.replacingOccurrences(of: ",", with: ".")).map { 1000 + $0 }
     }
@@ -31,5 +33,30 @@ public enum SizeOrder {
             case (nil, nil): a.offset < b.offset
             }
         }.map(\.size)
+    }
+}
+
+/// Size labels as stores write them.
+public enum SizeLabel {
+    /// Waist and length in inches, as jeans and many trousers are sold everywhere:
+    /// "31/32", "W31 L32", "W31/L32", "31x32", "31 32". Nil for anything else, a single
+    /// size or a double one ("S/M"). A plain "36/38" also reads as W36 L38; callers
+    /// apply it to trousers only, where that's what it means.
+    public static func waistLength(_ label: String) -> (waist: Int, length: Int)? {
+        let l = label.uppercased().trimmingCharacters(in: .whitespaces)
+        guard let re = try? NSRegularExpression(pattern: #"^W?\s*(\d{2})\s*(?:/|X|\s)\s*L?\s*(\d{2})$"#),
+              let m = re.firstMatch(in: l, range: NSRange(l.startIndex..., in: l)),
+              let wr = Range(m.range(at: 1), in: l), let lr = Range(m.range(at: 2), in: l),
+              let w = Int(l[wr]), let len = Int(l[lr]),
+              (22...52).contains(w), (26...38).contains(len) else { return nil }
+        return (w, len)
+    }
+
+    /// One spelling per size, to tell whether two labels are the same size: "W31 L32"
+    /// and "31/32" are; "2XL" and "XXL" are.
+    public static func normalized(_ label: String) -> String {
+        if let wl = waistLength(label) { return "\(wl.waist)/\(wl.length)" }
+        let l = label.uppercased().replacingOccurrences(of: " ", with: "")
+        return ["2XS": "XXS", "3XS": "XXXS", "2XL": "XXL", "3XL": "XXXL"][l] ?? l
     }
 }

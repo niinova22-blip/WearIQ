@@ -22,9 +22,13 @@ public enum ShoppingAssistant {
         public var text: String?
         /// Size labels offered on the page (its size buttons).
         public var sizes: [String]?
+        /// The visible size selectors, each with its caption (newer extension versions).
+        public var sizeGroups: [SizeOptionGroup]?
 
-        public init(url: String, title: String? = nil, html: String, text: String? = nil, sizes: [String]? = nil) {
+        public init(url: String, title: String? = nil, html: String, text: String? = nil, sizes: [String]? = nil,
+                    sizeGroups: [SizeOptionGroup]? = nil) {
             self.url = url; self.title = title; self.html = html; self.text = text; self.sizes = sizes
+            self.sizeGroups = sizeGroups
         }
     }
 
@@ -32,9 +36,11 @@ public enum ShoppingAssistant {
     public struct Shopper: Codable, Sendable, Equatable {
         public var body: BodyProfile
         public var style: StyleLearning.Style?
+        /// The size system the user shops in, for stores that list no sizes.
+        public var region: SizeRegion?
 
-        public init(body: BodyProfile, style: StyleLearning.Style? = nil) {
-            self.body = body; self.style = style
+        public init(body: BodyProfile, style: StyleLearning.Style? = nil, region: SizeRegion? = nil) {
+            self.body = body; self.style = style; self.region = region
         }
     }
 
@@ -74,10 +80,19 @@ public enum ShoppingAssistant {
         if info.category == nil { info.category = GarmentClassifier.category(from: [info.name, info.categoryText, page.title].compactMap { $0 }.joined(separator: " ")) }
         if info.fitStyle == nil, let name = info.name { info.fitStyle = GarmentClassifier.fitStyle(from: name) }
         if info.legCut == nil, let name = info.name { info.legCut = GarmentClassifier.legCut(from: name) }
-        if info.availableSizes.isEmpty, let sizes = page.sizes { info.availableSizes = sizes }
+        if info.audience == nil { info.audience = GarmentClassifier.audience(in: [page.title]) }
+        // The visible size selectors beat sizes found loose in script data; the older
+        // flat list is a last resort.
+        let shown = SizeOptions.labels(from: page.sizeGroups ?? [], category: info.category)
+        if !shown.isEmpty, info.sizeSource.map({ $0 > .pageButtons }) ?? true {
+            info.availableSizes = shown
+            info.sizeSource = .pageButtons
+        } else if info.availableSizes.isEmpty, page.sizeGroups == nil, let sizes = page.sizes {
+            info.availableSizes = sizes
+        }
         if let text = page.text {
             if info.material == nil { info.material = FabricAdvice.compositionText(in: text) }
-            if info.modelFit == nil { info.modelFit = ModelFitParser.parse(text) }
+            if info.modelFit == nil { info.modelFit = ModelFitParser.parse(text, audience: info.audience, category: info.category) }
         }
         if info.stretch == nil, let material = info.material { info.stretch = GarmentClassifier.stretch(fromComposition: material) }
         return info
@@ -90,7 +105,7 @@ public enum ShoppingAssistant {
         guard info.category != nil else { return advice }
         guard let shopper else { advice.status = .noBody; return advice }
         let audience: GarmentAudience? = shopper.body.sex.map { $0 == .female ? .women : .men }
-        guard let (spec, source) = ProductSpec.make(from: info, fallbackAudience: audience) else {
+        guard let (spec, source) = ProductSpec.make(from: info, fallbackAudience: audience, region: shopper.region ?? .eu) else {
             advice.status = .noChart
             return advice
         }

@@ -1,3 +1,4 @@
+import ProductMeasurementParser
 import ShoppingAssistant
 import SwiftData
 import SwiftUI
@@ -37,7 +38,7 @@ struct SizePassportView: View {
                     }
                 }
                 Section {
-                    ForEach(Array(SizePassport.lines(for: body).enumerated()), id: \.offset) { _, line in
+                    ForEach(Array(SizePassport.lines(for: body, region: SizeRegionSetting.current).enumerated()), id: \.offset) { _, line in
                         LabeledContent(line.label, value: line.otherSize.map { "\(line.size)–\($0)" } ?? line.size)
                     }
                 } header: {
@@ -82,7 +83,7 @@ struct SizePassportView: View {
         for d in [BodyDimension.height, .chest, .waist, .hip, .inseam] {
             if let v = body[d] { lines.append("\(d.title): \(Int(v.cm.rounded())) cm") }
         }
-        for line in SizePassport.lines(for: body) {
+        for line in SizePassport.lines(for: body, region: SizeRegionSetting.current) {
             lines.append("\(line.label): " + (line.otherSize.map { "\(line.size)–\($0)" } ?? line.size))
         }
         for row in brandRows {
@@ -96,8 +97,9 @@ extension SizePassport.Line {
     var label: String {
         switch system {
         case .letters: category.title
-        case .european: String(localized: "\(category.title) (EU)")
-        case .waistInches: String(localized: "\(category.title) (waist)")
+        case .european: String(localized: "\(category.title) (\(SizeRegionSetting.current.code))")
+        case .us: String(localized: "\(category.title) (US)")
+        case .waistLength: String(localized: "Jeans (W/L)")
         }
     }
 }

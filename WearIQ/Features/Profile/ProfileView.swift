@@ -79,6 +79,7 @@ struct ProfileView: View {
                 Toggle("Morning outfit reminder", isOn: $outfitReminder)
                     .onChange(of: outfitReminder) { _, on in Task { await OutfitReminder.set(on) } }
             }
+            SizeRegionSection()
             Section {
                 // iOS keeps a language per app (English or Turkish) in the app's own
                 // settings page; the voice guidance follows it too.

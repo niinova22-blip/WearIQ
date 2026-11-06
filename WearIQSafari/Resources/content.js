@@ -38,15 +38,69 @@
     const html = "<html><head><title>" + escapeHTML(document.title) + "</title>" + head.join("\n") +
       "</head><body>" + body.join("\n") + "</body></html>";
     const text = (document.body && document.body.innerText) || "";
-    const lines = text.split("\n").filter((l) =>
-      /(%\s?\d{1,3}|\d{1,3}\s?%)\s?[A-Za-zÇĞİÖŞÜçğıöşü]/.test(l) || /model/i.test(l) && /(cm|beden|size|boy)/i.test(l));
+    // Fabric lines, and the model block: "Manken Bilgileri" is often a heading with the
+    // bodies and the sizes worn on the lines below it.
+    const all = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = [];
+    all.forEach((l, i) => {
+      if (/(%\s?\d{1,3}|\d{1,3}\s?%)\s?[A-Za-zÇĞİÖŞÜçğıöşü]/.test(l)) lines.push(l);
+      if (/(model|manken)/i.test(l) && (l.length < 40 || /(cm|beden|size|boy)/i.test(l))) lines.push(...all.slice(i, i + 5));
+    });
     const sizes = new Set();
     document.querySelectorAll('button, li, label, option, a[role="button"], span[class*="size" i], div[class*="size" i]')
       .forEach((e) => {
         const s = (e.innerText || e.textContent || "").trim();
         if (s.length <= 8 && SIZE.test(s)) sizes.add(s.toUpperCase().replace(/\s/g, ""));
       });
-    return { html: html.slice(0, MAX_HTML), text: lines.slice(0, 12).join("\n"), sizes: [...sizes].slice(0, 24) };
+    let sizeGroups = [];
+    try { sizeGroups = visibleSizeGroups(); } catch (e) {}
+    return { html: html.slice(0, MAX_HTML), text: [...new Set(lines)].slice(0, 24).join("\n"),
+             sizes: [...sizes].slice(0, 24), sizeGroups };
+  }
+
+  // The size selectors a shopper can see, outside recommendation widgets and hidden
+  // sheets (Mavi hides a T-shirt's "XS S M L" next to its jeans). Same rules as the app's
+  // page reader (SizeOptions.script in WearIQKit): keep the two alike.
+  function visibleSizeGroups() {
+    const SIZE2 = /^(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|[2-6]XL|W?\d{2}(\s?[\/xX]\s?L?\d{2})?|W\d{2}\s?L\d{2}|\d{1,2}|\d{2}[A-H]{1,2})$/i;
+    const SKIP = /(^|[\s_-])(recommend\w*|recommendation\w*|reco|similar|related|carousel|slider|swiper|slick|upsell|cross-?sell|stylitics|insider|ins|benzer|oneri|kombin\w*|footer|filters?|facets?|qty|quantity|adet|miktar|pagination|rating\w*)([\s_-]|$)/i;
+    const visible = (e) => {
+      if (!e) return false;
+      const st = getComputedStyle(e);
+      if (st.display === "none" || st.visibility === "hidden" || st.opacity === "0") return false;
+      const r = e.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    };
+    const excluded = (e) => {
+      for (let p = e; p && p !== document.body; p = p.parentElement) {
+        if (p.getAttribute("aria-hidden") === "true" || p.hidden) return true;
+        const c = ((p.className && p.className.toString()) || "") + " " + (p.id || "") + " " + (p.getAttribute("name") || "");
+        if (SKIP.test(c)) return true;
+      }
+      return false;
+    };
+    const boxes = [], byBox = new Map();
+    for (const e of document.querySelectorAll('button, li, label, option, a[role="button"], [role="radio"], [role="option"], span[class*="size" i], div[class*="size" i]')) {
+      const s = (e.innerText || e.textContent || "").trim().replace(/\s+/g, " ");
+      if (!s || s.length > 9 || !SIZE2.test(s)) continue;
+      if (!visible(e.tagName === "OPTION" ? e.parentElement : e) || excluded(e)) continue;
+      let box = e.parentElement;
+      while (box && box.children.length === 1 && box.parentElement && box !== document.body) box = box.parentElement;
+      if (!byBox.has(box)) { byBox.set(box, []); boxes.push(box); }
+      const list = byBox.get(box);
+      if (!list.includes(s)) list.push(s);
+    }
+    const caption = (box) => {
+      const own = box.getAttribute("aria-label") || box.getAttribute("data-label") || "";
+      if (own) return own;
+      if (box.id) { const l = document.querySelector('label[for="' + box.id + '"]'); if (l) return l.innerText; }
+      for (let p = box, i = 0; p && i < 3; p = p.parentElement, i++) {
+        const prev = p.previousElementSibling;
+        if (prev && prev.innerText && prev.innerText.trim().length < 40) return prev.innerText;
+      }
+      return "";
+    };
+    return boxes.slice(0, 10).map((b) => ({ caption: caption(b).trim().replace(/\s+/g, " ").slice(0, 40), labels: byBox.get(b).slice(0, 60) }));
   }
 
   let lastSent = "";

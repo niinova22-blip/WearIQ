@@ -11,24 +11,25 @@ public enum ProductSpec {
         case store, standard
     }
 
-    public static func make(from info: ProductInfo, fallbackAudience: GarmentAudience? = nil)
+    public static func make(from info: ProductInfo, fallbackAudience: GarmentAudience? = nil, region: SizeRegion = .eu)
         -> (spec: GarmentSpec, source: Source)? {
         guard let category = info.category else { return nil }
         var fit = info.fitStyle ?? .regular
         var chart: ParsedSizeChart?
         var source = Source.store
+        let audience = info.audience ?? fallbackAudience
         if !info.sizeChartSections.isEmpty {
-            let section = SizeTableReader.best(info.sizeChartSections, fit: info.fitStyle) ?? info.sizeChartSections[0]
+            let section = SizeTableReader.best(info.sizeChartSections, fit: info.fitStyle, category: category,
+                                               audience: audience) ?? info.sizeChartSections[0]
             chart = section.chart
             if let f = section.fitStyle { fit = f }
         }
         if chart.map({ $0.sizes.isEmpty || $0.kind == nil }) ?? true {
+            // Without the store's size list, the sizes the user's region sells this in.
             let labels = info.availableSizes.isEmpty
-                ? (category == .pants && info.audience != .women
-                    ? ["28", "29", "30", "31", "32", "33", "34", "36", "38"] : ["XS", "S", "M", "L", "XL", "XXL"])
+                ? SizeSystems.ladder(for: category, audience: audience, region: region, productName: info.name)
                 : info.availableSizes
-            chart = StandardSizeCharts.chart(for: labels, category: category, audience: info.audience ?? fallbackAudience,
-                                             anchor: info.modelFit)
+            chart = StandardSizeCharts.chart(for: labels, category: category, audience: audience, anchor: info.modelFit)
             source = .standard
         }
         guard let chart, let kind = chart.kind, !chart.sizes.isEmpty else { return nil }

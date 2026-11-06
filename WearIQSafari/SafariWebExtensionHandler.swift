@@ -1,5 +1,6 @@
 import Foundation
 import SafariServices
+import ProductMeasurementParser
 import ShoppingAssistant
 
 /// The Safari extension's native side. The content script, on a product page of a store
@@ -16,7 +17,8 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
            let url = message["url"] as? String, let html = message["html"] as? String {
             let page = ShoppingAssistant.Page(url: url, title: message["title"] as? String, html: String(html.prefix(400_000)),
                                               text: (message["text"] as? String).map { String($0.prefix(4000)) },
-                                              sizes: message["sizes"] as? [String])
+                                              sizes: message["sizes"] as? [String],
+                                              sizeGroups: (message["sizeGroups"] as? [[String: Any]]).map(Self.groups))
             let advice = ShoppingAssistant.advise(page, shopper: ShoppingBridge.shopper())
             if advice.status != .notGarment {
                 ShoppingBridge.enqueue(.init(page: page, advice: advice, seenAt: Date()))
@@ -26,6 +28,14 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         let response = NSExtensionItem()
         response.userInfo = [SFExtensionMessageKey: reply]
         context.completeRequest(returningItems: [response], completionHandler: nil)
+    }
+
+    /// The visible size selectors the content script found, with their captions.
+    static func groups(_ raw: [[String: Any]]) -> [SizeOptionGroup] {
+        raw.prefix(10).compactMap { g in
+            guard let labels = g["labels"] as? [String] else { return nil }
+            return SizeOptionGroup(caption: String((g["caption"] as? String ?? "").prefix(40)), labels: Array(labels.prefix(60)))
+        }
     }
 
     static func reply(_ a: ShoppingAssistant.Advice) -> [String: Any] {

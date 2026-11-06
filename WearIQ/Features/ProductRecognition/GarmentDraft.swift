@@ -110,8 +110,12 @@ final class GarmentDraft {
     func fillStandardChart(fallbackAudience: GarmentAudience?) -> Bool {
         // Without the store's size list, use the usual range so the user still gets
         // their standard size.
+        // In the sizes the user's region sells this kind of garment in (Profile → Size
+        // system): jeans in W/L, women's dresses 34–46 in Türkiye and Europe, 0–16 in the US.
+        let audience = info.audience ?? fallbackAudience
         let labels = info.availableSizes.isEmpty
-            ? (category == .pants && info.audience != .women ? ["28", "29", "30", "31", "32", "33", "34", "36", "38"] : ["XS", "S", "M", "L", "XL", "XXL"])
+            ? category.map { SizeSystems.ladder(for: $0, audience: audience, region: SizeRegionSetting.current,
+                                                productName: info.name) } ?? []
             : info.availableSizes
         guard sizes.isEmpty || chartSource == .standard, category != nil,
               let chart = StandardSizeCharts.chart(for: labels, category: category,

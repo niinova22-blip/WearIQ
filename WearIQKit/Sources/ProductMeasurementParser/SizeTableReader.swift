@@ -82,6 +82,41 @@ public enum SizeTableReader {
         return sections.count == 1 ? sections[0] : nil
     }
 
+    /// Picks the table for this garment when a page or image has several: a store's size
+    /// guide often holds tables for tops and trousers, men and women, side by side. A
+    /// table for the wrong kind of garment (chest rows for jeans, W/L labels for a shirt)
+    /// or the other sex is out; then the product's fit decides, then page order.
+    public static func best(_ sections: [SizeChartSection], fit: FitStyle?, category: GarmentCategory?,
+                            audience: GarmentAudience?) -> SizeChartSection? {
+        guard sections.count > 1, let category else { return best(sections, fit: fit) }
+        func score(_ s: SizeChartSection) -> Int {
+            var points = 0
+            let dims = Set(s.chart.sizes.flatMap { $0.values.keys })
+            let labels = s.chart.sizes.map(\.label)
+            if category.isBottom {
+                if dims.contains(.waist) || dims.contains(.inseam) { points += 2 }
+                if dims.contains(.chest) && !dims.contains(.inseam) { points -= 3 }
+                if labels.contains(where: { SizeLabel.waistLength($0) != nil }) { points += 1 }
+            } else {
+                if dims.contains(.chest) { points += 2 }
+                if dims.contains(.inseam) || labels.contains(where: { SizeLabel.waistLength($0) != nil }) { points -= 3 }
+            }
+            if let title = s.title {
+                let said = GarmentClassifier.audience(from: title)
+                if let said, let audience { points += said == audience ? 2 : -4 }
+                if let kind = GarmentClassifier.category(from: title) {
+                    points += kind == category ? 2 : (kind.isBottom == category.isBottom ? 1 : -3)
+                }
+            }
+            if let fit, s.fitStyle == fit { points += 1 }
+            return points
+        }
+        let scored = sections.enumerated().map { (offset: $0.offset, section: $0.element, score: score($0.element)) }
+        guard let top = scored.max(by: { $0.score == $1.score ? $0.offset > $1.offset : $0.score < $1.score }),
+              top.score > 0 else { return best(sections, fit: fit) }
+        return top.section
+    }
+
     // MARK: - Rows and columns
 
     struct Column: Equatable {

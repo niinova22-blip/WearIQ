@@ -1,3 +1,4 @@
+import ProductMeasurementParser
 import UIKit
 import WebKit
 
@@ -19,6 +20,8 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
         var snapshot: UIImage?
         /// Texts of clickable elements that mention sizes, for diagnostics.
         var sizeRelatedControls: [String] = []
+        /// The size selectors visible on the page (not hidden sheets or carousels).
+        var sizeGroups: [SizeOptionGroup] = []
     }
 
     private var webView: WKWebView?
@@ -88,6 +91,12 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
         guard var page = last else { return nil }
         page.text = (try? await webView.evaluateJavaScript("document.body.innerText") as? String) ?? ""
         page.sizeRelatedControls = (try? await webView.evaluateJavaScript(Self.listSizeControls) as? [String]) ?? []
+        if let raw = try? await webView.evaluateJavaScript(SizeOptions.script) as? [[String: Any]] {
+            page.sizeGroups = raw.compactMap { g in
+                guard let labels = g["labels"] as? [String] else { return nil }
+                return SizeOptionGroup(caption: g["caption"] as? String ?? "", labels: labels)
+            }
+        }
         if page.sizeGuideControls > 0 {
             // Bring the opened guide into view, then photograph it.
             _ = try? await webView.evaluateJavaScript(Self.scrollToSizeGuide)
