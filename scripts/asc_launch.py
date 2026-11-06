@@ -254,14 +254,6 @@ def submit(app_id, version_string, build_number):
     call("PATCH", f"/appStoreVersions/{version['id']}/relationships/build",
          {"data": {"type": "builds", "id": build["id"]}})
     print(f"version {version_string}: build {build_number}")
-    for g in call("GET", f"/apps/{app_id}/subscriptionGroups")["data"]:
-        for sub in call("GET", f"/subscriptionGroups/{g['id']}/subscriptions")["data"]:
-            st = sub["attributes"].get("state")
-            print(f"{sub['attributes']['productId']}: {st}")
-            if st == "READY_TO_SUBMIT":
-                call("POST", "/subscriptionSubmissions", {"data": {
-                    "type": "subscriptionSubmissions", "relationships": {"subscription": rel("subscriptions", sub["id"])}}})
-                print("  submitted with the version")
     open_subs = call("GET", f"/reviewSubmissions?filter[app]={app_id}&filter[platform]=IOS"
                             "&filter[state]=READY_FOR_REVIEW,WAITING_FOR_REVIEW,IN_REVIEW,UNRESOLVED_ISSUES")["data"]
     if open_subs and open_subs[0]["attributes"]["state"] != "READY_FOR_REVIEW":
@@ -274,6 +266,16 @@ def submit(app_id, version_string, build_number):
         "type": "reviewSubmissionItems",
         "relationships": {"reviewSubmission": rel("reviewSubmissions", rs["id"]),
                           "appStoreVersion": rel("appStoreVersions", version["id"])}}})
+    # The first subscriptions go to App Review with the first version: added once the
+    # version is in the review submission, before it's sent.
+    for g in call("GET", f"/apps/{app_id}/subscriptionGroups")["data"]:
+        for sub in call("GET", f"/subscriptionGroups/{g['id']}/subscriptions")["data"]:
+            st = sub["attributes"].get("state")
+            print(f"{sub['attributes']['productId']}: {st}")
+            if st == "READY_TO_SUBMIT":
+                try_call("POST", "/subscriptionSubmissions", {"data": {
+                    "type": "subscriptionSubmissions", "relationships": {"subscription": rel("subscriptions", sub["id"])}}})
+                print("  submitted with the version")
     call("PATCH", f"/reviewSubmissions/{rs['id']}", {"data": {
         "type": "reviewSubmissions", "id": rs["id"], "attributes": {"submitted": True}}})
     print("submitted for review")
