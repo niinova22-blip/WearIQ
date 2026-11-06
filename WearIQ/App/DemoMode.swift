@@ -34,6 +34,8 @@ enum DemoMode {
     static var opensPaywall: Bool { screen == "paywall" }
     /// The 3D body from the scan (Profile → My 3D avatar).
     static var opensBody: Bool { screen == "body" }
+    /// Every garment checked, of every kind (Home → See all).
+    static var opensHistory: Bool { screen == "history" }
 
     private static var turkish: Bool { Locale.current.language.languageCode?.identifier == "tr" }
     private static func text(_ tr: String, _ en: String) -> String { turkish ? tr : en }
@@ -88,6 +90,24 @@ enum DemoMode {
             SizeEntry(label: "M", values: [.chest: v(100), .shoulderWidth: v(39), .bodyLength: v(62)]),
             SizeEntry(label: "L", values: [.chest: v(106), .shoulderWidth: v(40.5), .bodyLength: v(64)]),
         ])
+        let skirt = GarmentSpec(category: .skirt, fitStyle: .regular, chartKind: .garment, sizes: [
+            SizeEntry(label: "XS", values: [.waist: v(64), .hip: v(96)]),
+            SizeEntry(label: "S", values: [.waist: v(68), .hip: v(100)]),
+            SizeEntry(label: "M", values: [.waist: v(72), .hip: v(104)]),
+            SizeEntry(label: "L", values: [.waist: v(78), .hip: v(110)]),
+        ])
+        let coat = GarmentSpec(category: .coat, fitStyle: .regular, chartKind: .garment, sizes: [
+            SizeEntry(label: "XS", values: [.chest: v(96), .shoulderWidth: v(38), .sleeveLength: v(59)]),
+            SizeEntry(label: "S", values: [.chest: v(100), .shoulderWidth: v(39), .sleeveLength: v(60)]),
+            SizeEntry(label: "M", values: [.chest: v(106), .shoulderWidth: v(40.5), .sleeveLength: v(61)]),
+            SizeEntry(label: "L", values: [.chest: v(112), .shoulderWidth: v(42), .sleeveLength: v(62)]),
+        ])
+        let knit = GarmentSpec(category: .sweater, fitStyle: .relaxed, chartKind: .garment, sizes: [
+            SizeEntry(label: "XS", values: [.chest: v(98), .sleeveLength: v(58), .bodyLength: v(60)]),
+            SizeEntry(label: "S", values: [.chest: v(104), .sleeveLength: v(59), .bodyLength: v(62)]),
+            SizeEntry(label: "M", values: [.chest: v(110), .sleeveLength: v(60), .bodyLength: v(64)]),
+            SizeEntry(label: "L", values: [.chest: v(116), .sleeveLength: v(61), .bodyLength: v(66)]),
+        ])
         let blazer = GarmentSpec(category: .jacket, fitStyle: .regular, chartKind: .garment, sizes: [
             SizeEntry(label: "34", values: [.chest: v(90), .shoulderWidth: v(37), .sleeveLength: v(58), .bodyLength: v(68)]),
             SizeEntry(label: "36", values: [.chest: v(94), .shoulderWidth: v(38), .sleeveLength: v(59), .bodyLength: v(69)]),
@@ -100,6 +120,9 @@ enum DemoMode {
              "70% Polyester 30% Viscose", -26_000, true),
             ("demo-shirt", text("Keten Rahat Gömlek", "Relaxed Linen Shirt"), "Lumen", shirt, "100% Linen", -14_400, true),
             ("demo-tee", text("Beyaz Basic Tişört", "White Cotton Tee"), "Lumen", tee, "100% Cotton", -10_800, false),
+            ("demo-coat", text("Camel Yün Kaban", "Camel Wool Coat"), "Atelier Nord", coat, "60% Wool 40% Polyester", -30_000, false),
+            ("demo-skirt", text("Pileli Midi Etek", "Pleated Midi Skirt"), "Maison Rose", skirt, "100% Polyester", -34_000, false),
+            ("demo-knit", text("Krem Triko Kazak", "Cream Knit Sweater"), "Indigo & Co", knit, "50% Wool 50% Acrylic", -38_000, false),
             ("demo-jeans", text("Yüksek Bel Straight Jean", "High-Rise Straight Jeans"), "Indigo & Co", jeans,
              "99% Cotton 1% Elastane", -7_200, false),
             ("demo-dress", text("Saten Midi Elbise", "Satin Midi Dress"), "Maison Rose", dress,

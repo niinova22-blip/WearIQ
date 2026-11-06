@@ -29,6 +29,8 @@ struct MainTabView: View {
                 HomeView(selectTab: { selection = $0 })
                 #if DEBUG
                     .navigationDestination(isPresented: .constant(DemoMode.opensResult)) { DemoResultView() }
+                    // Its rows link on, which a constantly presented destination doesn't survive.
+                    .fullScreenCover(isPresented: .constant(DemoMode.opensHistory)) { NavigationStack { ScanHistoryView() } }
                     .fullScreenCover(isPresented: .constant(DemoMode.opensAvatar)) { DemoAvatarView() }
                     .sheet(isPresented: .constant(DemoMode.opensPaywall)) { PaywallView(reason: "Style is part of Premium.") }
                 #endif

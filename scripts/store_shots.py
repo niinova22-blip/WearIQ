@@ -25,47 +25,32 @@ BLUSH_BOTTOM = (246, 221, 231)
 PLUM_TOP = (64, 20, 72)
 PLUM_BOTTOM = (150, 44, 104)
 
-# (screen, kicker, headline, line, chips, dark background), per language.
+# (screen, kicker, headline, line, chips, dark background), per language. Lines of a
+# headline or a sentence are separated by "|".
 SLOTS = {
     "en": [
-        ("result", "SIZE ADVICE", "Know your size|before you buy",
-         "Every garment checked against your body,|region by region.", ["✓  Waist: ideal", "Size M · high confidence"], False),
-        ("body", "3D BODY SCAN", "Your body,|scanned in 3D",
-         "One turn in front of your phone builds|your 3D twin. No tape, no studio.", ["30-second scan", "Processed on-device"], True),
-        ("avatar", "3D TRY-ON", "Try it on your|3D twin",
-         "Jeans and a tee on your own body, in the|size you pick, draped like real fabric.", ["Tight · Ideal · Loose"], False),
-        ("profile", "12 MEASUREMENTS", "Every measurement,|no tape",
-         "Chest, waist, hips, inseam and more,|each with how sure it is.", ["Accurate to ~2 cm"], True),
-        ("scan", "ANY STORE", "Any link, any|size chart",
-         "Paste a product link, scan a barcode|or snap a size chart.", ["Works with 100+ stores"], False),
-        ("memory", "SAFARI", "Your size, right|where you shop",
-         "WearIQ reads clothing pages as you browse|and keeps them ready for you.", ["Saved from Safari"], True),
-        ("style", "PERSONAL STYLIST", "Colours and cuts|that suit you",
-         "From your skin tone and your shape,|and the way you like to dress.", ["Your palette"], False),
-        ("passport", "SIZE PASSPORT", "Every brand,|one passport",
-         "Your size in each brand you buy,|ready to share.", ["Brand by brand"], True),
-        ("home", "FEWER RETURNS", "Shop with|confidence",
-         "Know how it fits before it ships.|Keep what you order.", ["Fewer returns"], False),
+        ("body", "ACCURATE 3D BODY SCAN", "Every part of you,|scanned in 3D", "One 30-second turn measures chest, waist, hips,|shoulders, arms and legs. No tape.", ["12 body measurements", "Processed on-device"], True),
+        ("avatar", "3D TRY-ON", "See the fit|before it ships", "Your size on your own 3D twin: tight, ideal|or loose, zone by zone, like real fabric.", ["Tight · Ideal · Loose", "Top + bottom together"], False),
+        ("result", "SIZE ADVICE", "Know your size|before you buy", "Your size in any garment, checked against|your chest, waist, hips, arms and legs.", ["✓  Chest · Waist · Hips", "Size M · high confidence"], False),
+        ("history", "EVERY GARMENT", "Tops, jeans, dresses,|coats: all of them", "Shirts, tees, knits, jackets, skirts, trousers:|every cut, every leg, every brand.", ["Slim · Regular · Oversize", "Skinny to wide leg"], True),
+        ("style", "LEARNS YOUR STYLE", "It learns how|you like to dress", "Show your favourite outfit once: WearIQ learns|your cut and colours, and sizes for them.", ["\"M fits, S for your style\"", "Your colour palette"], False),
+        ("scan", "ANY STORE", "Any link, any|size chart", "Paste a product link, scan a barcode|or snap a size chart.", ["Works with 100+ stores"], False),
+        ("memory", "SAFARI", "Your size, right|where you shop", "WearIQ reads clothing pages as you browse|and keeps them ready for you.", ["Saved from Safari"], True),
+        ("profile", "YOUR MEASUREMENTS", "Every measurement,|in your pocket", "Chest, waist, hips, inseam and more,|each with how sure it is.", ["Tape it once to calibrate"], True),
+        ("passport", "SIZE PASSPORT", "Every brand,|one passport", "Your size in each brand you buy,|ready to share.", ["Brand by brand"], False),
+        ("home", "FEWER RETURNS", "Right size,|first time", "Know how it fits before you order.|Keep what you buy.", ["5 free checks a day"], True),
     ],
     "tr": [
-        ("result", "BEDEN ÖNERİSİ", "Almadan önce|bedenini bil",
-         "Her kıyafet vücuduna göre,|bölge bölge kontrol edilir.", ["✓  Bel: ideal", "M beden · yüksek güven"], False),
-        ("body", "3D VÜCUT TARAMA", "Tek turda|3D vücut taraması",
-         "Telefonun önünde bir tur dön, 3D ikizin|hazır. Mezura yok, stüdyo yok.", ["30 saniyede tarama", "Cihazında işlenir"], True),
-        ("avatar", "3D DENEME", "Kıyafeti 3D|ikizinde dene",
-         "Jean ve tişört kendi vücudunda, seçtiğin|bedende, gerçek kumaş gibi dökülür.", ["Dar · İdeal · Bol"], False),
-        ("profile", "12 ÖLÇÜ", "Tüm ölçülerin,|mezurasız",
-         "Göğüs, bel, kalça, iç bacak ve fazlası,|her biri güven aralığıyla.", ["~2 cm hassasiyet"], True),
-        ("scan", "HER MAĞAZA", "Her bağlantı,|her beden tablosu",
-         "Ürün bağlantısını yapıştır, barkodu okut|ya da beden tablosunun fotoğrafını çek.", ["100+ mağazayla çalışır"], False),
-        ("memory", "SAFARI", "Bedenin, alışveriş|yaptığın yerde",
-         "WearIQ gezdiğin giyim sayfalarını okur|ve senin için hazır tutar.", ["Safari'den kaydedildi"], True),
-        ("style", "KİŞİSEL STİLİST", "Sana yakışan|renk ve kesimler",
-         "Ten rengine, vücut tipine|ve giyinme tarzına göre.", ["Renk paletin"], False),
-        ("passport", "BEDEN PASAPORTU", "Her marka,|tek pasaport",
-         "Aldığın her markadaki bedenin,|paylaşmaya hazır.", ["Marka marka"], True),
-        ("home", "DAHA AZ İADE", "Gönül rahatlığıyla|alışveriş yap",
-         "Kargolanmadan önce nasıl oturacağını bil.|Sipariş ettiğini elinde tut.", ["Daha az iade"], False),
+        ("body", "HASSAS 3D VÜCUT TARAMA", "Tüm vücudun|3D olarak taranır", "30 saniyelik tek tur; göğüs, bel, kalça, omuz,|kol ve bacakları ölçer. Mezura yok.", ["12 vücut ölçüsü", "Cihazında işlenir"], True),
+        ("avatar", "3D DENEME", "Gelmeden önce|üstünde gör", "Bedenin kendi 3D ikizinde: dar, ideal ya da|bol; bölge bölge, gerçek kumaş gibi.", ["Dar · İdeal · Bol", "Alt + üst birlikte"], False),
+        ("result", "BEDEN ÖNERİSİ", "Almadan önce|bedenini bil", "Her kıyafette bedenin; göğüs, bel, kalça,|kol ve bacak ölçülerine göre kontrol edilir.", ["✓  Göğüs · Bel · Kalça", "M beden · yüksek güven"], False),
+        ("history", "HER KIYAFET", "Üst, jean, elbise,|kaban: hepsi", "Gömlek, tişört, triko, ceket, etek, pantolon:|her kesim, her paça, her marka.", ["Dar · Normal · Oversize", "Dar paçadan bol paçaya"], True),
+        ("style", "TARZINI ÖĞRENİR", "Nasıl giyindiğini|öğrenir", "En sevdiğin kombini bir kez göster: kesimini|ve renklerini öğrenir, bedeni ona göre önerir.", ["\"M olur, tarzına S\"", "Renk paletin"], False),
+        ("scan", "HER MAĞAZA", "Her bağlantı,|her beden tablosu", "Ürün bağlantısını yapıştır, barkodu okut|ya da beden tablosunun fotoğrafını çek.", ["100+ mağazayla çalışır"], False),
+        ("memory", "SAFARI", "Bedenin, alışveriş|yaptığın yerde", "WearIQ gezdiğin giyim sayfalarını okur|ve senin için hazır tutar.", ["Safari'den kaydedildi"], True),
+        ("profile", "ÖLÇÜLERİN", "Tüm ölçülerin|cebinde", "Göğüs, bel, kalça, iç bacak ve fazlası,|her biri güven aralığıyla.", ["Mezurayla bir kez ayarla"], True),
+        ("passport", "BEDEN PASAPORTU", "Her marka,|tek pasaport", "Aldığın her markadaki bedenin,|paylaşmaya hazır.", ["Marka marka"], False),
+        ("home", "DAHA AZ İADE", "İlk seferde|doğru beden", "Sipariş vermeden nasıl oturacağını bil.|Aldığını elinde tut.", ["Her gün 5 ücretsiz kontrol"], True),
     ],
 }
 
@@ -192,6 +177,8 @@ def main(raw_dir, out_dir, serif_path, sans_path, lang="en"):
             print("missing", path)
             continue
         n += 1
+        # Plum and blush in turn, plum first: the row reads as a set.
+        slot = slot[:5] + (n % 2 == 1,)
         compose(Image.open(path), slot, (serif, sans, sans_bold)).save(
             os.path.join(out_dir, f"{n:02d}_{slot[0]}.png"), optimize=True)
         print("made", slot[0])

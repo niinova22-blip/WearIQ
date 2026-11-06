@@ -52,7 +52,7 @@ jobs:
           for lang in en tr; do
             locale=$([ "$lang" = tr ] && echo tr_TR || echo en_US)
             mkdir -p "raw/$lang"
-            for screen in result body avatar profile scan memory style passport home paywall; do
+            for screen in body avatar result history style scan memory profile passport home paywall; do
               xcrun simctl launch "$UDID" com.niinova.weariq -WQDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$locale" > /dev/null
               # The avatar is cut and draped first (several seconds on the simulator).
               case "$screen" in avatar) sleep 75 ;; body) sleep 30 ;; *) sleep 8 ;; esac
