@@ -329,6 +329,12 @@ def submit(app_id, version_string, build_number):
                 try_call("POST", "/subscriptionSubmissions", {"data": {
                     "type": "subscriptionSubmissions", "relationships": {"subscription": rel("subscriptions", sub["id"])}}})
                 print("  submitted with the version")
+    # Sent only with everything in it: the version and the subscriptions together.
+    items = call("GET", f"/reviewSubmissions/{rs['id']}/items?limit=20")["data"]
+    kinds = sorted({k for i in items for k, v in (i.get("relationships") or {}).items() if (v.get("data") if isinstance(v, dict) else None)})
+    print(f"review submission items: {len(items)} {kinds}")
+    if len(items) < 2:
+        sys.exit("::error::The review submission doesn't hold both the version and the subscriptions; not sent")
     call("PATCH", f"/reviewSubmissions/{rs['id']}", {"data": {
         "type": "reviewSubmissions", "id": rs["id"], "attributes": {"submitted": True}}})
     print("submitted for review")
