@@ -97,7 +97,7 @@ def main(app_id, metadata_path, shots_dir=None):
                          info["id"], locs, ["name", "subtitle", "privacyPolicyUrl"])
 
     versions = call("GET", f"/apps/{app_id}/appStoreVersions?filter[platform]=IOS"
-                           "&filter[appStoreState]=PREPARE_FOR_SUBMISSION")["data"]
+                           "&filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED")["data"]
     if not versions:
         sys.exit("::error::No iOS App Store version in Prepare for Submission state")
     version = versions[0]
