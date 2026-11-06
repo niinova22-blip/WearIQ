@@ -236,6 +236,37 @@ def subscriptions(app_id, screenshot):
             print("  review screenshot uploaded")
 
 
+COPYRIGHT = "2026 Rahile Kökdogan"
+# Age rating answers not given yet: none of these in WearIQ, except the ads it shows.
+AGE_ENUMS = ["alcoholTobaccoOrDrugUseOrReferences", "contests", "gamblingSimulated", "gunsOrOtherWeapons",
+             "horrorOrFearThemes", "matureOrSuggestiveThemes", "medicalOrTreatmentInformation",
+             "profanityOrCrudeHumor", "sexualContentGraphicAndNudity", "sexualContentOrNudity",
+             "violenceCartoonOrFantasy", "violenceRealistic", "violenceRealisticProlongedGraphicOrSadistic"]
+AGE_FLAGS = {"gambling": False, "healthOrWellnessTopics": False, "lootBox": False, "messagingAndChat": False,
+             "parentalControls": False, "ageAssurance": False, "userGeneratedContent": False,
+             "unrestrictedWebAccess": False, "advertising": True}
+
+
+def age_rating(app_id):
+    infos = call("GET", f"/apps/{app_id}/appInfos")["data"]
+    info = next((i for i in infos if i["attributes"].get("state") not in ("READY_FOR_DISTRIBUTION", "REPLACED_WITH_NEW_INFO")), infos[0])
+    decl = call("GET", f"/appInfos/{info['id']}/ageRatingDeclaration")["data"]
+    have = decl["attributes"]
+    print("age rating now:", json.dumps(have))
+    wanted = {k: "NONE" for k in AGE_ENUMS if k in have and have[k] is None}
+    wanted.update({k: v for k, v in AGE_FLAGS.items() if k in have and have[k] is None})
+    # Keys the API lists but this script doesn't know: say so rather than guess.
+    unknown = [k for k, v in have.items() if v is None and k not in wanted and k not in ("kidsAgeBand", "ageRatingOverride",
+                                                                                        "ageRatingOverrideV2", "koreaAgeRatingOverride",
+                                                                                        "developerAgeRatingInfoUrl")]
+    if unknown:
+        print(f"::warning::age rating questions left unanswered: {unknown}")
+    if wanted:
+        call("PATCH", f"/ageRatingDeclarations/{decl['id']}", {"data": {
+            "type": "ageRatingDeclarations", "id": decl["id"], "attributes": wanted}})
+        print(f"age rating: answered {sorted(wanted)}")
+
+
 def submit(app_id, version_string, build_number):
     """Attaches the build to the version, puts the subscriptions in with it, and sends
     the lot to App Review."""
@@ -251,6 +282,9 @@ def submit(app_id, version_string, build_number):
     state = build["attributes"].get("processingState")
     if state != "VALID":
         sys.exit(f"::error::Build {build_number} is {state}")
+    call("PATCH", f"/appStoreVersions/{version['id']}", {"data": {
+        "type": "appStoreVersions", "id": version["id"], "attributes": {"copyright": COPYRIGHT}}})
+    age_rating(app_id)
     call("PATCH", f"/appStoreVersions/{version['id']}/relationships/build",
          {"data": {"type": "builds", "id": build["id"]}})
     print(f"version {version_string}: build {build_number}")
