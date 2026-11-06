@@ -71,7 +71,7 @@ def try_call(method: str, path: str, body: dict | None = None) -> dict | None:
             raw = resp.read()
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as e:
-        print(f"::warning::App Store Connect API {method} {path} failed ({e.code}): {e.read().decode(errors='replace')[:400]}")
+        print(f"::warning::App Store Connect API {method} {path} failed ({e.code}): {e.read().decode(errors='replace')[:6000]}")
         return None
 
 
