@@ -14,8 +14,9 @@ final class ValidationStore {
 
     /// Validation mode: scans are also measured by the experimental engine and kept here.
     /// Production measurements never change because of it.
+    /// Only in test builds: a store build never records a second engine's reading.
     static var isEnabled: Bool {
-        get { UserDefaults.standard.bool(forKey: "validationMode") }
+        get { TesterBuild.isActive && UserDefaults.standard.bool(forKey: "validationMode") }
         set { UserDefaults.standard.set(newValue, forKey: "validationMode") }
     }
 

@@ -48,8 +48,9 @@ struct ProfileView: View {
                 NavigationLink("My 3D avatar") { AvatarEditorView() }
                 Button("Scan again") { showRescan = true }
                 NavigationLink("Measurement changes") { MeasurementTrackingView() }
-                NavigationLink("Measurement validation") { ValidationView() }
+                // Testers' tools: never in a store build.
                 if TesterBuild.isActive {
+                    NavigationLink("Measurement validation") { ValidationView() }
                     NavigationLink { TesterPanelView() } label: { Label("Test panel", systemImage: "testtube.2") }
                 }
             } header: {

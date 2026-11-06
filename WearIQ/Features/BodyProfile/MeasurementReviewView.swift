@@ -102,7 +102,7 @@ struct MeasurementReviewView: View {
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Too small to see in the photos, so estimated from your height and weight. Tap one to enter your own.")
-                    if let ratio = model.profile.skeletonToMaskRatio {
+                    if TesterBuild.isActive, let ratio = model.profile.skeletonToMaskRatio {
                         // Diagnostic: 1.00 when the joints and the outline give the same scale.
                         Text("Scan check: skeleton/outline scale \(ratio, format: .number.precision(.fractionLength(2)))")
                             .font(.caption2)
