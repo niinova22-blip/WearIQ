@@ -248,6 +248,23 @@ AGE_FLAGS = {"gambling": False, "healthOrWellnessTopics": False, "lootBox": Fals
              "socialMediaAgeRestricted": False}
 
 
+def free_price(app_id):
+    """The app itself is free everywhere (Premium is the subscriptions)."""
+    sched = (try_call("GET", f"/apps/{app_id}/appPriceSchedule?include=manualPrices") or {})
+    if sched.get("included"):
+        print("app price: already set")
+        return
+    points = pages(f"/apps/{app_id}/appPricePoints?filter[territory]=USA&limit=200")
+    free = next(p for p in points if float(p["attributes"]["customerPrice"]) == 0)
+    call("POST", "/appPriceSchedules", {
+        "data": {"type": "appPriceSchedules",
+                 "relationships": {"app": rel("apps", app_id), "baseTerritory": rel("territories", "USA"),
+                                   "manualPrices": {"data": [{"type": "appPrices", "id": "${free}"}]}}},
+        "included": [{"type": "appPrices", "id": "${free}", "attributes": {"startDate": None},
+                      "relationships": {"appPricePoint": rel("appPricePoints", free["id"])}}]})
+    print("app price: free")
+
+
 def age_rating(app_id):
     infos = call("GET", f"/apps/{app_id}/appInfos")["data"]
     info = next((i for i in infos if i["attributes"].get("state") not in ("READY_FOR_DISTRIBUTION", "REPLACED_WITH_NEW_INFO")), infos[0])
@@ -286,6 +303,7 @@ def submit(app_id, version_string, build_number):
     call("PATCH", f"/appStoreVersions/{version['id']}", {"data": {
         "type": "appStoreVersions", "id": version["id"], "attributes": {"copyright": COPYRIGHT}}})
     age_rating(app_id)
+    free_price(app_id)
     call("PATCH", f"/appStoreVersions/{version['id']}/relationships/build",
          {"data": {"type": "builds", "id": build["id"]}})
     print(f"version {version_string}: build {build_number}")
