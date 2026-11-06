@@ -244,7 +244,8 @@ AGE_ENUMS = ["alcoholTobaccoOrDrugUseOrReferences", "contests", "gamblingSimulat
              "violenceCartoonOrFantasy", "violenceRealistic", "violenceRealisticProlongedGraphicOrSadistic"]
 AGE_FLAGS = {"gambling": False, "healthOrWellnessTopics": False, "lootBox": False, "messagingAndChat": False,
              "parentalControls": False, "ageAssurance": False, "userGeneratedContent": False,
-             "unrestrictedWebAccess": False, "advertising": True}
+             "unrestrictedWebAccess": False, "advertising": True, "socialMedia": False,
+             "socialMediaAgeRestricted": False}
 
 
 def age_rating(app_id):
@@ -258,7 +259,7 @@ def age_rating(app_id):
     # Keys the API lists but this script doesn't know: say so rather than guess.
     unknown = [k for k, v in have.items() if v is None and k not in wanted and k not in ("kidsAgeBand", "ageRatingOverride",
                                                                                         "ageRatingOverrideV2", "koreaAgeRatingOverride",
-                                                                                        "developerAgeRatingInfoUrl")]
+                                                                                        "developerAgeRatingInfoUrl", "gracRatingClassificationNumber")]
     if unknown:
         print(f"::warning::age rating questions left unanswered: {unknown}")
     if wanted:
