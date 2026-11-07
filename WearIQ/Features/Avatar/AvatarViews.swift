@@ -444,10 +444,7 @@ struct AvatarFitView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.m) {
                 if spec.sizes.count > 1 {
-                    Picker("Size", selection: $sizeLabel) {
-                        ForEach(spec.sizes, id: \.label) { Text($0.label).tag($0.label) }
-                    }
-                    .pickerStyle(.segmented)
+                    SizeChipRow(labels: spec.sizes.map(\.label), selection: $sizeLabel)
                 }
                 regionRows(regions)
                 placementRows(layer: 0)

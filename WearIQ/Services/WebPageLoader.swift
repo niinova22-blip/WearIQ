@@ -22,6 +22,8 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
         var sizeRelatedControls: [String] = []
         /// The size selectors visible on the page (not hidden sheets or carousels).
         var sizeGroups: [SizeOptionGroup] = []
+        /// The store's size guide data, for stores that load it on request (Zara).
+        var guideData: Data?
     }
 
     private var webView: WKWebView?
@@ -96,6 +98,13 @@ final class WebPageLoader: NSObject, WKNavigationDelegate {
                 guard let labels = g["labels"] as? [String] else { return nil }
                 return SizeOptionGroup(caption: g["caption"] as? String ?? "", labels: labels)
             }
+        }
+        if let guide = InditexSizeGuide.url(html: page.html, pageURL: page.url) {
+            // The same request the store's own size panel makes, from its page.
+            let text = try? await webView.callAsyncJavaScript(
+                "const r = await fetch(u, {headers: {Accept: 'application/json'}}); return r.ok ? await r.text() : null;",
+                arguments: ["u": guide.absoluteString], in: nil, contentWorld: .page) as? String
+            page.guideData = text.map { Data($0.utf8) }
         }
         if page.sizeGuideControls > 0 {
             // Bring the opened guide into view, then photograph it.

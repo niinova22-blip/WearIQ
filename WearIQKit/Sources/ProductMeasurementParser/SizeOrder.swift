@@ -52,6 +52,32 @@ public enum SizeLabel {
         return (w, len)
     }
 
+    /// A size written with its US equivalent, as Inditex stores (Zara, Bershka, Pull&Bear)
+    /// label trousers: "EU 38 (US 30)". Returns the European number and the US one; nil
+    /// for labels without a numeric US part ("S (US S)").
+    public static func withUS(_ label: String) -> (eu: Int?, us: Int)? {
+        let l = label.uppercased()
+        guard let re = try? NSRegularExpression(pattern: #"^\s*(?:EU\s*)?(\d{1,2})?\s*\(\s*US\s*(\d{1,2})\s*\)\s*$"#),
+              let m = re.firstMatch(in: l, range: NSRange(l.startIndex..., in: l)),
+              let ur = Range(m.range(at: 2), in: l), let us = Int(l[ur]) else { return nil }
+        let eu = Range(m.range(at: 1), in: l).flatMap { Int(l[$0]) }
+        return (eu, us)
+    }
+
+    /// The number a store's size label stands for, for reading it as a standard size:
+    /// trousers labelled "EU 38 (US 30)" are a 30 in waist (the US number is the waist in
+    /// inches, "W30"); other "EU 36" or "36 (US 4)" labels are the European 36.
+    public static func standardReading(_ label: String, category: GarmentCategory?) -> String {
+        if let pair = withUS(label) {
+            if category?.isBottom ?? true, (24...50).contains(pair.us) { return "W\(pair.us)" }
+            if let eu = pair.eu { return String(eu) }
+            return String(pair.us)
+        }
+        let l = label.trimmingCharacters(in: .whitespaces)
+        if l.uppercased().hasPrefix("EU"), let n = Int(l.dropFirst(2).trimmingCharacters(in: .whitespaces)) { return String(n) }
+        return l
+    }
+
     /// One spelling per size, to tell whether two labels are the same size: "W31 L32"
     /// and "31/32" are; "2XL" and "XXL" are.
     public static func normalized(_ label: String) -> String {

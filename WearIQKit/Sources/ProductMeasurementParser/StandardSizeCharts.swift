@@ -56,7 +56,8 @@ public enum StandardSizeCharts {
         // where jeans sit. Shifting the chart to it made a 73 cm model waist in W31 push
         // an 84 cm waist up to W35.
         if category?.isBottom ?? false,
-           waistInches(labels, category: category, audience: audience ?? .men) { return chart }
+           waistInches(labels.map { SizeLabel.standardReading($0, category: category) }, category: category,
+                       audience: audience ?? .men) { return chart }
         var shifted = false
         for (dim, value) in [(GarmentDimension.chest, anchor.chestCm), (.waist, anchor.waistCm), (.hip, anchor.hipCm)] {
             guard let value, let standard = reference.values[dim]?.cm else { continue }
@@ -118,9 +119,11 @@ public enum StandardSizeCharts {
 
     public static func chart(for labels: [String], category: GarmentCategory?, audience: GarmentAudience?) -> ParsedSizeChart? {
         let audience = audience ?? .men
-        let inches = waistInches(labels, category: category, audience: audience)
-        let sizes = labels.compactMap { label -> SizeEntry? in
-            guard let r = ranges(for: label, category: category, audience: audience, inches: inches) else { return nil }
+        // "EU 38 (US 30)" trousers read as W30, "EU 36" as 36; the store's label stays.
+        let readings = labels.map { SizeLabel.standardReading($0, category: category) }
+        let inches = waistInches(readings, category: category, audience: audience)
+        let sizes = zip(labels, readings).compactMap { label, reading -> SizeEntry? in
+            guard let r = ranges(for: reading, category: category, audience: audience, inches: inches) else { return nil }
             func v(_ range: ClosedRange<Double>) -> MeasuredValue {
                 // Range half-width plus a size step's worth of brand-to-brand variation.
                 MeasuredValue(cm: (range.lowerBound + range.upperBound) / 2,
@@ -148,6 +151,9 @@ public enum StandardSizeCharts {
         // Waist and length together (31/32, W31 L32) are inches whoever wears them.
         let trousers = category == .pants || category == .shorts
         if trousers || category == nil, labels.contains(where: { SizeLabel.waistLength($0) != nil }) { return true }
+        // "W30": a waist in inches by name.
+        if trousers || category == nil, labels.contains(where: { l in
+            let u = l.uppercased(); return u.hasPrefix("W") && Int(u.dropFirst()) != nil }) { return true }
         let numbers = labels.compactMap { l in Int(l.uppercased().replacingOccurrences(of: "W", with: "")
             .split(separator: "/").first.map(String.init) ?? l) }
         guard !numbers.isEmpty else { return false }

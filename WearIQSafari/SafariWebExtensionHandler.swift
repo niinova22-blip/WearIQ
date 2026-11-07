@@ -18,7 +18,8 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             let page = ShoppingAssistant.Page(url: url, title: message["title"] as? String, html: String(html.prefix(400_000)),
                                               text: (message["text"] as? String).map { String($0.prefix(4000)) },
                                               sizes: message["sizes"] as? [String],
-                                              sizeGroups: (message["sizeGroups"] as? [[String: Any]]).map(Self.groups))
+                                              sizeGroups: (message["sizeGroups"] as? [[String: Any]]).map(Self.groups),
+                                              guide: (message["guide"] as? String).map { String($0.prefix(200_000)) })
             let advice = ShoppingAssistant.advise(page, shopper: ShoppingBridge.shopper())
             if advice.status != .notGarment {
                 ShoppingBridge.enqueue(.init(page: page, advice: advice, seenAt: Date()))

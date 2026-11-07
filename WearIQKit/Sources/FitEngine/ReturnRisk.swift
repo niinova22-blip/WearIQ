@@ -59,6 +59,13 @@ public struct ReturnRisk: Sendable, Equatable {
 
         let recommended = analysis.recommendedSize?.label
         let chosen = size ?? recommended
+        let critical: Set<FitRegion> = category?.isBottom == true ? [.waist, .hip] : [.chest]
+        let chosenFit = chosen.flatMap { c in analysis.sizes.first { $0.label == c } }
+        // How likely the size is wearable where it matters (at most slightly off): the
+        // least likely of its deciding regions (the waist of jeans, the chest of a top).
+        let criticalOdds = chosenFit?.regions
+            .filter { critical.contains($0.region) && $0.missing == nil }
+            .compactMap(\.probabilityWearable).min()
         switch analysis.recommendation {
         case .insufficientData:
             raise(.high, .insufficientData)
@@ -68,14 +75,18 @@ public struct ReturnRisk: Sendable, Equatable {
             switch confidence {
             case .high: break
             case .medium: raise(.medium, .mediumConfidence)
-            case .low: raise(.high, .lowConfidence)
+            case .low:
+                // Low confidence mostly means the size next to it could be as right: a
+                // scanned waist is good to about ±4 cm and a jeans size is 2.5 cm, so nearly
+                // every pair of jeans was "high risk". That's doubt, not a likely return,
+                // unless this size itself is more likely wrong than right where it matters.
+                if let odds = criticalOdds, odds >= 0.6 { raise(.medium, .lowConfidence) } else { raise(.high, .lowConfidence) }
             }
         }
         if analysis.noSizeFits != nil { raise(.high, .noSizeFits) }
         if analysis.fromEstimates == true { raise(.medium, .fromEstimates) }
 
-        if let chosen, let fit = analysis.sizes.first(where: { $0.label == chosen }) {
-            let critical: Set<FitRegion> = category?.isBottom == true ? [.waist, .hip] : [.chest]
+        if let fit = chosenFit {
             for region in fit.regions where region.missing == nil {
                 switch region.severity {
                 case .major where critical.contains(region.region):

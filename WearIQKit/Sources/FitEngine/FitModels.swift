@@ -26,6 +26,9 @@ public struct RegionFit: Codable, Hashable, Sendable {
     /// Probability (0–1) that this region actually falls in the comfortable range,
     /// given body and garment measurement uncertainty.
     public var probabilityIdeal: Double?
+    /// Probability (0–1) that this region is at most slightly off (not clearly tight or
+    /// loose): wearable, not sent back. Nil in analyses saved before it was kept.
+    public var probabilityWearable: Double?
     public var confidence: ConfidenceLevel
     /// What's missing when verdict == .insufficientData.
     public var missing: MissingData?

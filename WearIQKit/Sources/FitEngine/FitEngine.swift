@@ -127,6 +127,11 @@ public struct FitEngine: FitAnalyzing {
                             estimatedOffsetCm: offset, probabilityIdeal: pIdeal,
                             confidence: confidence, missing: nil)
         fit.easeCm = ease
+        // Wearable: within the range, or out of it by no more than a slight miss (the
+        // comfort range of an everyday fit counts as slight too).
+        let lo = min(range.lowerBound - rule.majorThreshold, comfort?.lowerBound ?? .infinity)
+        let hi = max(range.upperBound + rule.majorThreshold, comfort?.upperBound ?? -.infinity)
+        fit.probabilityWearable = Self.normalCDF((hi - ease) / max(sigma, 0.01)) - Self.normalCDF((lo - ease) / max(sigma, 0.01))
         if byCutOnly { fit.byCutOnly = true }
         return (fit, rule.weight * expected)
     }

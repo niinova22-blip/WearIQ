@@ -78,7 +78,15 @@ A product page often carries sizes that aren't the product's:
 6. **Size guides with several tables** (tops and jeans, men and women): the table with
    the garment's measurements (waist/inside leg for trousers, chest for tops) and a
    title for its audience wins (`SizeTableReader.best(_:fit:category:audience:)`).
-7. **Model waist vs jeans waist.** A model's waist is taken at the narrowest point, well
+7. **Sizes with a conversion in brackets.** Zara and the other Inditex stores sell
+   trousers as "EU 38 (US 30)": the label is kept whole, and without a guide it reads as
+   W30 (the US number is the waist in inches), not as a European 38. "S (US S)" stays "S".
+8. **Guides loaded on request.** Zara's "Ürün boyutları" panel asks the store's catalogue
+   for JSON (`/itxrest/5/catalog/store/{storeId}/product/{catentryId}/size-measure-guide`);
+   the app and the Safari extension make the same request from the product page
+   (`InditexSizeGuide`). Its garment measurements are taken flat, so girths are doubled;
+   the store's department ("sectionName":"MAN") says who it's for.
+9. **Model waist vs jeans waist.** A model's waist is taken at the narrowest point, well
    above where jeans sit, so inch-sized trousers are not shifted to it.
 
 ## Sources

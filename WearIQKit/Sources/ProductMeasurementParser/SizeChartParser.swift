@@ -194,7 +194,7 @@ public struct SizeChartParser: Sendable {
         (.sleeveLength, ["kol", "sleeve"]),
         (.chest, ["gogus", "chest", "bust"]),
         (.waist, ["bel", "waist"]),
-        (.hip, ["kalca", "hip", "seat"]),
+        (.hip, ["kalca", "basen", "hip", "seat"]),
         (.thigh, ["uyluk", "baldir", "thigh"]),
         (.inseam, ["ic bacak", "inseam", "inside leg", "paca boyu"]),
         (.outseam, ["dis bacak", "outseam", "outside leg"]),
@@ -205,7 +205,9 @@ public struct SizeChartParser: Sendable {
     /// Rows that name a body part but measure something we don't use (sleeve or leg
     /// opening width, back width); without this "Kol genişliği" would be read as sleeve length.
     private static let notMeasured = ["kol genis", "sleeve width", "bicep", "pazu", "paca genis", "leg opening",
-                                      "etek genis", "bilek", "sirt genis", "back width", "yaka"]
+                                      "etek genis", "bilek", "sirt genis", "back width", "yaka",
+                                      // Rise ("Önden bel yüksekliği", "front rise") isn't the waist.
+                                      "bel yuksek", "rise", "kasik"]
 
     static func dimension(for line: String) -> GarmentDimension? {
         if notMeasured.contains(where: line.contains) { return nil }

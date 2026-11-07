@@ -35,6 +35,9 @@
       const text = table.innerText || "";
       if (SIZE_WORDS.test(text) && /\d/.test(text) && text.length < 20000) body.push(table.outerHTML);
     });
+    // The store's department in its page data (Zara: "sectionName":"MAN").
+    const section = (document.documentElement.innerHTML.match(/"(?:sectionName|section|gender|department)"\s*:\s*"(man|men|woman|women|male|female|erkek|kad[iı]n)"/i) || [])[1];
+    if (section) head.push('<script type="application/json">{"sectionName":"' + section.replace(/[^A-Za-zıİ]/g, "") + '"}</script>');
     const html = "<html><head><title>" + escapeHTML(document.title) + "</title>" + head.join("\n") +
       "</head><body>" + body.join("\n") + "</body></html>";
     const text = (document.body && document.body.innerText) || "";
@@ -103,7 +106,25 @@
     return boxes.slice(0, 10).map((b) => ({ caption: caption(b).trim().replace(/\s+/g, " ").slice(0, 40), labels: byBox.get(b).slice(0, 60) }));
   }
 
+  // Zara and the other Inditex stores load the size guide on request, as JSON; the same
+  // request their size panel makes (InditexSizeGuide in WearIQKit builds the same address).
+  async function inditexGuide() {
+    const h = document.documentElement.innerHTML;
+    const store = (h.match(/"storeId"\s*:\s*(\d{4,6})\b/) || [])[1];
+    const product = (h.match(/"catentryId"\s*:\s*(\d{6,12})\b/) || h.match(/"sku"\s*:\s*"(\d{6,12})-\d+-/) || [])[1];
+    if (!store || !product) return null;
+    const parts = location.pathname.split("/").filter(Boolean);
+    const locale = (h.match(/"locale"\s*:\s*"([a-z]{2}_[A-Z]{2})/) || [])[1] ||
+      (parts.length >= 2 && parts[0].length === 2 && parts[1].length === 2 ? parts[1] + "_" + parts[0].toUpperCase() : "en_GB");
+    try {
+      const r = await fetch("/itxrest/5/catalog/store/" + store + "/product/" + product + "/size-measure-guide?locale=" + locale,
+                            { headers: { Accept: "application/json" } });
+      return r.ok ? (await r.text()).slice(0, 200000) : null;
+    } catch (e) { return null; }
+  }
+
   let lastSent = "";
+  let guide = { url: "", text: null };
   let badge = null;
 
   function show(reply) {
@@ -144,13 +165,15 @@
     badge.querySelector(".x").addEventListener("click", () => { badge.innerHTML = ""; });
   }
 
-  function check() {
+  async function check() {
     if (!isProductPage()) return;
     const page = gather();
     const key = page.html.length + "|" + page.sizes.join(",") + "|" + location.href;
     if (key === lastSent) return;
     lastSent = key;
-    browser.runtime.sendMessage({ type: "product", url: location.href, title: document.title, ...page })
+    if (guide.url !== location.href) guide = { url: location.href, text: await inditexGuide() };
+    browser.runtime.sendMessage({ type: "product", url: location.href, title: document.title, ...page,
+                                  guide: guide.text || undefined })
       .then(show).catch(() => {});
   }
 

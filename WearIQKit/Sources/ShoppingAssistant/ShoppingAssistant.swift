@@ -24,11 +24,14 @@ public enum ShoppingAssistant {
         public var sizes: [String]?
         /// The visible size selectors, each with its caption (newer extension versions).
         public var sizeGroups: [SizeOptionGroup]?
+        /// The store's size guide data, for stores that load it on request (Zara's
+        /// size-measure-guide JSON).
+        public var guide: String?
 
         public init(url: String, title: String? = nil, html: String, text: String? = nil, sizes: [String]? = nil,
-                    sizeGroups: [SizeOptionGroup]? = nil) {
+                    sizeGroups: [SizeOptionGroup]? = nil, guide: String? = nil) {
             self.url = url; self.title = title; self.html = html; self.text = text; self.sizes = sizes
-            self.sizeGroups = sizeGroups
+            self.sizeGroups = sizeGroups; self.guide = guide
         }
     }
 
@@ -95,6 +98,9 @@ public enum ShoppingAssistant {
             if info.modelFit == nil { info.modelFit = ModelFitParser.parse(text, audience: info.audience, category: info.category) }
         }
         if info.stretch == nil, let material = info.material { info.stretch = GarmentClassifier.stretch(fromComposition: material) }
+        if let guide = page.guide, let chart = InditexSizeGuide.chart(from: Data(guide.utf8), category: info.category) {
+            info.sizeChartSections = [SizeChartSection(title: nil, fitStyle: nil, chart: chart)]
+        }
         return info
     }
 

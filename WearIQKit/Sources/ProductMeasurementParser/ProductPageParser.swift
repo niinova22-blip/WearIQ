@@ -111,7 +111,8 @@ public struct ProductPageParser: Sendable {
         if info.fitStyle == nil, let cut = info.legCut, info.category?.isBottom ?? true { info.fitStyle = cut.impliedFit }
         info.stretch = info.material.flatMap(GarmentClassifier.stretch(fromComposition:))
         info.audience = GarmentClassifier.audience(in: [info.name, info.categoryText, Self.breadcrumbText(in: html),
-                                                        pageURL?.path, og["og:title"], og["og:description"]])
+                                                        pageURL?.path, Self.storeSection(in: html),
+                                                        og["og:title"], og["og:description"]])
         info.modelFit = ModelFitParser.parse(visible, audience: info.audience, category: info.category)
         return info
     }
@@ -132,6 +133,17 @@ public struct ProductPageParser: Sendable {
         }
         jsonLDObjects(in: html).forEach(walk)
         return names.isEmpty ? nil : names.joined(separator: " > ")
+    }
+
+    /// The store's department for the page's product, from its page data: Zara and the
+    /// other Inditex stores write "sectionName":"MAN" (or "WOMAN"); others "gender" or
+    /// "department". The first one in the page is the product's; recommendations come later.
+    static func storeSection(in html: String) -> String? {
+        let pattern = #""(?:sectionName|section|gender|department)"\s*:\s*"(man|men|woman|women|male|female|erkek|kadin|kadın|mens|womens)""#
+        guard let re = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+              let m = re.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
+              let r = Range(m.range(at: 1), in: html) else { return nil }
+        return String(html[r])
     }
 
     /// Trouser variants that keep waist and length apart, as "waist/length" labels in
@@ -294,9 +306,7 @@ public struct ProductPageParser: Sendable {
 
         var sizes: [String] = []
         func add(_ raw: String?) {
-            // "S (US S)" → "S": keep the store's own label, drop the conversion in brackets.
-            let s = raw.map { $0.components(separatedBy: " (").first ?? $0 }?.trimmingCharacters(in: .whitespaces)
-            guard let s, !s.isEmpty, !sizes.contains(s) else { return }
+            guard let s = label(raw), !s.isEmpty, !sizes.contains(s) else { return }
             sizes.append(s)
         }
         func offers(_ v: Any?) -> [[String: Any]] {
@@ -312,9 +322,7 @@ public struct ProductPageParser: Sendable {
                 info.sizeStock[size] = (info.sizeStock[size] ?? false) || available
             }
         }
-        func label(_ raw: String?) -> String? {
-            raw.map { $0.components(separatedBy: " (").first ?? $0 }?.trimmingCharacters(in: .whitespaces)
-        }
+        func label(_ raw: String?) -> String? { Self.sizeLabel(raw) }
         if let s = p["size"] as? [Any] { s.forEach { add(string($0)) } } else { add(string(p["size"])) }
         for variant in (p["hasVariant"] as? [[String: Any]]) ?? [] {
             let size = string(variant["size"])
@@ -328,6 +336,16 @@ public struct ProductPageParser: Sendable {
             read(offer, size: label(size))
         }
         info.availableSizes = sizes
+    }
+
+    /// The store's size label without a conversion in brackets ("S (US S)" → "S"), except
+    /// a US number that says something the label doesn't: "EU 38 (US 30)" trousers are a
+    /// 30 in waist, which "EU 38" alone can't tell.
+    public static func sizeLabel(_ raw: String?) -> String? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespaces) else { return nil }
+        let collapsed = raw.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+        if SizeLabel.withUS(collapsed) != nil { return collapsed }
+        return (collapsed.components(separatedBy: " (").first ?? collapsed).trimmingCharacters(in: .whitespaces)
     }
 
     /// "1.299,90", "1299.90", 1299.9 → 1299.9.

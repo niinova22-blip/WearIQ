@@ -75,6 +75,8 @@ struct ProductDataService: ProductDataServicing {
             let page = await WebPageLoader.load(url) { page in
                 let info = parser.parse(html: page.html, pageURL: page.url)
                 if !info.sizeChartSections.isEmpty || !info.sizeChartImageURLs.isEmpty { return true }
+                // Zara and the other Inditex stores: the guide is one request away.
+                if !info.isEmpty, InditexSizeGuide.url(html: page.html, pageURL: page.url) != nil { return true }
                 // Product found but no size guide button after a few seconds: nothing more will come.
                 return !info.isEmpty && page.sizeGuideControls == 0 && page.elapsed > 8
             }
@@ -95,7 +97,13 @@ struct ProductDataService: ProductDataServicing {
             }
         }
 
-        guard let info else { throw directError ?? ProductDataError.notAProductPage }
+        guard var info else { throw directError ?? ProductDataError.notAProductPage }
+        // The store's own guide data first (Zara's "Ürün boyutları"), over tables read from
+        // the rendered panel, whose "EU 36 (US 29)" columns the text reader can't take apart.
+        if let page = renderedPage, let section = await inditexGuide(page, category: info.category) {
+            info.sizeChartSections = [section]
+            return ProductLookup(info: info, chart: SizeChartScan(sections: [section], chosen: section))
+        }
         if let chart = await readChart(info) { return ProductLookup(info: info, chart: chart) }
         return ProductLookup(info: info, chart: await readRenderedGuide(renderedPage, fit: info.fitStyle))
     }
@@ -177,6 +185,22 @@ struct ProductDataService: ProductDataServicing {
         m.audience = a.audience ?? b.audience
         m.modelFit = a.modelFit ?? b.modelFit
         return m
+    }
+
+    /// Zara's size guide, asked of the store's catalogue the way its product page asks.
+    private func inditexGuide(_ page: WebPageLoader.Page, category: GarmentCategory?) async -> SizeChartSection? {
+        if let data = page.guideData, let chart = InditexSizeGuide.chart(from: data, category: category) {
+            return SizeChartSection(title: nil, fitStyle: nil, chart: chart)
+        }
+        guard let url = InditexSizeGuide.url(html: page.html, pageURL: page.url) else { return nil }
+        var request = URLRequest(url: url, timeoutInterval: 10)
+        request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(page.url.absoluteString, forHTTPHeaderField: "Referer")
+        guard let (data, response) = try? await session.data(for: request),
+              (response as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) ?? false,
+              let chart = InditexSizeGuide.chart(from: data, category: category) else { return nil }
+        return SizeChartSection(title: nil, fitStyle: nil, chart: chart)
     }
 
     /// Tries the linked chart images in page order; a chart that can't be read is not an

@@ -104,7 +104,7 @@ def main(app_id, metadata_path, shots_dir=None):
     print(f"version {version['attributes']['versionString']}")
     loc_ids = upsert_localizations(f"/appStoreVersions/{version['id']}/appStoreVersionLocalizations",
                                    "appStoreVersionLocalizations", "appStoreVersion", version["id"], locs,
-                                   ["description", "keywords", "promotionalText", "supportUrl"])
+                                   ["description", "keywords", "promotionalText", "supportUrl", "marketingUrl"])
 
     review = call("GET", f"/appStoreVersions/{version['id']}/appStoreReviewDetail").get("data")
     attrs = {"notes": meta["reviewNotes"], "demoAccountRequired": False}
