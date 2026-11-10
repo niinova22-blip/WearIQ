@@ -31,7 +31,7 @@ SLOTS = {
     "en": [
         ("body", "ACCURATE 3D BODY SCAN", "Every part of you,|scanned in 3D", "One 30-second turn measures chest, waist, hips,|shoulders, arms and legs. No tape.", ["12 body measurements", "Processed on-device"], True),
         ("avatar", "3D TRY-ON", "See the fit|before it ships", "Your size on your own 3D twin: tight, ideal|or loose, zone by zone, like real fabric.", ["Tight · Ideal · Loose", "Top + bottom together"], False),
-        ("result", "SIZE ADVICE", "Know your size|before you buy", "Your size in any garment, checked against|your chest, waist, hips, arms and legs.", ["✓  Chest · Waist · Hips", "Size M · high confidence"], False),
+        ("result", "SIZE ADVICE", "Know your size|before you buy", "Your size in any garment, checked against|your chest, waist, hips, arms and legs.", ["✓  Chest · Waist · Hips", "S or M? It tells you why"], False),
         ("history", "EVERY GARMENT", "Tops, jeans, dresses,|coats: all of them", "Shirts, tees, knits, jackets, skirts, trousers:|every cut, every leg, every brand.", ["Slim · Regular · Oversize", "Skinny to wide leg"], True),
         ("style", "LEARNS YOUR STYLE", "It learns how|you like to dress", "Show your favourite outfit once: WearIQ learns|your cut and colours, and sizes for them.", ["\"M fits, S for your style\"", "Your colour palette"], False),
         ("scan", "ANY STORE", "Any link, any|size chart", "Paste a product link, scan a barcode|or snap a size chart.", ["Works with 100+ stores", "TR · EU · US sizes"], False),
@@ -43,7 +43,7 @@ SLOTS = {
     "tr": [
         ("body", "HASSAS 3D VÜCUT TARAMA", "Tüm vücudun|3D olarak taranır", "30 saniyelik tek tur; göğüs, bel, kalça, omuz,|kol ve bacakları ölçer. Mezura yok.", ["12 vücut ölçüsü", "Cihazında işlenir"], True),
         ("avatar", "3D DENEME", "Gelmeden önce|üstünde gör", "Bedenin kendi 3D ikizinde: dar, ideal ya da|bol; bölge bölge, gerçek kumaş gibi.", ["Dar · İdeal · Bol", "Alt + üst birlikte"], False),
-        ("result", "BEDEN ÖNERİSİ", "Almadan önce|bedenini bil", "Her kıyafette bedenin; göğüs, bel, kalça,|kol ve bacak ölçülerine göre kontrol edilir.", ["✓  Göğüs · Bel · Kalça", "M beden · yüksek güven"], False),
+        ("result", "BEDEN ÖNERİSİ", "Almadan önce|bedenini bil", "Her kıyafette bedenin; göğüs, bel, kalça,|kol ve bacak ölçülerine göre kontrol edilir.", ["✓  Göğüs · Bel · Kalça", "S mi M mi? Nedenini söyler"], False),
         ("history", "HER KIYAFET", "Üst, jean, elbise,|kaban: hepsi", "Gömlek, tişört, triko, ceket, etek, pantolon:|her kesim, her paça, her marka.", ["Dar · Normal · Oversize", "Dar paçadan bol paçaya"], True),
         ("style", "TARZINI ÖĞRENİR", "Nasıl giyindiğini|öğrenir", "En sevdiğin kombini bir kez göster: kesimini|ve renklerini öğrenir, bedeni ona göre önerir.", ["\"M olur, tarzına S\"", "Renk paletin"], False),
         ("scan", "HER MAĞAZA", "Her bağlantı,|her beden tablosu", "Ürün bağlantısını yapıştır, barkodu okut|ya da beden tablosunun fotoğrafını çek.", ["100+ mağazayla çalışır", "TR · EU · US bedenler"], False),
