@@ -98,13 +98,23 @@ def main(app_id, metadata_path, shots_dir=None):
 
     versions = call("GET", f"/apps/{app_id}/appStoreVersions?filter[platform]=IOS"
                            "&filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED")["data"]
+    if not versions and meta.get("version"):
+        # The next version, as project.yml names it.
+        versions = [call("POST", "/appStoreVersions", {"data": {
+            "type": "appStoreVersions", "attributes": {"platform": "IOS", "versionString": meta["version"]},
+            "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}})["data"]]
+        print(f"version {meta['version']}: created")
     if not versions:
         sys.exit("::error::No iOS App Store version in Prepare for Submission state")
     version = versions[0]
+    if meta.get("version") and version["attributes"]["versionString"] != meta["version"]:
+        call("PATCH", f"/appStoreVersions/{version['id']}", {"data": {
+            "type": "appStoreVersions", "id": version["id"], "attributes": {"versionString": meta["version"]}}})
+        print(f"version renamed to {meta['version']}")
     print(f"version {version['attributes']['versionString']}")
     loc_ids = upsert_localizations(f"/appStoreVersions/{version['id']}/appStoreVersionLocalizations",
                                    "appStoreVersionLocalizations", "appStoreVersion", version["id"], locs,
-                                   ["description", "keywords", "promotionalText", "supportUrl", "marketingUrl"])
+                                   ["description", "keywords", "promotionalText", "supportUrl", "marketingUrl", "whatsNew"])
 
     review = call("GET", f"/appStoreVersions/{version['id']}/appStoreReviewDetail").get("data")
     attrs = {"notes": meta["reviewNotes"], "demoAccountRequired": False}

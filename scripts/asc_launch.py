@@ -320,12 +320,14 @@ def submit(app_id, version_string, build_number):
         "relationships": {"reviewSubmission": rel("reviewSubmissions", rs["id"]),
                           "appStoreVersion": rel("appStoreVersions", version["id"])}}})
     # The first subscriptions go to App Review with the first version: added once the
-    # version is in the review submission, before it's sent.
+    # version is in the review submission, before it's sent. Later versions go alone.
+    waiting_subs = 0
     for g in call("GET", f"/apps/{app_id}/subscriptionGroups")["data"]:
         for sub in call("GET", f"/subscriptionGroups/{g['id']}/subscriptions")["data"]:
             st = sub["attributes"].get("state")
             print(f"{sub['attributes']['productId']}: {st}")
             if st == "READY_TO_SUBMIT":
+                waiting_subs += 1
                 try_call("POST", "/subscriptionSubmissions", {"data": {
                     "type": "subscriptionSubmissions", "relationships": {"subscription": rel("subscriptions", sub["id"])}}})
                 print("  submitted with the version")
@@ -333,7 +335,7 @@ def submit(app_id, version_string, build_number):
     items = call("GET", f"/reviewSubmissions/{rs['id']}/items?limit=20")["data"]
     kinds = sorted({k for i in items for k, v in (i.get("relationships") or {}).items() if (v.get("data") if isinstance(v, dict) else None)})
     print(f"review submission items: {len(items)} {kinds}")
-    if len(items) < 2:
+    if len(items) < 1 + min(1, waiting_subs):
         sys.exit("::error::The review submission doesn't hold both the version and the subscriptions; not sent")
     call("PATCH", f"/reviewSubmissions/{rs['id']}", {"data": {
         "type": "reviewSubmissions", "id": rs["id"], "attributes": {"submitted": True}}})
