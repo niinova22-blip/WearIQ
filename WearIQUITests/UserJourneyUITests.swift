@@ -26,6 +26,18 @@ final class UserJourneyUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
     }
 
+    /// Scrolls the screen until `element` is on it: a SwiftUI list only builds the rows
+    /// in view, so a row further down doesn't exist until it's scrolled to.
+    @discardableResult
+    private func scrolledTo(_ element: XCUIElement, _ what: String, down: Bool = true) -> XCUIElement {
+        for _ in 0..<12 {
+            if element.waitForExistence(timeout: 1.5), element.isHittable { return element }
+            if down { app.swipeUp() } else { app.swipeDown() }
+        }
+        XCTFail("\(what) not found on the screen")
+        return element
+    }
+
     /// Back from a pushed screen (the navigation bar's first button).
     private func back() {
         app.navigationBars.buttons.element(boundBy: 0).tap()
@@ -73,33 +85,29 @@ final class UserJourneyUITests: XCTestCase {
 
         // Profile: every row opens and comes back; every toggle and picker answers.
         tap(app.tabBars.buttons["Profile"], "Profile tab")
-        XCTAssertTrue(app.buttons["Edit measurements"].waitForExistence(timeout: 8), "the profile has no measurements")
-        for row in ["Size passport", "Shopping memory", "Measurement changes"] {
-            tap(app.buttons[row], row)
+        scrolledTo(app.buttons["Edit measurements"], "Edit measurements (the profile has no measurements)")
+        for row in ["Size passport", "Shopping memory", "Measurement changes", "My 3D avatar"] {
+            scrolledTo(app.buttons[row], row).tap()
+            if row == "My 3D avatar" {
+                XCTAssertTrue(app.staticTexts["Chest"].waitForExistence(timeout: 30), "the 3D body's sliders are missing")
+            }
             XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 8))
             back()
-            XCTAssertTrue(app.buttons["Edit measurements"].waitForExistence(timeout: 8), "\(row) didn't come back")
+            XCTAssertTrue(app.tabBars.buttons["Profile"].waitForExistence(timeout: 8), "\(row) didn't come back")
         }
-        tap(app.buttons["My 3D avatar"], "My 3D avatar")
-        XCTAssertTrue(app.staticTexts["Chest"].waitForExistence(timeout: 30), "the 3D body's measurement sliders are missing")
-        back()
-        XCTAssertTrue(app.buttons["Edit measurements"].waitForExistence(timeout: 8))
 
-        let sounds = app.switches["Interface sounds"]
-        app.swipeUp()
-        tap(sounds, "Interface sounds")
-        tap(app.buttons["Size system"], "Size system picker")
+        scrolledTo(app.switches["Interface sounds"], "Interface sounds").tap()
+        scrolledTo(app.buttons["Size system"], "Size system picker").tap()
         tap(app.buttons["Türkiye"], "Türkiye size system")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'jeans 31/32'")).firstMatch
             .waitForExistence(timeout: 5), "the size system footer didn't follow the choice")
 
-        tap(app.buttons["Acknowledgements"], "Acknowledgements")
+        scrolledTo(app.buttons["Acknowledgements"], "Acknowledgements").tap()
         XCTAssertTrue(app.navigationBars["Acknowledgements"].waitForExistence(timeout: 5))
         back()
 
         // Delete everything: back to the introduction.
-        app.swipeUp()
-        tap(app.buttons["Delete all my data"], "Delete all my data")
+        scrolledTo(app.buttons["Delete all my data"], "Delete all my data").tap()
         tap(app.buttons["Delete"], "confirm Delete")
         XCTAssertTrue(app.buttons["Continue"].waitForExistence(timeout: 10), "deleting didn't return to the introduction")
     }
