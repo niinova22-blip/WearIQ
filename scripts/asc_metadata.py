@@ -86,16 +86,7 @@ def main(app_id, metadata_path, shots_dir=None):
         meta = json.load(f)
     locs = meta["localizations"]
 
-    infos = call("GET", f"/apps/{app_id}/appInfos")["data"]
-    info = first(infos, lambda i: i["attributes"].get("state") not in ("READY_FOR_DISTRIBUTION", "REPLACED_WITH_NEW_INFO")) or infos[0]
-    call("PATCH", f"/appInfos/{info['id']}", {"data": {"type": "appInfos", "id": info["id"], "relationships": {
-        "primaryCategory": {"data": {"type": "appCategories", "id": meta["primaryCategory"]}},
-        "secondaryCategory": {"data": {"type": "appCategories", "id": meta["secondaryCategory"]}},
-    }}})
-    print("categories: updated")
-    upsert_localizations(f"/appInfos/{info['id']}/appInfoLocalizations", "appInfoLocalizations", "appInfo",
-                         info["id"], locs, ["name", "subtitle", "privacyPolicyUrl"])
-
+    # The version first: the app's info (name, categories) opens for edits with it.
     versions = call("GET", f"/apps/{app_id}/appStoreVersions?filter[platform]=IOS"
                            "&filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED")["data"]
     if not versions and meta.get("version"):
@@ -112,6 +103,18 @@ def main(app_id, metadata_path, shots_dir=None):
             "type": "appStoreVersions", "id": version["id"], "attributes": {"versionString": meta["version"]}}})
         print(f"version renamed to {meta['version']}")
     print(f"version {version['attributes']['versionString']}")
+    infos = call("GET", f"/apps/{app_id}/appInfos")["data"]
+    info = first(infos, lambda i: i["attributes"].get("state") not in ("READY_FOR_DISTRIBUTION", "REPLACED_WITH_NEW_INFO"))
+    if not info:
+        sys.exit("::error::No editable app info (open a new version first)")
+    call("PATCH", f"/appInfos/{info['id']}", {"data": {"type": "appInfos", "id": info["id"], "relationships": {
+        "primaryCategory": {"data": {"type": "appCategories", "id": meta["primaryCategory"]}},
+        "secondaryCategory": {"data": {"type": "appCategories", "id": meta["secondaryCategory"]}},
+    }}})
+    print("categories: updated")
+    upsert_localizations(f"/appInfos/{info['id']}/appInfoLocalizations", "appInfoLocalizations", "appInfo",
+                         info["id"], locs, ["name", "subtitle", "privacyPolicyUrl"])
+
     loc_ids = upsert_localizations(f"/appStoreVersions/{version['id']}/appStoreVersionLocalizations",
                                    "appStoreVersionLocalizations", "appStoreVersion", version["id"], locs,
                                    ["description", "keywords", "promotionalText", "supportUrl", "marketingUrl", "whatsNew"])
