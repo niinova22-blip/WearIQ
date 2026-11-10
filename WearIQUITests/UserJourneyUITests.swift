@@ -97,7 +97,7 @@ final class UserJourneyUITests: XCTestCase {
         }
 
         scrolledTo(app.switches["Interface sounds"], "Interface sounds").tap()
-        scrolledTo(app.buttons["Size system"], "Size system picker").tap()
+        scrolledTo(button(containing: "Size system"), "Size system picker").tap()
         tap(app.buttons["Türkiye"], "Türkiye size system")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'jeans 31/32'")).firstMatch
             .waitForExistence(timeout: 5), "the size system footer didn't follow the choice")
