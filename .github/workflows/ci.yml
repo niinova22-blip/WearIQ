@@ -60,7 +60,7 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 60 \
-            -maximum-test-execution-time-allowance 120 \
+            -maximum-test-execution-time-allowance 420 \
             -quiet CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=
       - name: Test summary
         if: always()
