@@ -96,6 +96,13 @@ def status(app_id):
         build = try_call("GET", f"/appStoreVersions/{v['id']}/build") or {}
         b = (build.get("data") or {}).get("attributes", {})
         print(f"version {a['versionString']}: {a['appStoreState']} build={b.get('version')}")
+        if a["appStoreState"] == "PREPARE_FOR_SUBMISSION":
+            for loc in call("GET", f"/appStoreVersions/{v['id']}/appStoreVersionLocalizations")["data"]:
+                for st in call("GET", f"/appStoreVersionLocalizations/{loc['id']}/appScreenshotSets")["data"]:
+                    shots = call("GET", f"/appScreenshotSets/{st['id']}/appScreenshots?limit=20")["data"]
+                    states = [((x["attributes"].get("assetDeliveryState") or {}).get("state"), x["attributes"].get("fileName"))
+                              for x in shots]
+                    print(f"  screenshots {loc['attributes']['locale']} {st['attributes']['screenshotDisplayType']}: {states}")
         review = try_call("GET", f"/appStoreVersions/{v['id']}/appStoreReviewDetail") or {}
         r = (review.get("data") or {}).get("attributes", {})
         print(f"  review contact: {r.get('contactFirstName')} {r.get('contactLastName')} "
