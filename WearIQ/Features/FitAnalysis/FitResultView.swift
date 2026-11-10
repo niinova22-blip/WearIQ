@@ -46,8 +46,10 @@ struct FitResultView: View {
 
     init(productName: String?, brand: String?, imageURL: URL?, pageURL: URL?, analysis: FitAnalysis, isSaved: Bool,
          category: GarmentCategory? = nil, fitStyle: FitStyle? = nil, chartNote: String? = nil, tagSize: String? = nil,
-         spec: GarmentSpec? = nil, material: String? = nil) {
+         spec: GarmentSpec? = nil, material: String? = nil, productKey: String? = nil, personID: UUID? = nil) {
         self.spec = spec
+        self.productKey = productKey
+        self.personID = personID
         self.material = material
         self.chartNote = chartNote
         self.tagSize = tagSize

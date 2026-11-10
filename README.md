@@ -7,15 +7,21 @@ SwiftUI · iOS 17+ · SwiftData · Vision · StoreKit 2.
 
 ```
 project.yml            XcodeGen tanımı (.xcodeproj CI'da / Mac'te üretilir)
-WearIQ/                iOS uygulaması (App, Core, Features, Resources)
-WearIQTests/           Uygulama testleri
+WearIQ/                iOS uygulaması (App, Core, Features, Services, Resources)
+WearIQSafari/          Safari uzantısı: alışveriş sayfasında beden rozeti
+WearIQShare/           Paylaş menüsü uzantısı (mağaza uygulamasından link)
+WearIQWidget/          Ana ekran widget'ı
+WearIQTests/           Uygulama testleri · WearIQUITests/  arayüz testleri
 WearIQKit/             Platformdan bağımsız Swift paketi
-  WearIQCore           Ölçü ve kıyafet modelleri
-  FitEngine            Bölgesel uyum + beden önerisi
-  BodyMeasurementEngine  Vision çıktısından ölçü + belirsizlik
-  ProductMeasurementParser  OCR beden tablosu ayrıştırıcı
-  ScanQuota            Günlük 4 tarama hakkı
-docs/VALIDATION.md     Ölçüm doğruluğu test protokolü
+  WearIQCore           Ölçü ve kıyafet modelleri, beden sistemleri
+  BodyMeasurementEngine  Vücut taramasından ölçü + belirsizlik
+  FitEngine            Bölgesel uyum, beden önerisi, iade riski, stil
+  ProductMeasurementParser  Ürün sayfası, beden tablosu (HTML/OCR/Zara rehberi)
+  AvatarEngine         3D vücut (SOMA-X) + kumaş simülasyonu
+  ShoppingAssistant    Safari uzantısının ortak mantığı, beden pasaportu
+  OutfitRecommendationEngine  Kombin ve renk önerileri
+  ScanQuota            Ücretsiz planda günlük 5 kontrol
+docs/VALIDATION.md     Ölçüm doğruluğu ve güven denetimi
 ```
 
 ## Derleme
@@ -24,18 +30,10 @@ docs/VALIDATION.md     Ölçüm doğruluğu test protokolü
 - **iOS** (Mac): `brew install xcodegen && xcodegen generate && open WearIQ.xcodeproj`
 - **CI:** Her push'ta GitHub Actions macOS runner'ında motor testleri, iOS derlemesi ve uygulama testleri çalışır.
 
-## Aşama durumu
+## Durum
 
-| Aşama | Durum |
-|---|---|
-| 1. Proje, mimari, tasarım sistemi, navigasyon | ✅ |
-| 2. Onboarding, kamera, vücut tarama, ölçü düzeltme | ✅ CI'da derleniyor. Gerçek cihazda henüz denenmedi |
-| 3. Ürün linki, barkod, OCR, kıyafet taslağı | ✅ Barkoddan ürün kataloğu eşlemesi yok (ücretsiz katalog yok) |
-| 4. FIT Engine | ✅ Bolluk payları henüz kalibre edilmedi (bkz. docs/VALIDATION.md) |
-| 5. Sonuç ekranı, geçmiş, günlük 4 tarama | ✅ |
-| 6. StoreKit 2 + AdMob | ✅ Satın alma akışı testleri yalnızca Mac'te çalışıyor. AdMob şu an Google test ID'leriyle |
-| 7. Gardırop, kombin motoru, ölçü takibi | ✅ |
-| 8. Sanal deneme | ⛔ Modül var, özellik bilinçli olarak kapalı (bulut modeli + açık rıza gerekir) |
-| 8. App Store hazırlığı | 🟡 TestFlight iş akışı ve metadata hazır. Team ID, API anahtarı ve AdMob ID'leri bekleniyor |
+App Store'da yayında (1.0). Ücretsiz plan: günlük 5 kontrol, sonuçtan önce reklam; Premium: sınırsız kontrol, Stil sekmesi, gardırop ve avatar bölge raporu.
+
+Mağaza okuma denetimi: `LIVE_PAGES=<klasör> swift test --filter LivePageAudit` (gerçek sayfaların tarayıcı dökümüyle).
 
 Yayın adımları: `docs/APP_STORE.md`

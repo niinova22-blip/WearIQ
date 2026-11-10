@@ -1,4 +1,5 @@
 import Foundation
+import FitEngine
 import Testing
 @testable import AvatarEngine
 import WearIQCore
@@ -85,6 +86,45 @@ import WearIQCore
         for p in marks { plot(p, Vec3(0.1, 1, 0.2), 1) }
         let dir = ProcessInfo.processInfo.environment["RENDER_DIR"] ?? "."
         FileManager.default.createFile(atPath: dir + "/" + name + ".rgb", contents: Data(color))
+    }
+
+    /// Real store products (LIVE_SPECS, written by LivePageAudit) dressed on the audit's
+    /// shoppers in the size the app recommended, as the app dresses them.
+    @Test func liveProducts() throws {
+        guard ProcessInfo.processInfo.environment["RENDER_DIR"] != nil,
+              let dir = ProcessInfo.processInfo.environment["LIVE_SPECS"] else { return }
+        struct LiveSpec: Codable { var body: String; var size: String; var name: String; var spec: GarmentSpec }
+        func m(_ cm: Double) -> MeasuredValue { MeasuredValue(cm: cm, uncertaintyCm: 1, source: .scan) }
+        let bodies: [String: BodyProfile] = [
+            "K165-S": BodyProfile(values: [.height: m(165), .chest: m(86), .waist: m(68), .hip: m(94), .thigh: m(54),
+                                           .shoulderWidth: m(37), .armLength: m(56), .torsoLength: m(41), .inseam: m(76),
+                                           .outseam: m(101)], sex: .female),
+            "K168-L": BodyProfile(values: [.height: m(168), .chest: m(102), .waist: m(86), .hip: m(110), .thigh: m(64),
+                                           .shoulderWidth: m(39), .armLength: m(57), .torsoLength: m(42), .inseam: m(77),
+                                           .outseam: m(103)], sex: .female),
+            "E178-M": BodyProfile(values: [.height: m(178), .chest: m(97), .waist: m(84), .hip: m(98), .thigh: m(56),
+                                           .shoulderWidth: m(45), .armLength: m(62), .torsoLength: m(47), .inseam: m(81),
+                                           .outseam: m(107)], sex: .male),
+            "E182-XL": BodyProfile(values: [.height: m(182), .chest: m(112), .waist: m(102), .hip: m(110), .thigh: m(63),
+                                            .shoulderWidth: m(48), .armLength: m(64), .torsoLength: m(49), .inseam: m(82),
+                                            .outseam: m(109)], sex: .male),
+        ]
+        let only = ProcessInfo.processInfo.environment["VARIANTS"].map { Set($0.split(separator: ",").map(String.init)) }
+        let files = try FileManager.default.contentsOfDirectory(atPath: dir).filter { $0.hasSuffix(".json") }.sorted()
+        for file in files {
+            let name = String(file.dropLast(5))
+            if let only, !only.contains(where: name.hasPrefix) { continue }
+            let live = try JSONDecoder().decode(LiveSpec.self, from: Data(contentsOf: URL(fileURLWithPath: dir + "/" + file)))
+            guard let body = bodies[live.body.replacingOccurrences(of: "/", with: "-")], let size = live.spec.sizes.first(where: { $0.label == live.size }),
+                  let measurements = Avatar.Measurements(body) else { continue }
+            let analysis = FitEngine().analyze(body: body, garment: live.spec)
+            let regions = analysis.sizes.first { $0.label == live.size }?.regions ?? []
+            let fit = AvatarFitMapper.fit(spec: live.spec, size: size, body: body, regions: regions, name: live.name)
+            let a = Avatar(measurements, garments: [fit], detail: ProcessInfo.processInfo.environment["SETTLE"] != nil ? .standard : .animated)
+            render(a, yaw: 0.35, fitMap: true, name: "live_" + name + "_map")
+            render(a, yaw: -.pi / 2, fitMap: false, name: "live_" + name + "_side")
+            print("LIVE", name, live.size, live.spec.category, a.fitReport.map { "\($0.key) \($0.value.tension)" }.sorted())
+        }
     }
 
     /// The population's far ends, bare and dressed: `VARIANTS` takes shopper ids.

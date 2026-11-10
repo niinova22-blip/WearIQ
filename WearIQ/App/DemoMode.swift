@@ -13,6 +13,9 @@ import WearIQCore
 enum DemoMode {
     static var screen: String? { UserDefaults.standard.string(forKey: "WQDemo") }
     static var isActive: Bool { screen != nil }
+    /// UI tests (`-WQUITest YES`): the real app on its real store, without ads, so a
+    /// tracking prompt or an interstitial never covers the screens being driven.
+    static var isUITest: Bool { UserDefaults.standard.bool(forKey: "WQUITest") }
 
     static var initialTab: AppTab {
         switch screen {

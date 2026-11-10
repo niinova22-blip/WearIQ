@@ -39,17 +39,28 @@ public enum SizeOrder {
 /// Size labels as stores write them.
 public enum SizeLabel {
     /// Waist and length in inches, as jeans and many trousers are sold everywhere:
-    /// "31/32", "W31 L32", "W31/L32", "31x32", "31 32". Nil for anything else, a single
-    /// size or a double one ("S/M"). A plain "36/38" also reads as W36 L38; callers
-    /// apply it to trousers only, where that's what it means.
+    /// "31/32", "W31 L32", "W31/L32", "31x32", "31 32", and the marketplaces' "31W x 32L",
+    /// "31W / 32L" and "31-32". Nil for anything else, a single size or a double one
+    /// ("S/M"). A plain "36/38" also reads as W36 L38; callers apply it to trousers only,
+    /// where that's what it means.
     public static func waistLength(_ label: String) -> (waist: Int, length: Int)? {
         let l = label.uppercased().trimmingCharacters(in: .whitespaces)
-        guard let re = try? NSRegularExpression(pattern: #"^W?\s*(\d{2})\s*(?:/|X|\s)\s*L?\s*(\d{2})$"#),
+        guard let re = try? NSRegularExpression(pattern: #"^W?\s*(\d{2})\s*W?\s*(?:/|X|-|\s)\s*L?\s*(\d{2})\s*L?$"#),
               let m = re.firstMatch(in: l, range: NSRange(l.startIndex..., in: l)),
               let wr = Range(m.range(at: 1), in: l), let lr = Range(m.range(at: 2), in: l),
               let w = Int(l[wr]), let len = Int(l[lr]),
               (22...52).contains(w), (26...38).contains(len) else { return nil }
         return (w, len)
+    }
+
+    /// A waist in inches without a length: "W30", "30W", "30W Standart" (one length).
+    public static func waistOnly(_ label: String) -> Int? {
+        let l = label.uppercased().trimmingCharacters(in: .whitespaces)
+        guard let re = try? NSRegularExpression(pattern: #"^(?:W\s*(\d{2})|(\d{2})\s*W)\b"#),
+              let m = re.firstMatch(in: l, range: NSRange(l.startIndex..., in: l)) else { return nil }
+        let r = m.range(at: 1).location != NSNotFound ? m.range(at: 1) : m.range(at: 2)
+        guard let range = Range(r, in: l), let w = Int(l[range]), (22...52).contains(w) else { return nil }
+        return w
     }
 
     /// A size written with its US equivalent, as Inditex stores (Zara, Bershka, Pull&Bear)

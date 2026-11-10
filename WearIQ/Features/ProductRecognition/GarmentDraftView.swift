@@ -24,6 +24,8 @@ struct GarmentDraftView: View {
         let id = UUID()
         let analysis: FitAnalysis
         let saved: Bool
+        var productKey: String?
+        var personID: UUID?
     }
 
     var body: some View {
@@ -56,7 +58,8 @@ struct GarmentDraftView: View {
             FitResultView(productName: draft.info.name, brand: draft.info.brand, imageURL: draft.info.imageURL,
                           pageURL: draft.info.pageURL, analysis: route.analysis, isSaved: route.saved,
                           category: draft.category, fitStyle: draft.fitStyle, chartNote: chartNote,
-                          tagSize: draft.preferredLabel, spec: draft.spec, material: draft.info.material)
+                          tagSize: draft.preferredLabel, spec: draft.spec, material: draft.info.material,
+                          productKey: route.productKey, personID: route.personID)
         }
         .sheet(isPresented: $showQuotaLimit) {
             PaywallView(reason: "You've used today's free scans. They renew tomorrow, or go unlimited with Premium.")
@@ -81,7 +84,9 @@ struct GarmentDraftView: View {
         case .store: String(localized: "Based on the store's size chart.")
         case .photo: String(localized: "Based on the size chart from your photo.")
         case .standard:
-            if let size = draft.chartWarnings.lazy.compactMap({ w -> String? in
+            if draft.storeChartSetAside {
+                String(localized: "The store's chart measures this garment narrower than the bodies its sizes are for (a very stretchy cut), so typical measurements for its sizes were used.")
+            } else if let size = draft.chartWarnings.lazy.compactMap({ w -> String? in
                 if case let .anchoredToModel(size) = w { return size } else { return nil }
             }).first {
                 String(localized: "The store publishes no size chart. Typical measurements were matched to the model, who wears \(size).")
@@ -288,7 +293,8 @@ struct GarmentDraftView: View {
                 container.ads.analysisCompleted()
                 guard let analysis = saved.analysis else { return }
                 container.ads.presentBeforeResult(isPremium: container.isPremium) {
-                    result = ResultRoute(analysis: analysis, saved: true)
+                    result = ResultRoute(analysis: analysis, saved: true, productKey: saved.productKey,
+                                         personID: saved.personID)
                 }
             case let .insufficientData(analysis):
                 result = ResultRoute(analysis: analysis, saved: false)

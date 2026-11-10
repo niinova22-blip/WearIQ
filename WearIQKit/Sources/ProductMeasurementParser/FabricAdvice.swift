@@ -89,9 +89,37 @@ public enum FabricAdvice {
     public static func compositionText(in text: String) -> String? {
         let pattern = #"(?:%\s*\d{1,3}\s*[A-Za-zÇĞİÖŞÜçğıöşü]+[\s,/]*){1,5}|(?:\d{1,3}\s*%\s*[A-Za-zÇĞİÖŞÜçğıöşü]+[\s,/]*){1,5}"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
-        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { m -> String? in
-            Range(m.range, in: text).map { String(text[$0]) }
+        // Pages carry more than the product's own composition: menu links ("%100 Pamuklu
+        // Ürünler"), campaign banners, other products. The product's is the one under a
+        // fabric label, adding up to 100 %; a menu entry is followed by "ürünler".
+        var best: (text: String, score: Int)?
+        for m in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+            guard let r = Range(m.range, in: text) else { continue }
+            let candidate = String(text[r]).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !fibres(in: candidate).isEmpty else { continue }
+            let start = text.index(r.lowerBound, offsetBy: -min(40, text.distance(from: text.startIndex, to: r.lowerBound)))
+            let before = SizeChartParser.fold(String(text[start..<r.lowerBound]))
+            let after = SizeChartParser.fold(String(text[r.upperBound...].prefix(14)))
+            var score = 0
+            if ["kumas", "dis ", "dis:", "materyal", "malzeme", "icerik", "composition", "fabric", "material",
+                "shell", "outer", "main"].contains(where: before.contains) { score += 3 }
+            let percents = percentages(in: candidate)
+            if percents.count >= 2, abs(percents.reduce(0, +) - 100) < 1 { score += 2 }
+            let folded = SizeChartParser.fold(candidate)
+            if folded.hasSuffix("urunler") || folded.hasSuffix("urunleri")
+                || ["urun", "products", "collection", "koleksiyon", "indirim", "off "].contains(where: after.hasPrefix) {
+                score -= 10
+            }
+            if score > (best?.score ?? -1) { best = (candidate, score) }
         }
-        return matches.first { !fibres(in: $0).isEmpty }?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return best.flatMap { $0.score >= 0 ? $0.text : nil }
+    }
+
+    private static func percentages(in text: String) -> [Double] {
+        guard let re = try? NSRegularExpression(pattern: #"(\d{1,3}(?:[.,]\d)?)\s*%|%\s*(\d{1,3}(?:[.,]\d)?)"#) else { return [] }
+        return re.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { m in
+            let r = m.range(at: 1).location != NSNotFound ? m.range(at: 1) : m.range(at: 2)
+            return Range(r, in: text).flatMap { Double(text[$0].replacingOccurrences(of: ",", with: ".")) }
+        }
     }
 }

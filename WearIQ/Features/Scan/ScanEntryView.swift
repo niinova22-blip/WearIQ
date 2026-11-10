@@ -282,7 +282,7 @@ struct ScanEntryView: View {
             let lookup = try await productService.product(at: url)
             let draft = GarmentDraft(info: lookup.info)
             if let chart = lookup.chart {
-                draft.apply(chart)
+                draft.applyStoreChart(chart, fallbackAudience: profileAudience)
             } else if !draft.fillStandardChart(fallbackAudience: profileAudience) {
                 // Unknown size labels: start the table with them so only numbers are missing.
                 lookup.info.availableSizes.forEach { draft.addSize(label: $0) }

@@ -45,8 +45,8 @@ final class AdvertisingService {
     func prepare(isPremium: Bool) async {
         guard !started, !isPremium else { return }
         #if DEBUG
-        // Screenshot mode: no consent forms over the screens being captured.
-        if DemoMode.isActive { return }
+        // Screenshot mode and UI tests: no consent forms or tracking prompt over the screens.
+        if DemoMode.isActive || DemoMode.isUITest { return }
         #endif
         started = true
 

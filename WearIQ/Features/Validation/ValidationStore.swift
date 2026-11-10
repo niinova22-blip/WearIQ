@@ -34,6 +34,12 @@ final class ValidationStore {
         save()
     }
 
+    /// "Delete all my data": every validation record, tape values included.
+    static func eraseAll() {
+        shared.records = []
+        try? FileManager.default.removeItem(at: url)
+    }
+
     /// The next free participant code, "P01", "P02"…
     var nextParticipant: String {
         let used = Set(records.map(\.participant))

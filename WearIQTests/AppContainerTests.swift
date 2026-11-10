@@ -13,11 +13,19 @@ import WearIQCore
         context.insert(try StoredBodyProfile(profile: BodyProfile(values: [.chest: .manual(100)])))
         try context.save()
         container.onboardingCompleted = true
+        UserDefaults.standard.set("female", forKey: "bodySex")
+        UserDefaults.standard.set("{}", forKey: "styleProfile")
+        UserDefaults.standard.set("looser", forKey: "fitPreference")
 
         try container.deleteAllPersonalData()
 
         #expect(try context.fetch(FetchDescriptor<StoredBodyProfile>()).isEmpty)
         #expect(container.onboardingCompleted == false)
+        // Style, gender and fit answers live outside the store and go too.
+        for key in ["bodySex", "styleProfile", "fitPreference"] {
+            #expect(UserDefaults.standard.object(forKey: key) == nil, "\(key) survived")
+        }
+        #expect(ShoppingBridge.shopper() == nil)
     }
 
     @Test func storedProfileRoundTrips() throws {

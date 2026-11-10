@@ -40,7 +40,9 @@ enum AmazonPage {
         for prefix in ["Marka:", "Brand:", "Visit the", "Marke:"] where s.hasPrefix(prefix) {
             s = String(s.dropFirst(prefix.count))
         }
-        for suffix in ["Mağazasını ziyaret edin", "Store", "-Store"] where s.hasSuffix(suffix) {
+        // "Grimelange Store’u ziyaret edin" (Amazon.com.tr's newer wording) too.
+        for suffix in ["Mağazasını ziyaret edin", "Store’u ziyaret edin", "Store'u ziyaret edin", "Store", "-Store"]
+            where s.hasSuffix(suffix) {
             s = String(s.dropLast(suffix.count))
         }
         s = s.trimmingCharacters(in: .whitespacesAndNewlines)

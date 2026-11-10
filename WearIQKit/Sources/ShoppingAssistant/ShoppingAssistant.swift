@@ -41,9 +41,12 @@ public enum ShoppingAssistant {
         public var style: StyleLearning.Style?
         /// The size system the user shops in, for stores that list no sizes.
         public var region: SizeRegion?
+        /// How the user likes clothes to sit (snugger, as designed, looser).
+        public var preference: FitPreference?
 
-        public init(body: BodyProfile, style: StyleLearning.Style? = nil, region: SizeRegion? = nil) {
-            self.body = body; self.style = style; self.region = region
+        public init(body: BodyProfile, style: StyleLearning.Style? = nil, region: SizeRegion? = nil,
+                    preference: FitPreference? = nil) {
+            self.body = body; self.style = style; self.region = region; self.preference = preference
         }
     }
 
@@ -81,7 +84,7 @@ public enum ShoppingAssistant {
         var info = ProductPageParser().parse(html: page.html, pageURL: URL(string: page.url))
         if info.name == nil { info.name = page.title }
         if info.category == nil { info.category = GarmentClassifier.category(from: [info.name, info.categoryText, page.title].compactMap { $0 }.joined(separator: " ")) }
-        if info.fitStyle == nil, let name = info.name { info.fitStyle = GarmentClassifier.fitStyle(from: name) }
+        if info.fitStyle == nil, let name = info.name { info.fitStyle = GarmentClassifier.fitStyle(from: name, category: info.category) }
         if info.legCut == nil, let name = info.name { info.legCut = GarmentClassifier.legCut(from: name) }
         if info.audience == nil { info.audience = GarmentClassifier.audience(in: [page.title]) }
         // The visible size selectors beat sizes found loose in script data; the older
@@ -116,7 +119,7 @@ public enum ShoppingAssistant {
             return advice
         }
         advice.fromStandardChart = source == .standard
-        let analysis = FitEngine().analyze(body: shopper.body, garment: spec)
+        let analysis = FitEngine().analyze(body: shopper.body, garment: spec, preference: shopper.preference ?? .asDesigned)
         switch analysis.recommendation {
         case let .size(label, confidence):
             advice.status = .sized

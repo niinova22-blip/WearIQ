@@ -142,6 +142,25 @@ public enum StandardSizeCharts {
         return ParsedSizeChart(sizes: SizeOrder.sorted(sizes), kind: .body, unit: .cm, warnings: [.standardChartUsed])
     }
 
+    /// A garment chart narrower at its critical girth (chest for tops, waist for bottoms)
+    /// than the bodies its own size labels are sold to, by more than a fabric gives:
+    /// Zara measures some stretch dresses at 70 cm round the chest in XS, where an XS
+    /// woman's bust is about 82. Read as it stands, such a chart sent a size S woman to
+    /// XXL. The median over the sizes is used so one odd column doesn't decide.
+    public static func implausiblyNarrow(_ chart: ParsedSizeChart, category: GarmentCategory,
+                                         audience: GarmentAudience?) -> Bool {
+        guard chart.kind == .garment,
+              let standard = Self.chart(for: chart.sizes.map(\.label), category: category, audience: audience) else { return false }
+        let critical: GarmentDimension = category.isBottom ? .waist : .chest
+        let eases = chart.sizes.compactMap { size -> Double? in
+            guard let garment = size.values[critical]?.cm,
+                  let body = standard.sizes.first(where: { $0.label == size.label })?.values[critical]?.cm else { return nil }
+            return garment - body
+        }.sorted()
+        guard eases.count >= 2 else { return false }
+        return eases[eases.count / 2] < -8
+    }
+
     /// Whether a chart's numbers are waist inches (W30) rather than EU sizes. Men's
     /// trousers in 24–50 always are. Women's trousers are sold both ways: 34/36/38/40 is
     /// EU sizing (waist 66–76 cm) on most European sites, W26–W33 jeans are inches. Odd
@@ -151,9 +170,8 @@ public enum StandardSizeCharts {
         // Waist and length together (31/32, W31 L32) are inches whoever wears them.
         let trousers = category == .pants || category == .shorts
         if trousers || category == nil, labels.contains(where: { SizeLabel.waistLength($0) != nil }) { return true }
-        // "W30": a waist in inches by name.
-        if trousers || category == nil, labels.contains(where: { l in
-            let u = l.uppercased(); return u.hasPrefix("W") && Int(u.dropFirst()) != nil }) { return true }
+        // "W30", "30W": a waist in inches by name.
+        if trousers || category == nil, labels.contains(where: { SizeLabel.waistOnly($0) != nil }) { return true }
         let numbers = labels.compactMap { l in Int(l.uppercased().replacingOccurrences(of: "W", with: "")
             .split(separator: "/").first.map(String.init) ?? l) }
         guard !numbers.isEmpty else { return false }
@@ -172,7 +190,8 @@ public enum StandardSizeCharts {
         let label = rawLabel.uppercased().trimmingCharacters(in: .whitespaces)
         if let r = (audience == .men ? menLetters : womenLetters)[label] { return r }
         let bare = label.hasPrefix("W") ? String(label.dropFirst()) : label
-        guard let n = SizeLabel.waistLength(label)?.waist ?? Int(bare.split(separator: "/").first.map(String.init) ?? bare)
+        guard let n = SizeLabel.waistLength(label)?.waist ?? SizeLabel.waistOnly(label)
+                ?? Int(bare.split(separator: "/").first.map(String.init) ?? bare)
         else { return nil }
         // Jeans and trousers in inches (W30): waist ≈ size × 2.54.
         let trousers = category == .pants || category == .shorts

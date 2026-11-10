@@ -17,7 +17,9 @@
     }
     const og = document.querySelector('meta[property="og:type"]');
     if (og && /product/i.test(og.content || "")) return true;
-    return !!document.querySelector('meta[property="product:price:amount"], meta[property="og:price:amount"]');
+    if (document.querySelector('meta[property="product:price:amount"], meta[property="og:price:amount"], [itemtype*="schema.org/Product" i]')) return true;
+    // Amazon publishes no product data in the page head: its product title and buy box.
+    return !!(document.getElementById("productTitle") && document.querySelector("#add-to-cart-button, #buy-now-button, #twister, #inline-twister-row-size_name"));
   }
 
   function escapeHTML(s) {
@@ -38,6 +40,16 @@
     // The store's department in its page data (Zara: "sectionName":"MAN").
     const section = (document.documentElement.innerHTML.match(/"(?:sectionName|section|gender|department)"\s*:\s*"(man|men|woman|women|male|female|erkek|kad[iı]n)"/i) || [])[1];
     if (section) head.push('<script type="application/json">{"sectionName":"' + section.replace(/[^A-Za-zıİ]/g, "") + '"}</script>');
+    // Amazon: the title, the brand byline and the size list are in the page, not its head.
+    const amazonTitle = document.getElementById("productTitle");
+    if (amazonTitle) {
+      ["productTitle", "bylineInfo"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) body.push('<span id="' + id + '">' + escapeHTML(el.innerText.trim()) + "</span>");
+      });
+      const sizeList = (document.documentElement.innerHTML.match(/"size_name"\s*:\s*\[[^\]]*\]/) || [])[0];
+      if (sizeList) body.push("<script>{" + sizeList + "}</script>");
+    }
     const html = "<html><head><title>" + escapeHTML(document.title) + "</title>" + head.join("\n") +
       "</head><body>" + body.join("\n") + "</body></html>";
     const text = (document.body && document.body.innerText) || "";
@@ -74,10 +86,14 @@
       const r = e.getBoundingClientRect();
       return r.width > 0 && r.height > 0;
     };
+    // The product's own size picker, even when it scrolls sideways (Trendyol's sizes sit
+    // in a "slider"): reached before any widget, the sizes are the product's.
+    const PICKER = /size[-_]?(picker|selector|select|variant|list|options|chooser|box)|sizepicker|sizeselector|beden[-_]?(sec|secimi|listesi)/i;
     const excluded = (e) => {
       for (let p = e; p && p !== document.body; p = p.parentElement) {
         if (p.getAttribute("aria-hidden") === "true" || p.hidden) return true;
         const c = ((p.className && p.className.toString()) || "") + " " + (p.id || "") + " " + (p.getAttribute("name") || "");
+        if (PICKER.test(c + " " + (p.getAttribute("data-testid") || ""))) return false;
         if (SKIP.test(c)) return true;
       }
       return false;
@@ -87,8 +103,11 @@
       const s = (e.innerText || e.textContent || "").trim().replace(/\s+/g, " ");
       if (!s || s.length > 9 || !SIZE2.test(s)) continue;
       if (!visible(e.tagName === "OPTION" ? e.parentElement : e) || excluded(e)) continue;
+      // Up to the element that holds more than this one size: wrappers around a single
+      // size (Nike's radio input and its label) belong to the selector above them.
       let box = e.parentElement;
-      while (box && box.children.length === 1 && box.parentElement && box !== document.body) box = box.parentElement;
+      const own = (n) => (n.innerText || n.textContent || "").trim().replace(/\s+/g, " ");
+      while (box && box.parentElement && box !== document.body && (box.children.length === 1 || own(box) === s)) box = box.parentElement;
       if (!byBox.has(box)) { byBox.set(box, []); boxes.push(box); }
       const list = byBox.get(box);
       if (!list.includes(s)) list.push(s);

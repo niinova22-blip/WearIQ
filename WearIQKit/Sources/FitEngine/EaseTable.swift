@@ -79,16 +79,19 @@ enum EaseTable {
     private static func topRules(_ c: GarmentCategory, _ f: FitStyle) -> [RegionRule] {
         // A coat goes over a jacket or a jumper: everything about 6 cm roomier.
         let over: Double = c == .coat ? 6 : 0
+        // A dress's bodice sits closer than a shirt: a regular dress has about 5–12 cm
+        // over the bust and is shaped at the waist (pattern-making ease for dresses).
+        let dress = c == .dress
         let chestEase: ClosedRange<Double> = switch f {
-        case .slim: (5 + over)...(10 + over)
-        case .regular: (9 + over)...(16 + over)
-        case .relaxed: (14 + over)...(24 + over)
-        case .oversized: (22 + over)...(40 + over)
+        case .slim: dress ? 1...7 : (5 + over)...(10 + over)
+        case .regular: dress ? 5...12 : (9 + over)...(16 + over)
+        case .relaxed: dress ? 10...20 : (14 + over)...(24 + over)
+        case .oversized: dress ? 18...40 : (22 + over)...(40 + over)
         }
         let waistEase: ClosedRange<Double> = switch f {
-        case .slim: 4...12
-        case .regular: 8...20
-        case .relaxed: 14...30
+        case .slim: dress ? 1...8 : 4...12
+        case .regular: dress ? 3...14 : 8...20
+        case .relaxed: dress ? 10...30 : 14...30
         case .oversized: 22...50
         }
         let shoulderEase: ClosedRange<Double> = switch f {
@@ -103,7 +106,7 @@ enum EaseTable {
         case .tshirt: 12...24
         case .jacket: 18...32
         case .coat: 30...75
-        case .dress: 30...80
+        case .dress: 30...100  // mini to maxi (Koton's 129 cm maxi on a 41 cm torso)
         default: 15...28
         }
 

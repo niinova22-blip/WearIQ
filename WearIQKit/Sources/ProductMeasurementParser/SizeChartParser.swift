@@ -10,6 +10,10 @@ public struct ParsedSizeChart: Equatable, Sendable {
     public var unit: Unit
     public var warnings: [Warning]
 
+    public init(sizes: [SizeEntry], kind: SizeChartKind?, unit: Unit = .cm, warnings: [Warning] = []) {
+        self.sizes = sizes; self.kind = kind; self.unit = unit; self.warnings = warnings
+    }
+
     public enum Unit: String, Equatable, Sendable { case cm, inch }
 
     public enum Warning: Equatable, Sendable {
@@ -78,10 +82,21 @@ extension ParsedSizeChart {
         // charts that measure the garment; charts with girths only describe bodies.
         if chart.kind == nil, !chart.sizes.isEmpty {
             let lengths: [GarmentDimension] = [.sleeveLength, .bodyLength, .shoulderWidth]
-            let kind: SizeChartKind = chart.sizes.contains { s in lengths.contains { s.values[$0] != nil } } ? .garment : .body
+            // Girths given as ranges ("Göğüs 88-92") are the bodies a size is for: a
+            // garment has one width. Tommy's body chart also lists "Kol 84-85" (the arm).
+            let girths = chart.sizes.flatMap { s in [GarmentDimension.chest, .waist, .hip].compactMap { s.values[$0] } }
+            let ranged = girths.count >= 4 && girths.filter { $0.uncertaintyCm >= 1 }.count * 2 >= girths.count
+            let kind: SizeChartKind = !ranged && chart.sizes.contains { s in lengths.contains { s.values[$0] != nil } }
+                ? .garment : .body
             chart.kind = kind
             chart.warnings.removeAll { $0 == .chartKindUnknown }
             chart.warnings.append(.chartKindGuessed(kind))
+        }
+        // A body chart's "Kol" over 75 cm runs from the back of the neck to the wrist (Tommy's
+        // 84–97), not the arm the app measures from the shoulder point.
+        if chart.kind == .body, let longest = chart.sizes.compactMap({ $0.values[.sleeveLength]?.cm }).max(), longest > 75 {
+            for i in chart.sizes.indices { chart.sizes[i].values[.sleeveLength] = nil }
+            chart.warnings.append(.implausibleColumnDropped(.sleeveLength))
         }
         return chart
     }
@@ -207,7 +222,9 @@ public struct SizeChartParser: Sendable {
     private static let notMeasured = ["kol genis", "sleeve width", "bicep", "pazu", "paca genis", "leg opening",
                                       "etek genis", "bilek", "sirt genis", "back width", "yaka",
                                       // Rise ("Önden bel yüksekliği", "front rise") isn't the waist.
-                                      "bel yuksek", "rise", "kasik"]
+                                      "bel yuksek", "rise", "kasik",
+                                      // The neck ("Boyun"), not the length ("Boy").
+                                      "boyun", "neck", "collar"]
 
     static func dimension(for line: String) -> GarmentDimension? {
         if notMeasured.contains(where: line.contains) { return nil }

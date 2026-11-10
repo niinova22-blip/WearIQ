@@ -3,6 +3,7 @@ import Observation
 import ScanQuota
 import SwiftData
 import SwiftUI
+import UserNotifications
 
 /// Composition root. Every feature gets its dependencies from here through protocols,
 /// so engines and services can be swapped for fakes in tests and previews.
@@ -109,6 +110,22 @@ final class AppContainer {
         WidgetSnapshot.clear()
         CloudBackup.erase()
         UserDefaults.standard.set(false, forKey: CloudBackup.enabledKey)
+        // The Safari extension's copy of the body, and what it saw and hasn't filed yet.
+        ShoppingBridge.saveShopper(nil)
+        ShoppingBridge.inbox().forEach { ShoppingBridge.remove(account: $0.account) }
+        // Style, skin tone, tape corrections and the other answers kept outside the store.
+        for key in Self.personalDefaultsKeys { UserDefaults.standard.removeObject(forKey: key) }
+        ValidationStore.eraseAll()
+        // Price, stock and purchase follow-up notifications for products that are gone now.
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
         onboardingCompleted = false
     }
+
+    /// UserDefaults entries that describe the person (not app settings like sounds or
+    /// the size system).
+    static let personalDefaultsKeys = [
+        "bodySex", "styleProfile", LearnedStyle.key, "favoriteColors", "avoidedColors", "savedOutfits",
+        "tapeCalibration", "fitPreference", "healthWeight", "healthWeightSeen", "outfitReminder", "validationMode",
+    ]
 }

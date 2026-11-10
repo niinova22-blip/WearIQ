@@ -21,6 +21,8 @@ struct ProfileView: View {
     @Query(sort: \PurchaseRecord.createdAt, order: .reverse) private var purchases: [PurchaseRecord]
     @AppStorage("soundsEnabled") private var soundsEnabled = true
     @AppStorage("outfitReminder") private var outfitReminder = false
+    @State private var notificationsOff = false
+    @State private var restoreMessage: String?
 
     /// The latest purchase per brand.
     private var brandSizes: [PurchaseRecord] {
@@ -77,7 +79,14 @@ struct ProfileView: View {
             Section("Sounds and reminders") {
                 Toggle("Interface sounds", isOn: $soundsEnabled)
                 Toggle("Morning outfit reminder", isOn: $outfitReminder)
-                    .onChange(of: outfitReminder) { _, on in Task { await OutfitReminder.set(on) } }
+                    .onChange(of: outfitReminder) { _, on in
+                        Task {
+                            if await !OutfitReminder.set(on) {
+                                outfitReminder = false
+                                notificationsOff = true
+                            }
+                        }
+                    }
             }
             SizeRegionSection()
             Section {
@@ -99,7 +108,16 @@ struct ProfileView: View {
                 } else {
                     Button("Get Premium") { showPaywall = true }
                 }
-                Button("Restore purchases") { Task { await container.subscriptions.restore() } }
+                Button("Restore purchases") {
+                    Task {
+                        await container.subscriptions.restore()
+                        restoreMessage = container.subscriptions.lastError.map { _ in
+                            String(localized: "Purchases couldn't be restored. Check your connection and try again.")
+                        } ?? (container.isPremium ? String(localized: "Premium is active again.")
+                              : String(localized: "No active subscription was found for this Apple Account."))
+                        container.subscriptions.lastError = nil
+                    }
+                }
             }
             Section("Privacy") {
                 Label("Photos are processed on this device and are not uploaded.", systemImage: "lock.shield")
@@ -119,7 +137,7 @@ struct ProfileView: View {
             Section {
                 Button("Delete all my data", role: .destructive) { confirmDelete = true }
             } footer: {
-                Text("Removes your body profile, saved analyses and wardrobe from this device.")
+                Text("Removes your measurements, checks, wardrobe, style and the people you shop for from this device, from iCloud and from the Safari extension.")
             }
         }
         .navigationTitle("Profile")
@@ -142,6 +160,19 @@ struct ProfileView: View {
             }
         } message: {
             Text("This can't be undone.")
+        }
+        .alert("Notifications are off", isPresented: $notificationsOff) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Allow notifications for WearIQ in Settings to get the morning reminder.")
+        }
+        .alert("Restore purchases", isPresented: .constant(restoreMessage != nil)) {
+            Button("OK") { restoreMessage = nil }
+        } message: {
+            Text(restoreMessage ?? "")
         }
         .alert("Couldn't delete data", isPresented: .constant(deleteError != nil)) {
             Button("OK") { deleteError = nil }

@@ -26,6 +26,8 @@ final class GarmentDraft {
         case standard   // typical measurements for the size labels
     }
     private(set) var chartSource: ChartSource?
+    /// The store's chart was set aside: narrower than the bodies its sizes are for.
+    private(set) var storeChartSetAside = false
     /// The size the user already has (e.g. from the garment's tag); the result opens on it.
     var preferredLabel: String?
 
@@ -104,6 +106,23 @@ final class GarmentDraft {
         if let fit = section.fitStyle { fitStyle = fit }
     }
 
+    /// The store's chart, unless it measures the garment narrower than any body its size
+    /// labels are sold to (Zara's stretch dresses): then typical measurements for its sizes.
+    func applyStoreChart(_ scan: SizeChartScan, fallbackAudience: GarmentAudience?) {
+        apply(scan)
+        let audience = info.audience ?? fallbackAudience
+        guard let category, chartKind == .garment,
+              StandardSizeCharts.implausiblyNarrow(ParsedSizeChart(sizes: sizes, kind: .garment, unit: .cm, warnings: []),
+                                                   category: category, audience: audience) else { return }
+        let labels = sizes.map(\.label)
+        if info.availableSizes.count < 2 { info.availableSizes = labels }
+        sizes = []
+        chartSections = []
+        selectedSection = nil
+        chartKind = nil
+        if fillStandardChart(fallbackAudience: fallbackAudience) { storeChartSetAside = true } else { apply(scan) }
+    }
+
     /// No chart from the store: use typical body measurements for the store's size labels,
     /// so the user gets advice without typing a table. Returns false if the labels are unknown.
     @discardableResult
@@ -113,10 +132,8 @@ final class GarmentDraft {
         // In the sizes the user's region sells this kind of garment in (Profile → Size
         // system): jeans in W/L, women's dresses 34–46 in Türkiye and Europe, 0–16 in the US.
         let audience = info.audience ?? fallbackAudience
-        let labels = info.availableSizes.isEmpty
-            ? category.map { SizeSystems.ladder(for: $0, audience: audience, region: SizeRegionSetting.current,
-                                                productName: info.name) } ?? []
-            : info.availableSizes
+        let labels = category.map { ProductSpec.standardLabels(info, category: $0, audience: audience,
+                                                                region: SizeRegionSetting.current) } ?? []
         guard sizes.isEmpty || chartSource == .standard, category != nil,
               let chart = StandardSizeCharts.chart(for: labels, category: category,
                                                    audience: info.audience ?? fallbackAudience,

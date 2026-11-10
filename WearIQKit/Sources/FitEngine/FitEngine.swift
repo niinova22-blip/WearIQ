@@ -49,6 +49,9 @@ public struct FitEngine: FitAnalyzing {
                 if rule.critical { hasCritical = false }
                 continue
             }
+            // A short or elbow sleeve is short by design, not too short: Koton's short-
+            // sleeved dress (13.5 cm sleeve) was sent two sizes up for "longer" sleeves.
+            if rule.garment == .sleeveLength, garment.chartKind == .garment, g.cm < 0.6 * b.cm { continue }
             let (fit, p) = evaluate(rule: rule, body: b, garment: g, spec: garment, preference: preference)
             regions.append(fit)
             penalty += p

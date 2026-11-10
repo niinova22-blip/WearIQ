@@ -72,6 +72,7 @@ struct QuickCheckSheet: View {
             }
             .safeAreaInset(edge: .bottom) {
                 Button("Check the fit", action: check)
+                    .accessibilityIdentifier("quickCheckSubmit")
                     .buttonStyle(.primary)
                     .disabled(tagSize == nil)
                     .padding(Theme.Spacing.m)

@@ -19,7 +19,9 @@ enum ShoppingMemory {
             return
         }
         let style = LearnedStyle.current.flatMap { $0.style.confirmed ? $0.style : nil }
-        ShoppingBridge.saveShopper(ShoppingAssistant.Shopper(body: body, style: style, region: SizeRegionSetting.current))
+        let preference = UserDefaults.standard.string(forKey: "fitPreference").flatMap(FitPreference.init(rawValue:))
+        ShoppingBridge.saveShopper(ShoppingAssistant.Shopper(body: body, style: style, region: SizeRegionSetting.current,
+                                                             preference: preference))
     }
 
     /// Files the products the extension saw as checks, sized for the user's body as it is
@@ -41,7 +43,9 @@ enum ShoppingMemory {
             let existing = (try? context.fetch(FetchDescriptor<SavedAnalysis>(predicate: #Predicate { $0.productKey == key }))) ?? []
             if existing.contains(where: { $0.fromSafari != true }) { continue }
             existing.forEach(context.delete)
-            let analysis = engine.analyze(body: body, garment: spec, preference: .asDesigned)
+            // The way the user likes clothes to sit (Profile → Measurement changes), as in their own checks.
+            let preference = UserDefaults.standard.string(forKey: "fitPreference").flatMap(FitPreference.init(rawValue:)) ?? .asDesigned
+            let analysis = engine.analyze(body: body, garment: spec, preference: preference)
             guard let saved = try? SavedAnalysis(productKey: key, productName: info.name, brand: info.brand,
                                                  imageURL: info.imageURL, pageURL: info.pageURL ?? URL(string: entry.page.url),
                                                  spec: spec, analysis: analysis, material: info.material,

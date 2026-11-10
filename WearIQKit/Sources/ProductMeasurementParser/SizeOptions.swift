@@ -35,10 +35,14 @@ public enum SizeOptions {
         const r = e.getBoundingClientRect();
         return r.width > 0 && r.height > 0;
       };
+      // The product's own size picker, even when it scrolls sideways (Trendyol's sizes
+      // sit in a "slider"): reached before any widget, the sizes are the product's.
+      const PICKER = /size[-_]?(picker|selector|select|variant|list|options|chooser|box)|sizepicker|sizeselector|beden[-_]?(sec|secimi|listesi)/i;
       const excluded = (e) => {
         for (let p = e; p && p !== document.body; p = p.parentElement) {
           if (p.getAttribute('aria-hidden') === 'true' || p.hidden) return true;
           const c = ((p.className && p.className.toString()) || '') + ' ' + (p.id || '') + ' ' + (p.getAttribute('name') || '');
+          if (PICKER.test(c + ' ' + (p.getAttribute('data-testid') || ''))) return false;
           if (SKIP.test(c)) return true;
         }
         return false;
@@ -48,8 +52,11 @@ public enum SizeOptions {
         const s = (e.innerText || e.textContent || '').trim().replace(/\s+/g, ' ');
         if (!s || s.length > 9 || !SIZE.test(s)) continue;
         if (!visible(e.tagName === 'OPTION' ? e.parentElement : e) || excluded(e)) continue;
+        // Up to the element that holds more than this one size: wrappers around a single
+        // size (Nike's radio input and its label) belong to the selector above them.
         let box = e.parentElement;
-        while (box && box.children.length === 1 && box.parentElement && box !== document.body) box = box.parentElement;
+        const own = (n) => (n.innerText || n.textContent || '').trim().replace(/\s+/g, ' ');
+        while (box && box.parentElement && box !== document.body && (box.children.length === 1 || own(box) === s)) box = box.parentElement;
         if (!byBox.has(box)) { byBox.set(box, []); boxes.push(box); }
         const list = byBox.get(box);
         if (!list.includes(s)) list.push(s);

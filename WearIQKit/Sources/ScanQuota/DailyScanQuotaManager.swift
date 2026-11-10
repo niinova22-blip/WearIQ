@@ -50,7 +50,7 @@ public enum QuotaDecision: Equatable, Sendable {
 /// Daily allowance of successful garment analyses for free users.
 ///
 /// Rules:
-/// - `dailyLimit` (4) new successful analyses per day.
+/// - `dailyLimit` (5) new successful analyses per day.
 /// - Failed lookups never consume (callers only record on success).
 /// - Re-analysing a product already analysed today is free; reopening a saved
 ///   analysis must not go through this manager at all.

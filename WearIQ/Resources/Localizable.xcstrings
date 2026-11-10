@@ -291,16 +291,6 @@
         }
       }
     },
-    "Removes your body profile, saved analyses and wardrobe from this device.": {
-      "localizations": {
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vücut profilini, kayıtlı analizleri ve gardırobu bu cihazdan siler."
-          }
-        }
-      }
-    },
     "Delete all your data?": {
       "localizations": {
         "tr": {
@@ -12887,6 +12877,76 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ (ABD)"
+          }
+        }
+      }
+    },
+    "Removes your measurements, checks, wardrobe, style and the people you shop for from this device, from iCloud and from the Safari extension.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ölçülerini, kontrollerini, gardırobunu, stilini ve alışveriş yaptığın kişileri bu cihazdan, iCloud'dan ve Safari uzantısından siler."
+          }
+        }
+      }
+    },
+    "Notifications are off": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildirimler kapalı"
+          }
+        }
+      }
+    },
+    "Allow notifications for WearIQ in Settings to get the morning reminder.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sabah hatırlatıcısını almak için Ayarlar'da WearIQ bildirimlerine izin ver."
+          }
+        }
+      }
+    },
+    "Purchases couldn't be restored. Check your connection and try again.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Satın alımlar geri yüklenemedi. Bağlantını kontrol edip tekrar dene."
+          }
+        }
+      }
+    },
+    "Premium is active again.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium yeniden etkin."
+          }
+        }
+      }
+    },
+    "No active subscription was found for this Apple Account.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu Apple Hesabı için etkin bir abonelik bulunamadı."
+          }
+        }
+      }
+    },
+    "The store's chart measures this garment narrower than the bodies its sizes are for (a very stretchy cut), so typical measurements for its sizes were used.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mağazanın tablosu bu ürünü, bedenlerinin karşılık geldiği vücutlardan daha dar ölçüyor (çok esnek bir kesim). Bu yüzden bedenleri için tipik ölçüler kullanıldı."
           }
         }
       }

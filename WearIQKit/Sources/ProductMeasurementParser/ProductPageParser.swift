@@ -106,7 +106,7 @@ public struct ProductPageParser: Sendable {
         let withoutBrand = info.brand.map { text.replacingOccurrences(of: $0, with: " ", options: .caseInsensitive) } ?? text
         info.category = GarmentClassifier.category(from: withoutBrand)
             ?? og["og:title"].flatMap { GarmentClassifier.category(from: $0) }
-        info.fitStyle = GarmentClassifier.fitStyle(from: text)
+        info.fitStyle = GarmentClassifier.fitStyle(from: text, category: info.category)
         info.legCut = GarmentClassifier.legCut(from: text)
         if info.fitStyle == nil, let cut = info.legCut, info.category?.isBottom ?? true { info.fitStyle = cut.impliedFit }
         info.stretch = info.material.flatMap(GarmentClassifier.stretch(fromComposition:))
@@ -498,7 +498,19 @@ public enum GarmentClassifier {
     /// an oversize word wins over both. Women's names: bodycon, pencil (kalem) and
     /// corset are close-fitting; boyfriend, mom, A-line and pleated skirts relaxed.
     public static func fitStyle(from text: String) -> FitStyle? {
-        let t = " " + SizeChartParser.fold(text) + " "
+        fitStyle(from: text, category: nil)
+    }
+
+    /// As `fitStyle(from:)`, for a garment of `category`: a dress named for its skirt
+    /// ("kloş", "A-line", "pileli", "balon") is still fitted above the waist, so those
+    /// words don't make the whole dress loose.
+    public static func fitStyle(from text: String, category: GarmentCategory?) -> FitStyle? {
+        var t = " " + SizeChartParser.fold(text) + " "
+        if category == .dress {
+            for skirtWord in ["klos", "pileli", "pleated", "evase", " a kesim", "a-line", " a line ", "balon", "balloon"] {
+                t = t.replacingOccurrences(of: skirtWord, with: " ")
+            }
+        }
         let oversized = ["oversize", "over size", "oversized", "bol kesim", "boxy", "baggy", "extra bol", "dusuk omuz",
                          "drop shoulder", "dropped shoulder", "salas"]
         let slim = ["slim", "skinny", "dar kesim", "muscle fit", "super slim", "extra slim", "bodycon", "kalem", "pencil",
@@ -527,7 +539,10 @@ public enum GarmentClassifier {
             let r = m.range(at: 1).location != NSNotFound ? m.range(at: 1) : m.range(at: 3)
             percent += Double(ns.substring(with: r).replacingOccurrences(of: ",", with: ".")) ?? 0
         }
-        guard t.contains("%") else { return nil }
+        // "polyester/viskoz/elastan" (Zara's structured data): stretch, amount unknown.
+        guard t.contains("%") else {
+            return ["elastan", "spandex", "lycra", "likra", "elasthan"].contains(where: t.contains) ? .low : nil
+        }
         switch percent {
         case 0: return FabricStretch.none  // `.none` alone would mean Optional.none
         case ..<3: return .low
