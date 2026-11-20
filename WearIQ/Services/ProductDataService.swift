@@ -105,7 +105,17 @@ struct ProductDataService: ProductDataServicing {
             return ProductLookup(info: info, chart: SizeChartScan(sections: [section], chosen: section))
         }
         if let chart = await readChart(info) { return ProductLookup(info: info, chart: chart) }
-        return ProductLookup(info: info, chart: await readRenderedGuide(renderedPage, fit: info.fitStyle))
+        if let chart = await readRenderedGuide(renderedPage, fit: info.fitStyle) { return ProductLookup(info: info, chart: chart) }
+        return ProductLookup(info: info, chart: await readProse(info, page: renderedPage))
+    }
+
+    /// The very last: measurements the description gives in sentences, proposed by the
+    /// on-device language model and checked by rules (iOS 26 with Apple Intelligence).
+    private func readProse(_ info: ProductInfo, page: WebPageLoader.Page?) async -> SizeChartScan? {
+        guard let text = info.measurementText ?? page.flatMap({ TextMeasurements.sentences(in: $0.text) }),
+              let chart = await MeasurementTextReader.chart(text: text, sizes: info.availableSizes) else { return nil }
+        let section = SizeChartSection(title: nil, fitStyle: nil, chart: chart)
+        return SizeChartScan(sections: [section], chosen: section)
     }
 
     /// Last resorts for size guides that aren't tables or linked images: the page's

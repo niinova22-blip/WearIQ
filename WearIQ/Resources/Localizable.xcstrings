@@ -12950,6 +12950,256 @@
           }
         }
       }
+    },
+    "Leg opening": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paça genişliği"
+          }
+        }
+      }
+    },
+    "Front rise": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ön ağ"
+          }
+        }
+      }
+    },
+    "The page gives two different %@ values for the same size, so it was left out rather than guessed. Enter it if the product's label says it.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sayfa aynı beden için iki farklı %@ değeri veriyor; tahmin etmek yerine dışarıda bırakıldı. Ürünün etiketinde yazıyorsa sen gir."
+          }
+        }
+      }
+    },
+    "The page gives two different %@ values, so that decision is on hold; the rest comes from the chart.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sayfada iki farklı %@ değeri var, bu yüzden o karar askıda; gerisi tablodan."
+          }
+        }
+      }
+    },
+    "%@ fits": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ uygun"
+          }
+        }
+      }
+    },
+    "%@ roomy": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ rahat"
+          }
+        }
+      }
+    },
+    "%@ a little loose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ biraz bol"
+          }
+        }
+      }
+    },
+    "%@ loose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bol"
+          }
+        }
+      }
+    },
+    "%@ a little tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ biraz dar"
+          }
+        }
+      }
+    },
+    "%@ tight": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ dar"
+          }
+        }
+      }
+    },
+    "%@ short": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kısa"
+          }
+        }
+      }
+    },
+    "%@ long": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ uzun"
+          }
+        }
+      }
+    },
+    "%@ unknown": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bilinmiyor"
+          }
+        }
+      }
+    },
+    "%@ %lld cm longer than your favourite": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ favorinden %2$lld cm uzun"
+          }
+        }
+      }
+    },
+    "%@ %lld cm shorter than your favourite": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ favorinden %2$lld cm kısa"
+          }
+        }
+      }
+    },
+    "%@ %lld cm wider than your favourite": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ favorinden %2$lld cm geniş"
+          }
+        }
+      }
+    },
+    "%@ %lld cm narrower than your favourite": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ favorinden %2$lld cm dar"
+          }
+        }
+      }
+    },
+    "Products that can't be read never use a check.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okunamayan ürünler hak düşürmez."
+          }
+        }
+      }
+    },
+    "The camera lens looks smudged. Wipe it for a sharper outline.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamera merceği lekeli görünüyor. Daha net bir siluet için sil."
+          }
+        }
+      }
+    },
+    "reference height": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "referans boy"
+          }
+        }
+      }
+    },
+    "Leg (hip to ankle)": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bacak (kalçadan bileğe)"
+          }
+        }
+      }
+    },
+    "Shoulder joints": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omuz eklemleri"
+          }
+        }
+      }
+    },
+    "Joints": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eklemler"
+          }
+        }
+      }
+    },
+    "Vision 3D pose": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vision 3B poz"
+          }
+        }
+      }
+    },
+    "A second observer, recorded only: it changes no measurement. Lengths are its proportions times the height.": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İkinci bir gözlemci; yalnızca kaydedilir, hiçbir ölçüyü değiştirmez. Uzunluklar, oranlarının boyla çarpımıdır."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -221,6 +221,27 @@ struct ValidationRecordView: View {
                 Text("Checks whether ARKit's floor and camera give the true height without the typed one. One person holds the phone, the other stands. Enter the tape height above to compare.")
             }
 
+            if let pose = record.pose3D {
+                Section {
+                    LabeledContent("Height", value: String(format: "%.1f cm", pose.heightCm)
+                                   + (pose.measured ? " · LiDAR" : " · " + String(localized: "reference height")))
+                    if let leg = pose.legCm(forHeight: record.tape(.height) ?? record.heightCm) {
+                        let tape = record.tape(.inseam)
+                        LabeledContent("Leg (hip to ankle)", value: String(format: "%.1f cm", leg)
+                                       + (tape.map { String(format: " · inseam tape %.1f", $0) } ?? ""))
+                    }
+                    if let shoulder = pose.shoulderFraction {
+                        LabeledContent("Shoulder joints", value: String(format: "%.1f cm",
+                                                                        shoulder * (record.tape(.height) ?? record.heightCm)))
+                    }
+                    LabeledContent("Joints", value: "\(pose.joints)")
+                } header: {
+                    Text("Vision 3D pose")
+                } footer: {
+                    Text("A second observer, recorded only: it changes no measurement. Lengths are its proportions times the height.")
+                }
+            }
+
             if let notes = record.notes {
                 Section("Engine B details") { Text(notes).font(.caption.monospaced()).foregroundStyle(.secondary) }
             }

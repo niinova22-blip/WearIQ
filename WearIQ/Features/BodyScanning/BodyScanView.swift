@@ -128,9 +128,21 @@ struct BodyScanView: View {
     private var overlay: some View {
         switch model.stage {
         case let .positioning(issue):
-            instructionCard(issue?.instruction ?? String(localized: "Hold still…"),
-                            symbol: issue == nil ? "checkmark.circle.fill" : "figure.stand",
-                            tint: issue == nil ? .green : .white)
+            VStack(spacing: Theme.Spacing.s) {
+                if model.lensSmudged {
+                    // Said on screen only: the spoken lines are recorded clips.
+                    Label("The camera lens looks smudged. Wipe it for a sharper outline.", systemImage: "drop.triangle")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.black)
+                        .padding(.vertical, Theme.Spacing.s)
+                        .padding(.horizontal, Theme.Spacing.m)
+                        .background(.yellow, in: Capsule())
+                        .accessibilityIdentifier("lensSmudged")
+                }
+                instructionCard(issue?.instruction ?? String(localized: "Hold still…"),
+                                symbol: issue == nil ? "checkmark.circle.fill" : "figure.stand",
+                                tint: issue == nil ? .green : .white)
+            }
         case let .countdown(n):
             Text("\(n)")
                 .font(.system(size: 220, weight: .heavy, design: .rounded))

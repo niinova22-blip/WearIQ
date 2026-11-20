@@ -229,8 +229,7 @@ struct WardrobeComparisonCard: View {
         let cm = Int(abs(delta).rounded())
         let name = d.title.lowercased()
         if cm == 0 { return String(localized: "\(name) the same") }
-        let isLength = [GarmentDimension.bodyLength, .sleeveLength, .inseam, .outseam].contains(d)
-        if isLength {
+        if d.isLength {
             return delta > 0 ? String(localized: "\(name) \(cm) cm longer") : String(localized: "\(name) \(cm) cm shorter")
         }
         return delta > 0 ? String(localized: "\(name) \(cm) cm wider") : String(localized: "\(name) \(cm) cm narrower")
@@ -349,6 +348,75 @@ extension FabricAdvice.Note {
         case .linenWrinkles: "wind"
         case .syntheticStable: "checkmark.shield"
         case .denimGives: "arrow.up.left.and.arrow.down.right"
+        }
+    }
+}
+
+/// The reasons for the size in one line, under the size itself: "Waist fits · hips roomy
+/// · inseam 4 cm longer than your favourite". Words beside the colours, for a decision
+/// that reads before the avatar is ready.
+struct DecisionSummaryLine: View {
+    let analysis: FitAnalysis
+    let spec: GarmentSpec?
+    let category: GarmentCategory?
+    let fitStyle: FitStyle?
+    /// The size on screen: the recommended one until another is picked.
+    let sizeLabel: String?
+    @Query(sort: \WardrobeEntry.createdAt, order: .reverse) private var wardrobe: [WardrobeEntry]
+
+    var body: some View {
+        if let text {
+            Text(text)
+                .font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+                .contentTransition(.opacity)
+                .accessibilityIdentifier("decisionSummary")
+        }
+    }
+
+    private var text: String? {
+        guard let category, let label = sizeLabel ?? analysis.recommendedSize?.label,
+              let size = analysis.sizes.first(where: { $0.label == label }) else { return nil }
+        let values = spec?.chartKind == .garment
+            ? spec?.sizes.first(where: { $0.label == label })?.values.mapValues(\.cm) : nil
+        let favourite = wardrobe.first {
+            $0.isReference == true && $0.category == WardrobeCategory(category) && !$0.measurements.isEmpty
+        }?.measurements
+        let parts = DecisionSummary.parts(size: size, category: category, fit: fitStyle ?? spec?.fitStyle ?? .regular,
+                                          leg: spec?.legCut, sizeValues: values, favourite: favourite)
+        guard !parts.isEmpty else { return nil }
+        let line = parts.enumerated().map { i, part in part.text(capitalised: i == 0) }.joined(separator: " · ")
+        return label == analysis.recommendedSize?.label ? line : "\(label): \(line)"
+    }
+}
+
+extension DecisionSummary.Part {
+    func text(capitalised: Bool) -> String {
+        func named(_ title: String) -> String { capitalised ? title : title.lowercased(with: Locale.current) }
+        switch self {
+        case let .region(region, verdict):
+            let name = named(region.title)
+            switch verdict {
+            case .ideal: return String(localized: "\(name) fits")
+            case .slightlyLoose:
+                return region == .hip || region == .thigh
+                    ? String(localized: "\(name) roomy") : String(localized: "\(name) a little loose")
+            case .loose: return String(localized: "\(name) loose")
+            case .slightlyTight: return String(localized: "\(name) a little tight")
+            case .tight: return String(localized: "\(name) tight")
+            case .short: return String(localized: "\(name) short")
+            case .long: return String(localized: "\(name) long")
+            case .insufficientData: return String(localized: "\(name) unknown")
+            }
+        case let .versusFavourite(dimension, delta):
+            let name = named(dimension.title)
+            let cm = Int(abs(delta).rounded())
+            if dimension.isLength {
+                return delta > 0 ? String(localized: "\(name) \(cm) cm longer than your favourite")
+                    : String(localized: "\(name) \(cm) cm shorter than your favourite")
+            }
+            return delta > 0 ? String(localized: "\(name) \(cm) cm wider than your favourite")
+                : String(localized: "\(name) \(cm) cm narrower than your favourite")
         }
     }
 }

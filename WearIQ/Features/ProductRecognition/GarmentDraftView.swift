@@ -80,6 +80,16 @@ struct GarmentDraftView: View {
 
     /// Shown with the result so the user knows what the advice is based on.
     private var chartNote: String? {
+        let suspended = draft.chartWarnings.compactMap { w -> String? in
+            if case let .conflictingValuesSuspended(d) = w { return d.title.lowercased() } else { return nil }
+        }
+        let base = chartSourceNote
+        guard !suspended.isEmpty, draft.chartSource != .standard else { return base }
+        let held = String(localized: "The page gives two different \(suspended.joined(separator: ", ")) values, so that decision is on hold; the rest comes from the chart.")
+        return [base, held].compactMap { $0 }.joined(separator: " ")
+    }
+
+    private var chartSourceNote: String? {
         switch draft.chartSource {
         case .store: String(localized: "Based on the store's size chart.")
         case .photo: String(localized: "Based on the size chart from your photo.")
@@ -373,6 +383,8 @@ extension GarmentDimension {
         case .bodyLength: String(localized: "Length")
         case .inseam: String(localized: "Inseam")
         case .outseam: String(localized: "Outseam")
+        case .legOpening: String(localized: "Leg opening")
+        case .frontRise: String(localized: "Front rise")
         }
     }
 }
@@ -399,6 +411,7 @@ extension ParsedSizeChart.Warning {
         case .standardChartUsed, .anchoredToModel: nil // explained by the chart note
         case .chartKindGuessed: nil  // the picker above shows the choice
         case let .implausibleColumnDropped(dim): String(localized: "The chart's \"\(dim.title.lowercased())\" values can't be that measurement, so they were left out.")
+        case let .conflictingValuesSuspended(dim): String(localized: "The page gives two different \(dim.title.lowercased()) values for the same size, so it was left out rather than guessed. Enter it if the product's label says it.")
         }
     }
 }

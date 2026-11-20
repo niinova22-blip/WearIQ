@@ -73,13 +73,13 @@ final class GarmentDraft {
     /// Dimensions worth asking for, in table order.
     static func dimensions(for category: GarmentCategory) -> [GarmentDimension] {
         switch category {
-        case .pants: [.waist, .hip, .thigh, .inseam, .outseam]
+        case .pants: [.waist, .hip, .thigh, .inseam, .outseam, .frontRise, .legOpening]
         case .tshirt: [.chest, .shoulderWidth, .waist, .bodyLength]
         case .shirt, .jacket, .coat: [.chest, .shoulderWidth, .sleeveLength, .waist, .bodyLength]
         case .dress: [.chest, .waist, .hip, .shoulderWidth, .bodyLength]
         case .skirt: [.waist, .hip, .bodyLength]
         case .sweater: [.chest, .shoulderWidth, .sleeveLength, .bodyLength]
-        case .shorts: [.waist, .hip, .thigh, .inseam]
+        case .shorts: [.waist, .hip, .thigh, .inseam, .frontRise, .legOpening]
         }
     }
 

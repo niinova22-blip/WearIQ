@@ -21,7 +21,9 @@ public enum ReferenceGarment {
         case .chest, .waist, .hip: 1.0
         case .thigh, .shoulderWidth: 0.7
         case .bodyLength, .inseam, .outseam: 0.5
-        case .sleeveLength: 0.4
+        case .sleeveLength, .frontRise: 0.4
+        // The hem's width is the cut more than the size: a little.
+        case .legOpening: 0.3
         }
     }
 

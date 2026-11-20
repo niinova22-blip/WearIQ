@@ -69,7 +69,7 @@ struct WardrobeItemEditor: View {
     /// The measurements that matter for comparing garments of this kind.
     private var measurable: [GarmentDimension] {
         switch category {
-        case .bottom: [.waist, .hip, .thigh, .inseam, .outseam]
+        case .bottom: [.waist, .hip, .thigh, .inseam, .outseam, .frontRise, .legOpening]
         default: [.chest, .shoulderWidth, .bodyLength, .sleeveLength]
         }
     }

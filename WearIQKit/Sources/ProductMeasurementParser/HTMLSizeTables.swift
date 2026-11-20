@@ -8,7 +8,9 @@ public enum HTMLSizeTables {
         tables(in: html).flatMap(sections(fromGrid:))
     }
 
-    static func sections(fromGrid grid: [[String]]) -> [SizeChartSection] {
+    /// A table already split into rows and cells (a page's HTML, or Vision's document
+    /// reader on a chart image), read whichever way its sizes run.
+    public static func sections(fromGrid grid: [[String]]) -> [SizeChartSection] {
         let text = SizeChartParser.fold(grid.joined().joined(separator: " "))
         // Only tables that talk about body/garment dimensions; skips price tables etc.
         guard grid.count >= 2, grid.contains(where: { row in row.contains { SizeChartParser.dimension(for: SizeChartParser.fold($0)) != nil } }),

@@ -94,6 +94,10 @@ final class BodyScanViewModel {
     private var goodSince: Date?
     private var countdownTask: Task<Void, Never>?
     private var front: Task<FrontAnalysis, Error>?
+    /// Test builds in validation mode: Vision's 3D pose of the front photo, for the record.
+    private var frontPose3D: Task<Pose3DReading?, Never>?
+    /// The lens looked smudged when checked while positioning (iOS 26).
+    private(set) var lensSmudged = false
     private var scan = StationScan()
     private var stillness: StillnessDetector = {
         var detector = StillnessDetector()
@@ -169,8 +173,18 @@ final class BodyScanViewModel {
             try await camera.start(position: .front)
             audio.say(String(localized: "Photos are processed on this phone and deleted right away. Nothing is sent anywhere.") + " "
                       + String(localized: "Stand about three steps back from the phone, facing it, arms slightly away from your body."), priority: .high)
+            checkLens()
         } catch {
             stage = .failed(error.localizedDescription)
+        }
+    }
+
+    /// One look at the lens once the camera has settled: a smudge blurs the outline.
+    private func checkLens() {
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard let self, !Task.isCancelled, let image = self.camera.captureStill() else { return }
+            if await LensCheck.isSmudged(image) { self.lensSmudged = true }
         }
     }
 
@@ -348,6 +362,10 @@ final class BodyScanViewModel {
         stage = .turning(0)
         let front = Task.detached(priority: .userInitiated) { try FrontAnalysis(image) }
         self.front = front
+        frontPose3D = nil
+        if ValidationStore.isEnabled {
+            frontPose3D = Task.detached(priority: .utility) { () -> Pose3DReading? in Pose3DReader.read(image) }
+        }
         audio.say(String(localized: "Great. Now, counting slowly to ten in your head, turn once all the way round in place, with your arms straight out to the sides."),
                   priority: .high)
         countdownTask = Task { [weak self] in
@@ -712,12 +730,14 @@ final class BodyScanViewModel {
                 let turn = recording
                 let store = ValidationStore.shared
                 let participant = store.nextParticipant, device = DeviceInfo.model, lidar = DeviceInfo.hasLiDAR
+                let pose3D = frontPose3D
                 // In the background: the result screen doesn't wait for it.
                 Task {
-                    let record = await Task.detached(priority: .utility) {
+                    var record = await Task.detached(priority: .utility) {
                         ValidationRun.record(participant: participant, device: device, hasLiDAR: lidar, basics: basics,
                                              engineA: engineA, profiles: profiles, scanSeconds: scanSeconds, turn: turn)
                     }.value
+                    record.pose3D = await pose3D?.value
                     store.upsert(record)
                 }
             }

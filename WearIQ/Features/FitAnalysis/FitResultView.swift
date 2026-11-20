@@ -186,6 +186,8 @@ struct FitResultView: View {
                     }
                 }
             }
+            DecisionSummaryLine(analysis: analysis, spec: spec, category: category, fitStyle: fitStyle,
+                                sizeLabel: selectedLabel)
             if let tagSize, let recommended = analysis.recommendedSize?.label {
                 Label(tagSize == recommended
                       ? String(localized: "The size on your tag, \(tagSize), is the right one.")
@@ -301,6 +303,16 @@ struct FitResultView: View {
                 Label("Not saved and no scan used, because data was missing.", systemImage: "info.circle")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+            }
+            if !container.isPremium {
+                // What's left today, and that a page that couldn't be read cost nothing.
+                Label("\(container.quota.remaining()) free scans left today", systemImage: "ticket")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("remainingChecks")
+                Text("Products that can't be read never use a check.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
         }
     }

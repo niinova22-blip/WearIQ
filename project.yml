@@ -10,7 +10,7 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     SWIFT_STRICT_CONCURRENCY: targeted
-    MARKETING_VERSION: "1.0.1"
+    MARKETING_VERSION: "1.1"
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: ""   # set your Apple Team ID (App Store Connect → Membership)
     TARGETED_DEVICE_FAMILY: "1"
@@ -139,7 +139,8 @@ targets:
         # iPhone only; XcodeGen's iOS preset would otherwise add iPad at target level,
         # and an iPad build must support every orientation.
         TARGETED_DEVICE_FAMILY: "1"
-        OTHER_LDFLAGS: ["$(inherited)", "-ObjC"]
+        # FoundationModels (iOS 26) is weak: the app still opens on iOS 17 without it.
+        OTHER_LDFLAGS: ["$(inherited)", "-ObjC", "-weak_framework", "FoundationModels"]
         PRODUCT_NAME: WearIQ
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor

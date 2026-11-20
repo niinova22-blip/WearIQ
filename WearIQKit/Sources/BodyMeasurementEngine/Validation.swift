@@ -62,6 +62,8 @@ public struct ValidationRecord: Codable, Sendable, Identifiable, Equatable {
     /// Engine C's feature vectors for this turn, by level: with the tape values they are
     /// real training examples for the next model (scripts/scan_training/train.py --real).
     public var turnFeatures: [String: [Double]]?
+    /// Vision's 3D skeleton of the front photo, a second observer beside the engines.
+    public var pose3D: Pose3DReading?
     public var notes: String?
 
     public init(participant: String, device: String, hasLiDAR: Bool, clothing: String, sex: BodySex?,
@@ -91,6 +93,32 @@ public struct ValidationRecord: Codable, Sendable, Identifiable, Equatable {
         guard let t = tape(d), let v = value(engine, d) else { return nil }
         return v.cm - t
     }
+}
+
+/// What Vision's 3D body pose (iOS 17) makes of the front photo: a height, LiDAR-measured
+/// where the frame has depth and otherwise its 1.8 m reference, and proportions of the
+/// height, which don't depend on that scale. Recorded in test builds to see, against the
+/// tape, whether it is worth taking into the measurement; it changes no measurement.
+public struct Pose3DReading: Codable, Sendable, Equatable {
+    public var heightCm: Double
+    /// From depth (LiDAR), not the reference height.
+    public var measured: Bool
+    /// Hip to knee to ankle, as a share of the height (both legs' mean where both are seen).
+    public var legFraction: Double?
+    /// Shoulder joint to shoulder joint, as a share of the height.
+    public var shoulderFraction: Double?
+    public var joints: Int
+
+    public init(heightCm: Double, measured: Bool, legFraction: Double?, shoulderFraction: Double?, joints: Int) {
+        self.heightCm = heightCm
+        self.measured = measured
+        self.legFraction = legFraction
+        self.shoulderFraction = shoulderFraction
+        self.joints = joints
+    }
+
+    /// The leg length this reading gives a person of `heightCm` (the tape's or the typed).
+    public func legCm(forHeight heightCm: Double) -> Double? { legFraction.map { $0 * heightCm } }
 }
 
 /// Height measured with ARKit (`FloorScale`): a real-world scale that doesn't come from

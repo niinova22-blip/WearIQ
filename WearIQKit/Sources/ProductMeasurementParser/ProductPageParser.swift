@@ -28,6 +28,9 @@ public struct ProductInfo: Equatable, Sendable {
     public var audience: GarmentAudience?
     /// The model's measurements and worn size, if the page states them.
     public var modelFit: ModelFit?
+    /// The page's sentences that give measurements in prose ("iç boyu 78 cm"), for the
+    /// on-device language model to propose a chart from (checked by `TextMeasurements`).
+    public var measurementText: String?
     /// Lowest price the page offers, and its currency (schema.org offers).
     public var price: Double?
     public var currency: String?
@@ -114,6 +117,7 @@ public struct ProductPageParser: Sendable {
                                                         pageURL?.path, Self.storeSection(in: html),
                                                         og["og:title"], og["og:description"]])
         info.modelFit = ModelFitParser.parse(visible, audience: info.audience, category: info.category)
+        if info.sizeChartSections.isEmpty { info.measurementText = TextMeasurements.sentences(in: visible) }
         return info
     }
 

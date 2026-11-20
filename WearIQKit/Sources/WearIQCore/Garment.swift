@@ -91,6 +91,43 @@ public enum GarmentDimension: String, Codable, CaseIterable, Sendable {
     case bodyLength // tops: garment length from neck point; pants: not used
     case inseam
     case outseam
+    /// Trousers: the width round the hem ("paça açıklığı", "leg opening"), as a full
+    /// circumference like the girths. Told, not judged: the app measures no ankle.
+    case legOpening
+    /// Trousers: crotch seam to the top of the waistband at the front ("ön ağ",
+    /// "front rise"). How high the waist sits; compared with garments the user owns.
+    case frontRise
+}
+
+extension GarmentDimension {
+    /// Measured round the garment (or across it, doubled): the ones flat-lay charts halve.
+    public var isGirth: Bool {
+        switch self {
+        case .chest, .waist, .hip, .thigh, .legOpening: true
+        default: false
+        }
+    }
+
+    /// Measured along the garment.
+    public var isLength: Bool {
+        switch self {
+        case .bodyLength, .sleeveLength, .inseam, .outseam, .frontRise: true
+        default: false
+        }
+    }
+}
+
+/// What a number on a product page measures. Mixing these up is how a size goes wrong:
+/// a body's 84 cm waist and a garment's 84 cm waist are a size apart.
+public enum MeasurementBasis: String, Codable, Sendable {
+    /// The body a size is made for ("Vücut ölçüleri", "to fit").
+    case body
+    /// The finished garment, measured round ("Ürün ölçüleri").
+    case garment
+    /// The garment laid flat and measured across, so half a girth ("düz serim", "1/2").
+    case flatLay
+    /// The model in the photos ("Manken 1.85 boyunda, M beden giyiyor").
+    case model
 }
 
 /// Size charts come in two kinds; mixing them up is the most common sizing error.

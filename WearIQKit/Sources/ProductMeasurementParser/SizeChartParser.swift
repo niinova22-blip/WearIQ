@@ -32,10 +32,57 @@ public struct ParsedSizeChart: Equatable, Sendable {
         /// The chart didn't say whether it lists body or garment measurements; decided
         /// from which measurements it has.
         case chartKindGuessed(SizeChartKind)
+        /// The page gives two different values for this measurement of the same size
+        /// (two tables neither of which is surely this product's, or two columns of the
+        /// same name). Left out rather than guessed; the rest of the chart stands.
+        case conflictingValuesSuspended(GarmentDimension)
+    }
+
+    /// What the numbers for `dimension` measure: the body, the garment round, or the
+    /// garment laid flat (halved, and doubled here). Nil when the chart doesn't say.
+    /// Leg openings and rises are always the garment's: a body has neither.
+    public func basis(for dimension: GarmentDimension) -> MeasurementBasis? {
+        if warnings.contains(.halfMeasurementsDoubled(dimension)) { return .flatLay }
+        if dimension == .legOpening || dimension == .frontRise { return .garment }
+        switch kind {
+        case .body: return .body
+        case .garment: return .garment
+        case nil: return nil
+        }
     }
 }
 
 extension ParsedSizeChart {
+    /// The chart without `dimensions`, each marked as suspended: told two ways, so not
+    /// told. Sizes left with nothing are dropped by the plausibility check.
+    public func suspending(_ dimensions: Set<GarmentDimension>) -> ParsedSizeChart {
+        guard !dimensions.isEmpty else { return self }
+        var chart = self
+        for i in chart.sizes.indices {
+            for d in dimensions { chart.sizes[i].values[d] = nil }
+        }
+        for d in dimensions.sorted(by: { $0.rawValue < $1.rawValue }) where !chart.warnings.contains(.conflictingValuesSuspended(d)) {
+            chart.warnings.append(.conflictingValuesSuspended(d))
+        }
+        return chart
+    }
+
+    /// The chart with the kind that text around it states ("Ürün ölçüleri", "Body
+    /// measurements"), when the chart itself didn't say: a title above a table that
+    /// was read without it.
+    public func kind(statedIn text: String) -> ParsedSizeChart {
+        guard let stated = SizeChartParser.chartKind(SizeChartParser.fold(text)) else { return self }
+        var chart = self
+        let guessed = chart.warnings.contains { if case .chartKindGuessed = $0 { true } else { false } }
+        guard chart.kind == nil || guessed else { return self }
+        chart.kind = stated
+        chart.warnings.removeAll { w in
+            if case .chartKindGuessed = w { return true }
+            return w == .chartKindUnknown
+        }
+        return chart
+    }
+
     /// Store charts follow different conventions; this normalises the common ones.
     /// - Flat-lay charts give half girths: a 52 cm "chest" can only be half of a garment,
     ///   and one clearly halved girth means the whole table uses that convention.
@@ -58,7 +105,19 @@ extension ParsedSizeChart {
             chart.kind = .garment
             chart.warnings.removeAll { $0 == .chartKindUnknown }
         }
-        let minimum: [GarmentDimension: Double] = [.shoulderWidth: 25, .sleeveLength: 15, .bodyLength: 30, .inseam: 30, .outseam: 50]
+        // A leg opening is a garment's width round the hem: a skinny jean's is 28–32 cm
+        // round, a wide leg's 50–60; a chart whose widest is under 26 gives it flat.
+        if let widest = chart.sizes.compactMap({ $0.values[.legOpening]?.cm }).max(), widest < 26,
+           !chart.warnings.contains(.halfMeasurementsDoubled(.legOpening)) {
+            for i in chart.sizes.indices {
+                if let v = chart.sizes[i].values[.legOpening] {
+                    chart.sizes[i].values[.legOpening] = MeasuredValue(cm: v.cm * 2, uncertaintyCm: v.uncertaintyCm * 2, source: v.source)
+                }
+            }
+            chart.warnings.append(.halfMeasurementsDoubled(.legOpening))
+        }
+        let minimum: [GarmentDimension: Double] = [.shoulderWidth: 25, .sleeveLength: 15, .bodyLength: 30, .inseam: 30, .outseam: 50,
+                                                    .legOpening: 18, .frontRise: 15]
         for (dim, min) in minimum {
             let vals = chart.sizes.compactMap { $0.values[dim]?.cm }
             guard let maxVal = vals.max(), maxVal < min else { continue }
@@ -68,7 +127,7 @@ extension ParsedSizeChart {
         // Values no garment has are something else (a person's height, weight, a price).
         let maximum: [GarmentDimension: Double] = [.chest: 180, .waist: 180, .hip: 190, .thigh: 100,
                                                     .shoulderWidth: 70, .sleeveLength: 100, .bodyLength: 120,
-                                                    .inseam: 110, .outseam: 135]
+                                                    .inseam: 110, .outseam: 135, .legOpening: 90, .frontRise: 45]
         for (dim, max) in maximum {
             guard let maxVal = chart.sizes.compactMap({ $0.values[dim]?.cm }).max(), maxVal > max else { continue }
             for i in chart.sizes.indices { chart.sizes[i].values[dim] = nil }
@@ -130,6 +189,7 @@ public struct SizeChartParser: Sendable {
 
         var sizeLabels: [String] = []
         var columns: [[GarmentDimension: MeasuredValue]] = []
+        var conflicting = Set<GarmentDimension>()
 
         for line in lines {
             let tokens = Self.tokens(line)
@@ -160,22 +220,32 @@ public struct SizeChartParser: Sendable {
             let factor = (unit == .inch ? 2.54 : 1) * (isHalf ? 2 : 1)
 
             for (i, v) in values.enumerated() {
-                columns[i][dim] = MeasuredValue(cm: v.mid * factor,
-                                                uncertaintyCm: max(v.halfRange * factor, 0.5 * factor),
-                                                source: .manual)
+                let value = MeasuredValue(cm: v.mid * factor, uncertaintyCm: max(v.halfRange * factor, 0.5 * factor),
+                                          source: .manual)
+                // A second row of the same name with other numbers ("Bel" for the body,
+                // then "Bel" for the garment): which is which can't be told from here.
+                if let earlier = columns[i][dim], Self.differs(earlier, value) { conflicting.insert(dim) }
+                columns[i][dim] = value
             }
         }
 
         let sizes = zip(sizeLabels, columns).compactMap { label, vals in
             vals.isEmpty ? nil : SizeEntry(label: label, values: vals)
         }
-        return ParsedSizeChart(sizes: sizes, kind: kind, unit: unit, warnings: warnings).plausibilityChecked()
+        return ParsedSizeChart(sizes: sizes, kind: kind, unit: unit, warnings: warnings)
+            .suspending(conflicting).plausibilityChecked()
+    }
+
+    /// Two readings of one measurement of one size that are not the same number: more
+    /// apart than rounding or a range's ends would put them.
+    static func differs(_ a: MeasuredValue, _ b: MeasuredValue) -> Bool {
+        abs(a.cm - b.cm) > max(1.5, a.uncertaintyCm, b.uncertaintyCm)
     }
 
     /// Whether folded chart text says the values are body or garment measurements.
     static func chartKind(_ folded: String) -> SizeChartKind? {
         if containsAny(folded, ["vucut olc", "body measure", "beden olculeri", "to fit", "fits body"]) { return .body }
-        if containsAny(folded, ["urun olc", "garment", "product measure", "flat", "duz olc", "giysi olc"]) { return .garment }
+        if containsAny(folded, ["urun olc", "garment", "product measure", "flat", "duz olc", "duz serim", "giysi olc"]) { return .garment }
         return nil
     }
 
@@ -204,6 +274,8 @@ public struct SizeChartParser: Sendable {
         return nil
     }
 
+    /// The Turkish–English textile dictionary: what each row or column heading means.
+    /// Lines are folded (no case, no Turkish dots or accents) before matching.
     private static let labelMap: [(GarmentDimension, [String])] = [
         (.shoulderWidth, ["omuz", "shoulder"]),
         (.sleeveLength, ["kol", "sleeve"]),
@@ -211,24 +283,36 @@ public struct SizeChartParser: Sendable {
         (.waist, ["bel", "waist"]),
         (.hip, ["kalca", "basen", "hip", "seat"]),
         (.thigh, ["uyluk", "baldir", "thigh"]),
-        (.inseam, ["ic bacak", "inseam", "inside leg", "paca boyu"]),
-        (.outseam, ["dis bacak", "outseam", "outside leg"]),
+        (.inseam, ["ic bacak", "ic boy", "ic dikis", "inseam", "inside leg", "inner leg", "paca boyu"]),
+        (.outseam, ["dis bacak", "dis boy", "dis dikis", "outseam", "outside leg"]),
+        // After the lengths: "paça boyu" is the inseam, "paça" alone the hem's width.
+        (.legOpening, ["paca genis", "paca eni", "paca acik", "paca cevre", "leg opening", "leg width at hem",
+                       "bottom opening", "hem opening"]),
+        (.frontRise, ["on ag", "bel yuksek", "front rise"]),
         (.bodyLength, ["boy", "length", "uzunluk"]),
     ]
 
     /// Order matters: "iç bacak" must win over the generic "boy"/"length".
     /// Rows that name a body part but measure something we don't use (sleeve or leg
     /// opening width, back width); without this "Kol genişliği" would be read as sleeve length.
-    private static let notMeasured = ["kol genis", "sleeve width", "bicep", "pazu", "paca genis", "leg opening",
+    private static let notMeasured = ["kol genis", "sleeve width", "bicep", "pazu",
                                       "etek genis", "bilek", "sirt genis", "back width", "yaka",
-                                      // Rise ("Önden bel yüksekliği", "front rise") isn't the waist.
-                                      "bel yuksek", "rise", "kasik",
+                                      // The back rise isn't the front one, and a rise isn't the waist.
+                                      "arka ag", "back rise", "arka bel yuksek", "arkadan bel yuksek", "kasik",
                                       // The neck ("Boyun"), not the length ("Boy").
                                       "boyun", "neck", "collar"]
 
     static func dimension(for line: String) -> GarmentDimension? {
         if notMeasured.contains(where: line.contains) { return nil }
-        for (dim, keys) in [labelMap[6], labelMap[7]] + labelMap where keys.contains(where: line.contains) {
+        // "Paça" and "Rise" alone head a column or a row: the hem's width and the front
+        // rise. Inside a name ("Dar Paça Jean", "High Rise Skinny") they are the cut.
+        if line.range(of: #"^\s*paca\b(?!\s*boy)[^a-z]*$|^\s*paca\b(?!\s*boy)\s*[\d(]"#, options: .regularExpression) != nil {
+            return .legOpening
+        }
+        if line.range(of: #"^\s*rise\b[^a-z]*$|^\s*rise\b\s*[\d(]"#, options: .regularExpression) != nil { return .frontRise }
+        // Lengths and the leg's widths before the generic "boy"/"length": "iç boy",
+        // "paça boyu" and "front rise" are not the garment's length.
+        for (dim, keys) in [labelMap[6], labelMap[7], labelMap[8], labelMap[9]] + labelMap where keys.contains(where: line.contains) {
             // "Boy" alone in a height-based chart means body height, which we don't map.
             if dim == .bodyLength, line.contains("vucut boyu") || line.contains("height") { return nil }
             return dim
@@ -247,9 +331,7 @@ public struct SizeChartParser: Sendable {
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX"))
     }
 
-    static func isGirth(_ d: GarmentDimension) -> Bool {
-        [.chest, .waist, .hip, .thigh].contains(d)
-    }
+    static func isGirth(_ d: GarmentDimension) -> Bool { d.isGirth }
 
     static func number(_ s: String) -> Double? {
         Double(s.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: CharacterSet(charactersIn: "\"cm")))

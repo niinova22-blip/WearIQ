@@ -114,7 +114,30 @@ public enum SizeTableReader {
         let scored = sections.enumerated().map { (offset: $0.offset, section: $0.element, score: score($0.element)) }
         guard let top = scored.max(by: { $0.score == $1.score ? $0.offset > $1.offset : $0.score < $1.score }),
               top.score > 0 else { return best(sections, fit: fit) }
-        return top.section
+        // Tables that score as well as the chosen one are as likely to be this product's
+        // (an LC Waikiki trouser page with two tables, neither named for its fit): where
+        // they give the same size other numbers, those numbers are suspended, not picked
+        // by page order. What they agree on (often the inseam) stands.
+        let rivals = scored.filter { $0.offset != top.offset && $0.score == top.score }.map(\.section)
+        let suspended = conflicts(top.section.chart, with: rivals.map(\.chart))
+        guard !suspended.isEmpty else { return top.section }
+        var section = top.section
+        section.chart = section.chart.suspending(suspended)
+        return section
+    }
+
+    /// Measurements the rival charts give other values for, in a size they share.
+    static func conflicts(_ chart: ParsedSizeChart, with rivals: [ParsedSizeChart]) -> Set<GarmentDimension> {
+        var found = Set<GarmentDimension>()
+        for rival in rivals {
+            for size in chart.sizes {
+                guard let other = rival.sizes.first(where: { $0.label.uppercased() == size.label.uppercased() }) else { continue }
+                for (d, v) in size.values {
+                    if let w = other.values[d], SizeChartParser.differs(v, w) { found.insert(d) }
+                }
+            }
+        }
+        return found
     }
 
     // MARK: - Rows and columns
@@ -144,7 +167,7 @@ public enum SizeTableReader {
 
     /// Words that head columns we read, plus columns we deliberately skip; both count
     /// as columns so that values stay aligned.
-    private static let skippedColumns = ["etek", "yaka", "collar", "neck", "hem", "paca genisligi", "bilek", "kapanis",
+    private static let skippedColumns = ["etek", "yaka", "collar", "neck", "hem", "bilek", "kapanis",
                                          "kol genis", "sirt genis", "sleeve width", "back width", "pazu"]
 
     static func columns(_ boxes: [TextBox]) -> [Column] {
@@ -193,6 +216,7 @@ public enum SizeTableReader {
     static func makeChart(header: [Column], rows: [(label: String, cells: [TextBox])], fullText: String) -> ParsedSizeChart? {
         var warnings: [ParsedSizeChart.Warning] = []
         var sizes: [SizeEntry] = []
+        var conflicting = Set<GarmentDimension>()
         for row in rows {
             var values: [GarmentDimension: (mid: Double, halfRange: Double)] = [:]
             for cell in row.cells {
@@ -200,6 +224,11 @@ public enum SizeTableReader {
                 let center = cell.minX + cell.width / 2
                 guard let col = header.min(by: { abs($0.centerX - center) < abs($1.centerX - center) }),
                       let dim = col.dimension else { continue }
+                // Two columns of one name ("Bel" twice, one for the body, one for the
+                // garment) with different numbers: neither is taken.
+                if let earlier = values[dim], abs(earlier.mid - v.mid) > max(1.5, earlier.halfRange, v.halfRange) {
+                    conflicting.insert(dim)
+                }
                 values[dim] = v
             }
             if !values.isEmpty {
@@ -223,6 +252,7 @@ public enum SizeTableReader {
 
         let kind = SizeChartParser.chartKind(fullText)
         if kind == nil { warnings.append(.chartKindUnknown) }
-        return ParsedSizeChart(sizes: sizes, kind: kind, unit: inch ? .inch : .cm, warnings: warnings).plausibilityChecked()
+        return ParsedSizeChart(sizes: sizes, kind: kind, unit: inch ? .inch : .cm, warnings: warnings)
+            .suspending(conflicting).plausibilityChecked()
     }
 }

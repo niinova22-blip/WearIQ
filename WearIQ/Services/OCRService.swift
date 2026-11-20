@@ -39,14 +39,66 @@ struct OCRService: SizeChartReading {
     /// Reads every table in the image. Tables with sizes in rows are read by cell position;
     /// otherwise the classic layout (sizes across the top) is parsed from text lines.
     func readSections(from image: UIImage, fit: FitStyle?) async throws -> SizeChartScan {
-        let boxes = try await recognize(image)
-        var sections = SizeTableReader.sections(from: boxes)
-        if sections.isEmpty {
-            let chart = SizeChartParser().parse(OCRLineAssembler.assemble(boxes))
-            if !chart.sizes.isEmpty { sections = [SizeChartSection(title: nil, fitStyle: nil, chart: chart)] }
+        // iOS 26 reads a table's rows and cells itself; text boxes matched to columns by
+        // position remain for older systems, and for charts without a table's lines,
+        // which Vision may not take for a table. The reading with more numbers wins.
+        let structured = await Self.documentTableSections(image)
+        var sections: [SizeChartSection] = []
+        do {
+            let boxes = try await recognize(image)
+            sections = SizeTableReader.sections(from: boxes)
+            if sections.isEmpty {
+                let chart = SizeChartParser().parse(OCRLineAssembler.assemble(boxes))
+                if !chart.sizes.isEmpty { sections = [SizeChartSection(title: nil, fitStyle: nil, chart: chart)] }
+            }
+        } catch {
+            if structured.isEmpty { throw error }
         }
+        if Self.valueCount(structured) > Self.valueCount(sections) { sections = structured }
         guard !sections.isEmpty else { throw OCRError.noSizeChartFound }
         return SizeChartScan(sections: sections, chosen: SizeTableReader.best(sections, fit: fit))
+    }
+
+    /// How many measurements the sections hold: the fuller reading of a chart is the better.
+    static func valueCount(_ sections: [SizeChartSection]) -> Int {
+        sections.reduce(0) { $0 + $1.chart.sizes.reduce(0) { $0 + $1.values.count } }
+    }
+
+    /// Tables Vision's document reader finds (iOS 26), each laid out as a grid by its
+    /// cells' columns (a heading spanning columns sits in its first) and read like a
+    /// store's HTML table. Empty before iOS 26 or when it finds none.
+    static func documentTableSections(_ image: UIImage) async -> [SizeChartSection] {
+        guard #available(iOS 26.0, *) else { return [] }
+        guard let cgImage = image.cgImage else { return [] }
+        let orientation = CGImagePropertyOrientation(image.imageOrientation)
+        guard let observations = try? await RecognizeDocumentsRequest().perform(on: cgImage, orientation: orientation)
+        else { return [] }
+        var sections: [SizeChartSection] = []
+        for observation in observations {
+            for table in observation.document.tables {
+                let width = (table.rows.flatMap { $0 }.map(\.columnRange.upperBound).max() ?? -1) + 1
+                guard width >= 2 else { continue }
+                let grid: [[String]] = table.rows.map { row in
+                    var cells = Array(repeating: "", count: width)
+                    for cell in row {
+                        let text = cell.content.text.transcript
+                            .split(whereSeparator: \.isNewline).joined(separator: " ")
+                            .trimmingCharacters(in: .whitespaces)
+                        let column = cell.columnRange.lowerBound
+                        if column < width, cells[column].isEmpty { cells[column] = text }
+                    }
+                    return cells
+                }
+                // "Ürün ölçüleri (cm)" above the table says what its numbers are.
+                let page = observation.document.text.transcript
+                sections += HTMLSizeTables.sections(fromGrid: grid).map { section in
+                    var section = section
+                    section.chart = section.chart.kind(statedIn: page)
+                    return section
+                }
+            }
+        }
+        return sections
     }
 
     private func recognize(_ image: UIImage) async throws -> [TextBox] {
